@@ -1,0 +1,36 @@
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+require('dotenv').config();
+
+const connectDB = require('./config/database');
+const errorHandler = require('./middleware/errorHandler');
+
+// Connect to database
+connectDB();
+
+const app = express();
+
+// Security middleware
+app.use(helmet());
+app.use(cors());
+
+// Body parser middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Logging middleware
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+
+// Error handler
+app.use(errorHandler);
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`));
