@@ -26,6 +26,8 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Routes
+// Add this line with your other route imports
+app.use('/api/public', require('./routes/publicRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/districts', require('./routes/districtRoutes'));
 app.use('/api/area-supervisors', require('./routes/areaSupervisorRoutes'));

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import GridItem from '../common/GridItem';
 import {
   Box,
   Card,

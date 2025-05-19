@@ -15,16 +15,14 @@ import {
   Chip,
   Button,
 } from '@mui/material';
-import { CheckCircle, Cancel } from '@mui/icons-material';
+import { CheckCircle, Cancel, Download } from '@mui/icons-material';
 import api from '../../services/api';
 import { WeeklyReport, ReportSummary } from '../../types';
-import { useNavigate } from 'react-router-dom';
 
-const AreaSupervisorDashboard: React.FC = () => {
+const DistrictPastorDashboard: React.FC = () => {
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardData();
@@ -34,7 +32,7 @@ const AreaSupervisorDashboard: React.FC = () => {
     setLoading(true);
     try {
       const [reportsResponse, summaryResponse] = await Promise.all([
-        api.get('/reports?status=pending&limit=10'),
+        api.get('/reports?status=area_approved&limit=10'),
         api.get('/reports/summary'),
       ]);
       setReports(reportsResponse.data.reports);
@@ -49,7 +47,7 @@ const AreaSupervisorDashboard: React.FC = () => {
   const handleApprove = async (reportId: string) => {
     try {
       await api.put(`/reports/${reportId}/approve`);
-      fetchDashboardData(); // Refresh data
+      fetchDashboardData();
     } catch (error) {
       console.error('Error approving report:', error);
     }
@@ -61,17 +59,44 @@ const AreaSupervisorDashboard: React.FC = () => {
     
     try {
       await api.put(`/reports/${reportId}/reject`, { reason });
-      fetchDashboardData(); // Refresh data
+      fetchDashboardData();
     } catch (error) {
       console.error('Error rejecting report:', error);
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/export/excel', {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `district-reports-${new Date().toISOString().split('T')[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error exporting reports:', error);
+    }
+  };
+
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Area Supervisor Dashboard
-      </Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          District Pastor Dashboard
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Download />}
+          onClick={handleExport}
+        >
+          Export Reports
+        </Button>
+      </Box>
 
       {summary && (
         <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -115,7 +140,7 @@ const AreaSupervisorDashboard: React.FC = () => {
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Pending Reports for Approval
+            Reports for Final Approval
           </Typography>
           <TableContainer>
             <Table>
@@ -161,7 +186,7 @@ const AreaSupervisorDashboard: React.FC = () => {
           </TableContainer>
           {reports.length === 0 && (
             <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-              No pending reports
+              No reports pending approval
             </Typography>
           )}
         </CardContent>
@@ -170,4 +195,4 @@ const AreaSupervisorDashboard: React.FC = () => {
   );
 };
 
-export default AreaSupervisorDashboard;
+export default DistrictPastorDashboard;
