@@ -27,6 +27,11 @@ if (process.env.NODE_ENV === 'development') {
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/districts', require('./routes/districtRoutes'));
+app.use('/api/area-supervisors', require('./routes/areaSupervisorRoutes'));
+app.use('/api/cith-centres', require('./routes/cithCentreRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/export', require('./routes/exportRoutes'));
 
 // Error handler
 app.use(errorHandler);
