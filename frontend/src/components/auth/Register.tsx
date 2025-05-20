@@ -103,22 +103,32 @@ const Register: React.FC = () => {
   }, []);
 
   // Filter area supervisors when district is selected
-  useEffect(() => {
-    if (formData.districtId && areaSupervisors.length > 0) {
-      const filtered = areaSupervisors.filter(
-        (sup) => sup.districtId && sup.districtId._id === formData.districtId
-      );
-      setFilteredAreaSupervisors(filtered);
-      
-      // Clear area supervisor selection if selected area not in filtered list
-      if (formData.areaSupervisorId && !filtered.some(area => area._id === formData.areaSupervisorId)) {
-        setFormData(prev => ({ ...prev, areaSupervisorId: '' }));
-      }
-    } else {
-      setFilteredAreaSupervisors([]);
+  // In Register.tsx, improve the useEffect that filters area supervisors
+useEffect(() => {
+  if (formData.districtId && areaSupervisors.length > 0) {
+    console.log("Filtering area supervisors for district:", formData.districtId);
+    console.log("Available area supervisors:", areaSupervisors);
+    
+    // Make sure we're comparing string IDs
+    const districtId = formData.districtId.toString();
+    
+    const filtered = areaSupervisors.filter(
+      (sup) => sup.districtId && sup.districtId._id 
+        ? sup.districtId._id.toString() === districtId 
+        : false
+    );
+    
+    console.log("Filtered area supervisors:", filtered);
+    setFilteredAreaSupervisors(filtered);
+    
+    // Clear area supervisor selection if selected area not in filtered list
+    if (formData.areaSupervisorId && !filtered.some(area => area._id === formData.areaSupervisorId)) {
+      setFormData(prev => ({ ...prev, areaSupervisorId: '' }));
     }
-  }, [formData.districtId, areaSupervisors]);
-
+  } else {
+    setFilteredAreaSupervisors([]);
+  }
+}, [formData.districtId, areaSupervisors]);
   // Filter CITH centres when area supervisor is selected
   useEffect(() => {
     if (formData.areaSupervisorId && cithCentres.length > 0) {
