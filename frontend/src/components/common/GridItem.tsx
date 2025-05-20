@@ -1,17 +1,10 @@
 import React from 'react';
-import { Grid, GridProps } from '@mui/material';
+import { Grid } from '@mui/material';
+import { GridProps } from '@mui/material/Grid';
 
-interface GridItemProps extends GridProps {
-  item?: boolean;
-  xs?: number;
-  sm?: number;
-  md?: number;
-  lg?: number;
-  xl?: number;
-}
-
-const GridItem: React.FC<GridItemProps> = ({ children, ...props }) => {
-  return <Grid {...props as any}>{children}</Grid>;
+// Create a custom GridItem component that works with the new Grid API
+const GridItem: React.FC<GridProps> = (props) => {
+  return <Grid {...props} />;
 };
 
 export default GridItem;

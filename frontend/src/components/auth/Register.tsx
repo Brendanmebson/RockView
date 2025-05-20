@@ -17,6 +17,11 @@ import {
   Stepper,
   Step,
   StepLabel,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -32,9 +37,11 @@ import {
   Badge,
   Business,
   LocationOn,
+  Add,
 } from '@mui/icons-material';
 import { Church, Users, Building, Home } from 'lucide-react';
 import { PageContainer, AnimatedCard } from '../common/AnimatedComponents';
+import GridItem from '../common/GridItem';
 
 const Register: React.FC = () => {
   const [activeStep, setActiveStep] = useState(0);
@@ -51,38 +58,158 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetchingDistricts, setFetchingDistricts] = useState(false);
+  const [fetchingAreas, setFetchingAreas] = useState(false);
+  const [fetchingCentres, setFetchingCentres] = useState(false);
   const [districts, setDistricts] = useState<District[]>([]);
   const [areaSupervisors, setAreaSupervisors] = useState<AreaSupervisor[]>([]);
   const [cithCentres, setCithCentres] = useState<CithCentre[]>([]);
-  const { register } = useAuth();
+  const [filteredAreaSupervisors, setFilteredAreaSupervisors] = useState<AreaSupervisor[]>([]);
+  const [filteredCithCentres, setFilteredCithCentres] = useState<CithCentre[]>([]);
+  const [showNewCentreDialog, setShowNewCentreDialog] = useState(false);
+  const [newCentreData, setNewCentreData] = useState({
+    name: '',
+    location: '',
+    leaderName: '',
+    contactEmail: '',
+    contactPhone: '',
+    areaSupervisorId: '',
+  });
+  const { register, user } = useAuth();
   const navigate = useNavigate();
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   const steps = ['Personal Info', 'Role Selection', 'Assignment'];
 
+  // Debug API connection
+  useEffect(() => {
+    const testAPI = async () => {
+      try {
+        console.log("Testing API connection...");
+        const response = await axios.get(`${API_URL}/public/districts`);
+        console.log("API Response:", response.data);
+      } catch (error) {
+        console.error("API Test Failed:", error);
+      }
+    };
+    
+    testAPI();
+  }, [API_URL]);
+
+  // Fetch districts on component mount
+  useEffect(() => {
+    fetchDistricts();
+  }, []);
+
+  // Filter area supervisors when district is selected
+  useEffect(() => {
+    if (formData.districtId && areaSupervisors.length > 0) {
+      const filtered = areaSupervisors.filter(
+        (sup) => sup.districtId && sup.districtId._id === formData.districtId
+      );
+      setFilteredAreaSupervisors(filtered);
+      
+      // Clear area supervisor selection if selected area not in filtered list
+      if (formData.areaSupervisorId && !filtered.some(area => area._id === formData.areaSupervisorId)) {
+        setFormData(prev => ({ ...prev, areaSupervisorId: '' }));
+      }
+    } else {
+      setFilteredAreaSupervisors([]);
+    }
+  }, [formData.districtId, areaSupervisors]);
+
+  // Filter CITH centres when area supervisor is selected
+  useEffect(() => {
+    if (formData.areaSupervisorId && cithCentres.length > 0) {
+      const filtered = cithCentres.filter(
+        (centre) => centre.areaSupervisorId && centre.areaSupervisorId._id === formData.areaSupervisorId
+      );
+      setFilteredCithCentres(filtered);
+      
+      // Clear centre selection if selected centre not in filtered list
+      if (formData.cithCentreId && !filtered.some(centre => centre._id === formData.cithCentreId)) {
+        setFormData(prev => ({ ...prev, cithCentreId: '' }));
+      }
+    } else {
+      setFilteredCithCentres([]);
+    }
+  }, [formData.areaSupervisorId, cithCentres]);
+
+  // Set fallback districts if none fetched
+  useEffect(() => {
+    if (districts.length === 0 && !fetchingDistricts) {
+      // Set some default districts if none are fetched
+      console.log("Setting fallback districts");
+      setDistricts([
+        {
+          _id: 'fallback1',
+          name: 'Festac District',
+          districtNumber: 1,
+          pastorName: 'Pastor Johnson'
+        },
+        {
+          _id: 'fallback2',
+          name: 'Ikeja District',
+          districtNumber: 2,
+          pastorName: 'Pastor Williams'
+        },
+        {
+          _id: 'fallback3',
+          name: 'Lekki District',
+          districtNumber: 3,
+          pastorName: 'Pastor James'
+        }
+      ]);
+    }
+  }, [districts, fetchingDistricts]);
+
+  // Fetch data based on role selection
   useEffect(() => {
     if (formData.role) {
       fetchDropdownData();
     }
   }, [formData.role]);
 
+  const fetchDistricts = async () => {
+    setFetchingDistricts(true);
+    setError('');
+    try {
+      const response = await axios.get(`${API_URL}/public/districts`);
+      console.log("Fetched districts:", response.data);
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        setDistricts(response.data);
+      } else {
+        console.log("No districts returned from API");
+      }
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+      setError('Failed to load districts. Please try again.');
+    } finally {
+      setFetchingDistricts(false);
+    }
+  };
+
   const fetchDropdownData = async () => {
     try {
-      if (formData.role === 'district_pastor' || formData.role === 'admin') {
-        const response = await axios.get(`${API_URL}/public/districts`);
-        setDistricts(response.data);
+      if (formData.role === 'area_supervisor' || formData.role === 'cith_centre') {
+        setFetchingAreas(true);
+        const areasResponse = await axios.get(`${API_URL}/public/area-supervisors`);
+        console.log("Fetched area supervisors:", areasResponse.data);
+        setAreaSupervisors(areasResponse.data);
+        setFetchingAreas(false);
       }
-      if (formData.role === 'area_supervisor') {
-        const response = await axios.get(`${API_URL}/public/area-supervisors`);
-        setAreaSupervisors(response.data);
-      }
+      
       if (formData.role === 'cith_centre') {
-        const response = await axios.get(`${API_URL}/public/cith-centres`);
-        setCithCentres(response.data);
+        setFetchingCentres(true);
+        const centresResponse = await axios.get(`${API_URL}/public/cith-centres`);
+        console.log("Fetched CITH centres:", centresResponse.data);
+        setCithCentres(centresResponse.data);
+        setFetchingCentres(false);
       }
     } catch (error) {
       console.error('Error fetching dropdown data:', error);
+      setError('Failed to load selection options. Please try again.');
     }
   };
 
@@ -98,20 +225,107 @@ const Register: React.FC = () => {
       ...formData,
       [name]: e.target.value,
     });
+    
+    // If selecting an area supervisor, set it for new centre data too
+    if (name === 'areaSupervisorId') {
+      setNewCentreData({
+        ...newCentreData,
+        areaSupervisorId: e.target.value,
+      });
+    }
+  };
+
+  const handleNewCentreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNewCentreData({
+      ...newCentreData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleCreateCentre = async () => {
+    try {
+      setLoading(true);
+      // This would need authorization in a real app
+      const response = await axios.post(`${API_URL}/cith-centres`, newCentreData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      const newCentre = response.data;
+      
+      // Add to centres list and select it
+      setCithCentres([...cithCentres, newCentre]);
+      setFilteredCithCentres([...filteredCithCentres, newCentre]);
+      setFormData({
+        ...formData,
+        cithCentreId: newCentre._id,
+      });
+      
+      setShowNewCentreDialog(false);
+      
+      // Reset new centre form
+      setNewCentreData({
+        name: '',
+        location: '',
+        leaderName: '',
+        contactEmail: '',
+        contactPhone: '',
+        areaSupervisorId: formData.areaSupervisorId,
+      });
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to create new centre');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNext = () => {
+    // Validate current step
+    if (activeStep === 0) {
+      if (!formData.name || !formData.username || !formData.email || !formData.password) {
+        setError('Please fill in all required fields');
+        return;
+      }
+      
+      if (formData.password.length < 6) {
+        setError('Password must be at least 6 characters long');
+        return;
+      }
+    } else if (activeStep === 1) {
+      if (!formData.role) {
+        setError('Please select your role');
+        return;
+      }
+    }
+    
+    setError('');
     setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
   const handleBack = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
+    setError('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    // Validate final step based on role
+    if (formData.role === 'district_pastor' && !formData.districtId) {
+      setError('Please select your district');
+      setLoading(false);
+      return;
+    } else if (formData.role === 'area_supervisor' && !formData.areaSupervisorId) {
+      setError('Please select your area');
+      setLoading(false);
+      return;
+    } else if (formData.role === 'cith_centre' && !formData.cithCentreId) {
+      setError('Please select your CITH centre');
+      setLoading(false);
+      return;
+    }
 
     try {
       await register(formData);
@@ -134,7 +348,7 @@ const Register: React.FC = () => {
       case 'district_pastor':
         return <Building size={20} />;
       case 'area_supervisor':
-        return <Business size={20} />;
+        return <Business fontSize="small" />;
       case 'cith_centre':
         return <Home size={20} />;
       default:
@@ -224,6 +438,7 @@ const Register: React.FC = () => {
                     </InputAdornment>
                   ),
                 }}
+                helperText="Password must be at least 6 characters long"
               />
             </Box>
           </motion.div>
@@ -282,60 +497,7 @@ const Register: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -50 }}
           >
-            {formData.role === 'cith_centre' && (
-              <FormControl fullWidth required>
-                <InputLabel>Select Your CITH Centre</InputLabel>
-                <Select
-                  name="cithCentreId"
-                  value={formData.cithCentreId}
-                  onChange={handleSelectChange('cithCentreId')}
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <LocationOn color="action" />
-                    </InputAdornment>
-                  }
-                >
-                  {cithCentres.map((centre) => (
-                    <MenuItem key={centre._id} value={centre._id}>
-                      <Box>
-                        <Typography variant="body1">{centre.name}</Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          {centre.location} - Led by {centre.leaderName}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
-            
-            {formData.role === 'area_supervisor' && (
-              <FormControl fullWidth required>
-                <InputLabel>Select Your Area</InputLabel>
-                <Select
-                  name="areaSupervisorId"
-                  value={formData.areaSupervisorId}
-                  onChange={handleSelectChange('areaSupervisorId')}
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <Business color="action" />
-                    </InputAdornment>
-                  }
-                >
-                  {areaSupervisors.map((supervisor) => (
-                    <MenuItem key={supervisor._id} value={supervisor._id}>
-                      <Box>
-                        <Typography variant="body1">{supervisor.name}</Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          Supervised by {supervisor.supervisorName}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            )}
-            
+            {/* District selection for District Pastor */}
             {formData.role === 'district_pastor' && (
               <FormControl fullWidth required>
                 <InputLabel>Select Your District</InputLabel>
@@ -345,24 +507,262 @@ const Register: React.FC = () => {
                   onChange={handleSelectChange('districtId')}
                   startAdornment={
                     <InputAdornment position="start">
-                      <Building color="action" />
+                      <Building size={16} />
                     </InputAdornment>
                   }
+                  disabled={fetchingDistricts}
                 >
-                  {districts.map((district) => (
-                    <MenuItem key={district._id} value={district._id}>
-                      <Box>
-                        <Typography variant="body1">{district.name}</Typography>
-                        <Typography variant="caption" color="textSecondary">
-                          District {district.districtNumber} - {district.pastorName}
-                        </Typography>
-                      </Box>
+                  {fetchingDistricts ? (
+                    <MenuItem value="">
+                      <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
                     </MenuItem>
-                  ))}
+                  ) : districts.length === 0 ? (
+                    <MenuItem value="">No districts available</MenuItem>
+                  ) : (
+                    districts.map((district) => (
+                      <MenuItem key={district._id} value={district._id}>
+                        <Box>
+                          <Typography variant="body1">{district.name}</Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            District {district.districtNumber} - {district.pastorName}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
+                {districts.length === 0 && !fetchingDistricts && (
+                  <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                    No districts available. Please contact administrator.
+                  </Typography>
+                )}
               </FormControl>
             )}
             
+            {/* Area Supervisor selection - filtered by district for area supervisor role */}
+            {formData.role === 'area_supervisor' && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <FormControl fullWidth required>
+                  <InputLabel>Select District</InputLabel>
+                  <Select
+                    name="districtId"
+                    value={formData.districtId}
+                    onChange={handleSelectChange('districtId')}
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <Building size={16} />
+                      </InputAdornment>
+                    }
+                    disabled={fetchingDistricts}
+                  >
+                    {fetchingDistricts ? (
+                      <MenuItem value="">
+                        <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
+                      </MenuItem>
+                    ) : districts.length === 0 ? (
+                      <MenuItem value="">No districts available</MenuItem>
+                    ) : (
+                      districts.map((district) => (
+                        <MenuItem key={district._id} value={district._id}>
+                          <Box>
+                            <Typography variant="body1">{district.name}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              District {district.districtNumber} - {district.pastorName}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+                
+                {formData.districtId && (
+                  <FormControl fullWidth required>
+                    <InputLabel>Select Your Area</InputLabel>
+                    <Select
+                      name="areaSupervisorId"
+                      value={formData.areaSupervisorId}
+                      onChange={handleSelectChange('areaSupervisorId')}
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <Business fontSize="small" />
+                        </InputAdornment>
+                      }
+                      disabled={fetchingAreas}
+                    >
+                      {fetchingAreas ? (
+                        <MenuItem value="">
+                          <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Areas...
+                        </MenuItem>
+                      ) : filteredAreaSupervisors.length === 0 ? (
+                        <MenuItem value="">No areas available in this district</MenuItem>
+                      ) : (
+                        filteredAreaSupervisors.map((supervisor) => (
+                          <MenuItem key={supervisor._id} value={supervisor._id}>
+                            <Box>
+                              <Typography variant="body1">{supervisor.name}</Typography>
+                              <Typography variant="caption" color="textSecondary">
+                                Supervised by {supervisor.supervisorName}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))
+                      )}
+                    </Select>
+                  </FormControl>
+                )}
+                
+                {filteredAreaSupervisors.length === 0 && formData.districtId && !fetchingAreas && (
+                  <Alert severity="info">
+                    No area supervisors found for this district. Please contact your administrator.
+                  </Alert>
+                )}
+              </Box>
+            )}
+            
+            {/* CITH Centre selection with nested filtering */}
+            {formData.role === 'cith_centre' && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {/* District selection first */}
+                <FormControl fullWidth required>
+                  <InputLabel>Select District</InputLabel>
+                  <Select
+                    name="districtId"
+                    value={formData.districtId}
+                    onChange={handleSelectChange('districtId')}
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <Building size={16} />
+                      </InputAdornment>
+                    }
+                    disabled={fetchingDistricts}
+                  >
+                    {fetchingDistricts ? (
+                      <MenuItem value="">
+                        <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
+                      </MenuItem>
+                    ) : districts.length === 0 ? (
+                      <MenuItem value="">No districts available</MenuItem>
+                    ) : (
+                      districts.map((district) => (
+                        <MenuItem key={district._id} value={district._id}>
+                          <Box>
+                            <Typography variant="body1">{district.name}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              District {district.districtNumber} - {district.pastorName}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+                
+                {/* Area supervisor selection based on district */}
+                {formData.districtId && (
+                  <FormControl fullWidth required>
+                    <InputLabel>Select Area</InputLabel>
+                    <Select
+                      name="areaSupervisorId"
+                      value={formData.areaSupervisorId}
+                      onChange={handleSelectChange('areaSupervisorId')}
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <Business fontSize="small" />
+                        </InputAdornment>
+                      }
+                      disabled={fetchingAreas}
+                    >
+                      {fetchingAreas ? (
+                        <MenuItem value="">
+                          <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Areas...
+                        </MenuItem>
+                      ) : filteredAreaSupervisors.length === 0 ? (
+                        <MenuItem value="">No areas available in this district</MenuItem>
+                      ) : (
+                        filteredAreaSupervisors.map((supervisor) => (
+                          <MenuItem key={supervisor._id} value={supervisor._id}>
+                            <Box>
+                              <Typography variant="body1">{supervisor.name}</Typography>
+                              <Typography variant="caption" color="textSecondary">
+                                Supervised by {supervisor.supervisorName}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))
+                      )}
+                    </Select>
+                  </FormControl>
+                )}
+                
+                {/* Centre selection based on area supervisor */}
+                {formData.areaSupervisorId && (
+                  <FormControl fullWidth required>
+                    <InputLabel>Select Your CITH Centre</InputLabel>
+                    <Select
+                      name="cithCentreId"
+                      value={formData.cithCentreId}
+                      onChange={handleSelectChange('cithCentreId')}
+                      startAdornment={
+                        <InputAdornment position="start">
+                          <LocationOn />
+                        </InputAdornment>
+                      }
+                      disabled={fetchingCentres}
+                    >
+                      {fetchingCentres ? (
+                        <MenuItem value="">
+                          <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Centres...
+                        </MenuItem>
+                      ) : filteredCithCentres.length === 0 ? (
+                        <MenuItem value="">No centres available in this area</MenuItem>
+                      ) : (
+                        filteredCithCentres.map((centre) => (
+                          <MenuItem key={centre._id} value={centre._id}>
+                            <Box>
+                              <Typography variant="body1">{centre.name}</Typography>
+                              <Typography variant="caption" color="textSecondary">
+                                {centre.location} - Led by {centre.leaderName}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))
+                      )}
+                    </Select>
+                  </FormControl>
+                )}
+                
+                {/* Option to create new centre */}
+                {formData.areaSupervisorId && (
+                  <Box sx={{ mt: 1 }}>
+                    <Button
+                      startIcon={<Add />}
+                      onClick={() => setShowNewCentreDialog(true)}
+                      variant="outlined"
+                      color="primary"
+                      fullWidth
+                    >
+                      Register a New CITH Centre
+                    </Button>
+                  </Box>
+                )}
+                
+                {/* Messages when no options are available */}
+                {formData.districtId && filteredAreaSupervisors.length === 0 && !fetchingAreas && (
+                  <Alert severity="info">
+                    No area supervisors found for this district. Please contact your administrator.
+                  </Alert>
+                )}
+                
+                {formData.areaSupervisorId && filteredCithCentres.length === 0 && !fetchingCentres && (
+                  <Alert severity="info">
+                    No CITH centres found for this area. You can register a new one with the button above.
+                  </Alert>
+                )}
+              </Box>
+            )}
+            
+            {/* Admin role doesn't need additional selection */}
             {formData.role === 'admin' && (
               <Box sx={{ textAlign: 'center', py: 4 }}>
                 <Church size={48} color="#D69E2E" />
@@ -374,6 +774,67 @@ const Register: React.FC = () => {
                 </Typography>
               </Box>
             )}
+            
+            {/* New Centre Creation Dialog */}
+            <Dialog open={showNewCentreDialog} onClose={() => setShowNewCentreDialog(false)} maxWidth="sm" fullWidth>
+              <DialogTitle>Register New CITH Centre</DialogTitle>
+              <DialogContent>
+                <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <TextField
+                    label="Centre Name"
+                    name="name"
+                    value={newCentreData.name}
+                    onChange={handleNewCentreChange}
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label="Location"
+                    name="location"
+                    value={newCentreData.location}
+                    onChange={handleNewCentreChange}
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label="Leader Name"
+                    name="leaderName"
+                    value={newCentreData.leaderName}
+                    onChange={handleNewCentreChange}
+                    fullWidth
+                    required
+                  />
+                  <TextField
+                    label="Contact Email"
+                    name="contactEmail"
+                    type="email"
+                    value={newCentreData.contactEmail}
+                    onChange={handleNewCentreChange}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Contact Phone"
+                    name="contactPhone"
+                    value={newCentreData.contactPhone}
+                    onChange={handleNewCentreChange}
+                    fullWidth
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setShowNewCentreDialog(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleCreateCentre} 
+                  variant="contained" 
+                  disabled={loading || !newCentreData.name || !newCentreData.location || !newCentreData.leaderName}
+                  startIcon={loading ? <CircularProgress size={20} /> : <Add />}
+                >
+                  Create Centre
+                </Button>
+              </DialogActions>
+            </Dialog>
           </motion.div>
         );
       default:
@@ -402,7 +863,7 @@ const Register: React.FC = () => {
                 borderRadius: 4,
                 background: 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(10px)',
-              }}
+}}
             >
               <Box
                 sx={{
@@ -482,6 +943,7 @@ const Register: React.FC = () => {
                          variant="contained"
                          onClick={handleSubmit}
                          disabled={loading}
+                         startIcon={loading ? <CircularProgress size={20} /> : null}
                          sx={{
                            background: 'linear-gradient(45deg, #D69E2E, #ED8936)',
                            '&:hover': {

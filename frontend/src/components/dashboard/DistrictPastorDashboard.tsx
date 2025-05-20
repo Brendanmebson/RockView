@@ -14,15 +14,28 @@ import {
   TableRow,
   Chip,
   Button,
+  Avatar,
+  Divider,
 } from '@mui/material';
-import { CheckCircle, Cancel, Download } from '@mui/icons-material';
+import { CheckCircle, Cancel, Download, PeopleAlt, AttachMoney, TrendingUp, 
+         Assessment, Group } from '@mui/icons-material';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, 
+         LineChart, Line, PieChart, Pie, Cell, ComposedChart, Area, Scatter, 
+         Treemap } from 'recharts';
 import api from '../../services/api';
-import { WeeklyReport, ReportSummary } from '../../types';
+import { WeeklyReport, ReportSummary, AreaSupervisor, CithCentre } from '../../types';
 
 const DistrictPastorDashboard: React.FC = () => {
   const [reports, setReports] = useState<WeeklyReport[]>([]);
+  const [pendingReports, setPendingReports] = useState<WeeklyReport[]>([]);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [areaSupervisors, setAreaSupervisors] = useState<AreaSupervisor[]>([]);
+  const [centres, setCentres] = useState<CithCentre[]>([]);
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [areaComparisonData, setAreaComparisonData] = useState<any[]>([]);
+  const [conversionData, setConversionData] = useState<any[]>([]);
+  const [centreTreemapData, setCentreTreemapData] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -31,17 +44,144 @@ const DistrictPastorDashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const [reportsResponse, summaryResponse] = await Promise.all([
+      const [reportsResponse, pendingResponse, summaryResponse, areasResponse, centresResponse] = await Promise.all([
+        api.get('/reports?limit=50'),
         api.get('/reports?status=area_approved&limit=10'),
         api.get('/reports/summary'),
+        api.get('/area-supervisors'),
+        api.get('/cith-centres')
       ]);
       setReports(reportsResponse.data.reports);
+      setPendingReports(pendingResponse.data.reports);
       setSummary(summaryResponse.data);
+      setAreaSupervisors(areasResponse.data);
+      setCentres(centresResponse.data);
+      
+      // Process data for charts
+      processChartData(reportsResponse.data.reports, areasResponse.data, centresResponse.data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const processChartData = (reports: WeeklyReport[], areas: AreaSupervisor[], centres: CithCentre[]) => {
+    // Group reports by week for attendance trends
+    const weeklyData: {[key: string]: any} = {};
+    reports.forEach(report => {
+      const week = new Date(report.week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (!weeklyData[week]) {
+        weeklyData[week] = { 
+          week, 
+          male: 0, 
+          female: 0, 
+          children: 0, 
+          total: 0,
+          offerings: 0,
+          firstTimers: 0 
+        };
+      }
+      weeklyData[week].male += report.data.male;
+      weeklyData[week].female += report.data.female;
+      weeklyData[week].children += report.data.children;
+      weeklyData[week].total += report.data.male + report.data.female + report.data.children;
+      weeklyData[week].offerings += report.data.offerings;
+      weeklyData[week].firstTimers += report.data.numberOfFirstTimers;
+    });
+    
+    setAttendanceData(Object.values(weeklyData).sort((a, b) => {
+      const dateA = new Date(a.week);
+      const dateB = new Date(b.week);
+      return dateA.getTime() - dateB.getTime();
+    }));
+    
+    // Area comparison data
+    const areaData: {[key: string]: any} = {};
+    areas.forEach(area => {
+      areaData[area._id] = { 
+        name: area.name, 
+        attendance: 0, 
+        offerings: 0, 
+        firstTimers: 0,
+        testimonies: 0,
+        centres: 0
+      };
+    });
+    
+    // Map centres to areas
+    const centresToArea: {[key: string]: string} = {};
+    centres.forEach(centre => {
+      centresToArea[centre._id] = centre.areaSupervisorId._id;
+      if (areaData[centre.areaSupervisorId._id]) {
+        areaData[centre.areaSupervisorId._id].centres++;
+      }
+    });
+    
+    reports.forEach(report => {
+      const centreId = report.cithCentreId._id;
+      const areaId = centresToArea[centreId];
+      
+      if (areaData[areaId]) {
+        areaData[areaId].attendance += report.data.male + report.data.female + report.data.children;
+        areaData[areaId].offerings += report.data.offerings;
+        areaData[areaId].firstTimers += report.data.numberOfFirstTimers;
+        areaData[areaId].testimonies += report.data.numberOfTestimonies;
+      }
+    });
+    
+    setAreaComparisonData(Object.values(areaData));
+    
+    // First timer conversion funnel
+    const conversionFunnel = reports.reduce((acc, report) => {
+      acc.firstTimers += report.data.numberOfFirstTimers;
+      acc.followedUp += report.data.firstTimersFollowedUp;
+      acc.converted += report.data.firstTimersConvertedToCITH;
+      return acc;
+    }, { firstTimers: 0, followedUp: 0, converted: 0 });
+    
+    setConversionData([
+      { name: 'First Timers', value: conversionFunnel.firstTimers },
+      { name: 'Followed Up', value: conversionFunnel.followedUp },
+      { name: 'Converted', value: conversionFunnel.converted }
+    ]);
+    
+    // Centre treemap data
+    const treemapData: { name: string, children: any[] } = { name: 'Centres', children: [] };
+    const centreData: {[key: string]: any} = {};
+    
+    centres.forEach(centre => {
+      centreData[centre._id] = { 
+        name: centre.name, 
+        size: 0,
+        area: centre.areaSupervisorId.name
+      };
+    });
+    
+    reports.forEach(report => {
+      const centreId = report.cithCentreId._id;
+      if (centreData[centreId]) {
+        centreData[centreId].size += report.data.male + report.data.female + report.data.children;
+      }
+    });
+    
+    // Group by area
+    const areaGroups: {[key: string]: any} = {};
+    Object.values(centreData).forEach(centre => {
+      if (!areaGroups[centre.area]) {
+        areaGroups[centre.area] = {
+          name: centre.area,
+          children: []
+        };
+      }
+      areaGroups[centre.area].children.push({
+        name: centre.name,
+        size: centre.size > 0 ? centre.size : 1 // Ensure minimum size for visibility
+      });
+    });
+    
+    treemapData.children = Object.values(areaGroups);
+    setCentreTreemapData([treemapData]);
   };
 
   const handleApprove = async (reportId: string) => {
@@ -83,6 +223,8 @@ const DistrictPastorDashboard: React.FC = () => {
     }
   };
 
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -98,100 +240,280 @@ const DistrictPastorDashboard: React.FC = () => {
         </Button>
       </Box>
 
+      {/* Summary Statistics */}
       {summary && (
         <Grid container spacing={3} sx={{ mb: 3 }}>
           <Grid item xs={12} md={3}>
             <Card>
-              <CardContent>
-                <Typography variant="h6">Total Attendance</Typography>
-                <Typography variant="h4">
-                  {summary.totalMale + summary.totalFemale + summary.totalChildren}
-                </Typography>
+              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                  <PeopleAlt />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" color="textSecondary">Total Attendance</Typography>
+                  <Typography variant="h5">
+                    {summary.totalMale + summary.totalFemale + summary.totalChildren}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                    <Chip label={`${summary.totalMale} Male`} size="small" color="primary" variant="outlined" />
+                    <Chip label={`${summary.totalFemale} Female`} size="small" color="secondary" variant="outlined" />
+                  </Box>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} md={3}>
             <Card>
-              <CardContent>
-                <Typography variant="h6">Total Offerings</Typography>
-                <Typography variant="h4">${summary.totalOfferings}</Typography>
+              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+                <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+                  <AttachMoney />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" color="textSecondary">Total Offerings</Typography>
+                  <Typography variant="h5">${summary.totalOfferings}</Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    From {summary.totalReports} services
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} md={3}>
             <Card>
-              <CardContent>
-                <Typography variant="h6">First Timers</Typography>
-                <Typography variant="h4">{summary.totalFirstTimers}</Typography>
+              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                  <TrendingUp />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" color="textSecondary">First Timers</Typography>
+                  <Typography variant="h5">{summary.totalFirstTimers}</Typography>
+                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                    <Chip 
+                      label={`${summary.totalFirstTimersConverted} Converted`} 
+                      size="small" 
+                      color="success" 
+                      variant="outlined" 
+                    />
+                  </Box>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
           <Grid item xs={12} md={3}>
             <Card>
-              <CardContent>
-                <Typography variant="h6">Testimonies</Typography>
-                <Typography variant="h4">{summary.totalTestimonies}</Typography>
+              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                  <Group />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" color="textSecondary">CITH Centres</Typography>
+                  <Typography variant="h5">{centres.length}</Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {areaSupervisors.length} Areas
+                  </Typography>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
         </Grid>
       )}
 
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Reports for Final Approval
-          </Typography>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>CITH Centre</TableCell>
-                  <TableCell>Week</TableCell>
-                  <TableCell>Total Attendance</TableCell>
-                  <TableCell>Offerings</TableCell>
-                  <TableCell>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {reports.map((report) => (
-                  <TableRow key={report._id}>
-                    <TableCell>{report.cithCentreId.name}</TableCell>
-                    <TableCell>{new Date(report.week).toDateString()}</TableCell>
-                    <TableCell>
-                      {report.data.male + report.data.female + report.data.children}
-                    </TableCell>
-                    <TableCell>${report.data.offerings}</TableCell>
-                    <TableCell>
-                      <Button
-                        startIcon={<CheckCircle />}
-                        color="success"
-                        onClick={() => handleApprove(report._id)}
-                        sx={{ mr: 1 }}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        startIcon={<Cancel />}
-                        color="error"
-                        onClick={() => handleReject(report._id)}
-                      >
-                        Reject
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          {reports.length === 0 && (
-            <Typography variant="body2" color="textSecondary" sx={{ mt: 2 }}>
-              No reports pending approval
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
+      {/* Charts and Analytics */}
+      <Grid container spacing={3}>
+        {/* District Growth Trend */}
+        <Grid item xs={12} md={8}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>District Growth Trends</Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <ComposedChart data={attendanceData}>
+                  <XAxis dataKey="week" />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="total" name="Total Attendance" fill="#8884d8" />
+                  <Line yAxisId="right" type="monotone" dataKey="offerings" name="Offerings" stroke="#82ca9d" />
+                  <Area yAxisId="left" type="monotone" dataKey="firstTimers" name="First Timers" fill="#ffc658" stroke="#ffc658" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        {/* First Timer Conversion Funnel */}
+        <Grid item xs={12} md={4}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>First Timer Conversion</Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={conversionData} layout="vertical">
+                  <XAxis type="number" />
+                  <YAxis type="category" dataKey="name" />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="value" fill="#8884d8">
+                    {conversionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              {conversionData.length > 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    Conversion Rate: {((conversionData[2]?.value / conversionData[0]?.value) * 100 || 0).toFixed(1)}%
+                  </Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    Follow-up Rate: {((conversionData[1]?.value / conversionData[0]?.value) * 100 || 0).toFixed(1)}%
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        {/* Area Performance Comparison */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Area Performance</Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={areaComparisonData}>
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="attendance" name="Attendance" fill="#8884d8" />
+                  <Bar dataKey="firstTimers" name="First Timers" fill="#82ca9d" />
+                  <Bar dataKey="testimonies" name="Testimonies" fill="#ffc658" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+        
+        {/* Centre Distribution Treemap */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Centre Size Distribution</Typography>
+              <ResponsiveContainer width="100%" height={300}>
+                <Treemap
+                  data={centreTreemapData}
+                  dataKey="size"
+                  ratio={4/3}
+                  stroke="#fff"
+                  fill="#8884d8"
+                  content={<CustomizedContent colors={COLORS} />}
+                />
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </Grid>
+                
+        {/* Reports for Final Approval */}
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Reports for Final Approval
+              </Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>CITH Centre</TableCell>
+                      <TableCell>Area</TableCell>
+                      <TableCell>Week</TableCell>
+                      <TableCell>Total Attendance</TableCell>
+                      <TableCell>Offerings</TableCell>
+                      <TableCell>First Timers</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {pendingReports.map((report) => (
+                      <TableRow key={report._id}>
+                        <TableCell>{report.cithCentreId.name}</TableCell>
+                        <TableCell>{report.cithCentreId.areaSupervisorId.name}</TableCell>
+                        <TableCell>{new Date(report.week).toDateString()}</TableCell>
+                        <TableCell>
+                          {report.data.male + report.data.female + report.data.children}
+                        </TableCell>
+                        <TableCell>${report.data.offerings}</TableCell>
+                        <TableCell>{report.data.numberOfFirstTimers}</TableCell>
+                        <TableCell>
+                          <Button
+                            startIcon={<CheckCircle />}
+                            color="success"
+                            onClick={() => handleApprove(report._id)}
+                            sx={{ mr: 1 }}
+                            size="small"
+                            variant="outlined"
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            startIcon={<Cancel />}
+                            color="error"
+                            onClick={() => handleReject(report._id)}
+                            size="small"
+                            variant="outlined"
+                          >
+                            Reject
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              {pendingReports.length === 0 && (
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center', py: 3 }}>
+                  No reports pending approval
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
     </Box>
+  );
+};
+
+// Custom content component for Treemap
+const CustomizedContent = (props: any) => {
+  const { root, depth, x, y, width, height, index, colors, name, value } = props;
+
+  return (
+    <g>
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        style={{
+          fill: depth < 2 
+            ? colors[Math.floor((index / root.children.length) * colors.length) % colors.length]
+            : 'rgba(255,255,255,0.3)',
+          stroke: '#fff',
+          strokeWidth: 2 / (depth + 1e-10),
+          strokeOpacity: 1 / (depth + 1e-10),
+        }}
+      />
+      {depth === 1 && width > 50 && height > 20 && (
+        <text
+          x={x + width / 2}
+          y={y + height / 2 + 7}
+          textAnchor="middle"
+          fill="#fff"
+          fontSize={12}
+        >
+          {name}
+        </text>
+      )}
+    </g>
   );
 };
 
