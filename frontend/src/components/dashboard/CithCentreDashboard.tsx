@@ -130,7 +130,7 @@ const CithCentreDashboard: React.FC = () => {
 
       {/* Key Metrics */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={3}>
+        <GridItem xs={12} md={3}>
           <Card>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
@@ -146,8 +146,8 @@ const CithCentreDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} md={3}>
           <Card>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
@@ -161,8 +161,8 @@ const CithCentreDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} md={3}>
           <Card>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
@@ -176,8 +176,8 @@ const CithCentreDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} md={3}>
           <Card>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
@@ -189,13 +189,13 @@ const CithCentreDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
       </Grid>
 
       {/* Charts Section */}
       <Grid container spacing={3}>
         {/* Attendance Trend Line Chart */}
-        <Grid item xs={12} md={8}>
+        <GridItem xs={12} md={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Attendance Trends</Typography>
@@ -213,10 +213,10 @@ const CithCentreDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* Demographic Pie Chart */}
-        <Grid item xs={12} md={4}>
+        <GridItem xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Demographics</Typography>
@@ -241,10 +241,10 @@ const CithCentreDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* Offerings Bar Chart */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Offering Trends</Typography>
@@ -259,10 +259,10 @@ const CithCentreDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* First Timer Conversion Funnel */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>First Timer Conversion</Typography>
@@ -279,10 +279,10 @@ const CithCentreDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* Recent Reports Table */}
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -344,7 +344,7 @@ const CithCentreDashboard: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
       </Grid>
     </Box>
   );

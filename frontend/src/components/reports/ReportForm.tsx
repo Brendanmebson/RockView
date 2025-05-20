@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import GridItem from '../common/GridItem';
 import {
   Box,
   Card,
@@ -216,7 +217,7 @@ const ReportForm: React.FC = () => {
               <form onSubmit={handleSubmit}>
                 <Grid container spacing={3}>
                   {/* Week Selection and Meeting Mode */}
-                  <Grid item xs={12} md={6}>
+                  <GridItem xs={12} md={6}>
                     <DatePicker
                       label="Week of"
                       value={week}
@@ -228,9 +229,9 @@ const ReportForm: React.FC = () => {
                         } 
                       }}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12} md={6}>
+                  </GridItem>
+
+                  <GridItem xs={12} md={6}>
                     <FormControl fullWidth>
                       <InputLabel>Mode of Meeting</InputLabel>
                       <Select
@@ -253,18 +254,18 @@ const ReportForm: React.FC = () => {
                         <MenuItem value="hybrid">Hybrid</MenuItem>
                       </Select>
                     </FormControl>
-                  </Grid>
+                  </GridItem>
                   
-                  <Grid item xs={12}>
+                  <GridItem xs={12}>
                     <Divider>
                       <Typography variant="subtitle2" color="textSecondary">
                         Attendance Information
                       </Typography>
                     </Divider>
-                  </Grid>
-                  
+                  </GridItem>
+
                   {/* Attendance Section */}
-                  <Grid item xs={12} md={4}>
+                  <GridItem xs={12} md={4}>
                     <TextField
                       label="Male"
                       type="number"
@@ -280,9 +281,9 @@ const ReportForm: React.FC = () => {
                         ),
                       }}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12} md={4}>
+                  </GridItem>
+
+                  <GridItem xs={12} md={4}>
                     <TextField
                       label="Female"
                       type="number"
@@ -298,9 +299,9 @@ const ReportForm: React.FC = () => {
                         ),
                       }}
                     />
-                  </Grid>
+                  </GridItem>
                   
-                  <Grid item xs={12} md={4}>
+                  <GridItem xs={12} md={4}>
                     <TextField
                       label="Children"
                       type="number"
@@ -316,15 +317,15 @@ const ReportForm: React.FC = () => {
                         ),
                       }}
                     />
-                  </Grid>
-                  
+                  </GridItem>
+
                   {/* Total Attendance Display */}
-                  <Grid item xs={12}>
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        p: 2, 
-                        bgcolor: 'primary.light', 
+                  <GridItem xs={12}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        bgcolor: 'primary.light',
                         color: 'white',
                         borderRadius: 2,
                         textAlign: 'center'
@@ -334,18 +335,18 @@ const ReportForm: React.FC = () => {
                         Total Attendance: {totalAttendance}
                       </Typography>
                     </Paper>
-                  </Grid>
-                  
-                  <Grid item xs={12}>
+                  </GridItem>
+
+                  <GridItem xs={12}>
                     <Divider>
                       <Typography variant="subtitle2" color="textSecondary">
                         Offerings and Testimonies
                       </Typography>
                     </Divider>
-                  </Grid>
-                  
+                  </GridItem>
+
                   {/* Offerings and Testimonies Section */}
-                  <Grid item xs={12} md={6}>
+                  <GridItem xs={12} md={6}>
                     <TextField
                       label="Offerings ($)"
                       type="number"
@@ -361,9 +362,9 @@ const ReportForm: React.FC = () => {
                         ),
                       }}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12} md={6}>
+                  </GridItem>
+
+                  <GridItem xs={12} md={6}>
                     <TextField
                       label="Number of Testimonies"
                       type="number"
@@ -379,18 +380,18 @@ const ReportForm: React.FC = () => {
                         ),
                       }}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12}>
+                  </GridItem>
+
+                  <GridItem xs={12}>
                     <Divider>
                       <Typography variant="subtitle2" color="textSecondary">
                         First Timers Information
                       </Typography>
                     </Divider>
-                  </Grid>
-                  
+                  </GridItem>
+
                   {/* First Timers Section */}
-                  <Grid item xs={12} md={4}>
+                  <GridItem xs={12} md={4}>
                     <TextField
                       label="Number of First Timers"
                       type="number"
@@ -406,9 +407,9 @@ const ReportForm: React.FC = () => {
                         ),
                       }}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12} md={4}>
+                  </GridItem>
+
+                  <GridItem xs={12} md={4}>
                     <TextField
                       label="First Timers Followed Up"
                       type="number"
@@ -427,9 +428,9 @@ const ReportForm: React.FC = () => {
                       helperText={reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers ? 
                         'Cannot exceed first timers' : ''}
                     />
-                  </Grid>
-                  
-                  <Grid item xs={12} md={4}>
+                  </GridItem>
+
+                  <GridItem xs={12} md={4}>
                     <TextField
                       label="First Timers Converted to CITH"
                       type="number"
@@ -448,10 +449,10 @@ const ReportForm: React.FC = () => {
                       helperText={reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp ? 
                         'Cannot exceed followed up' : ''}
                     />
-                  </Grid>
+                  </GridItem>
                   
                   {/* Remarks Section */}
-                  <Grid item xs={12}>
+                  <GridItem xs={12}>
                     <TextField
                       label="Remarks"
                       multiline
@@ -461,10 +462,10 @@ const ReportForm: React.FC = () => {
                       fullWidth
                       placeholder="Enter any additional comments, prayer points, or notable events"
                     />
-                  </Grid>
-                  
+                  </GridItem>
+
                   {/* Submit Buttons */}
-                  <Grid item xs={12}>
+                  <GridItem xs={12}>
                     <Box sx={{ display: 'flex', gap: 2 }}>
                       <Button
                         variant="contained"
@@ -483,7 +484,7 @@ const ReportForm: React.FC = () => {
                         Cancel
                       </Button>
                     </Box>
-                  </Grid>
+                  </GridItem>
                 </Grid>
               </form>
             </CardContent>

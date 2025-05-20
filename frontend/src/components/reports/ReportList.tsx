@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import GridItem from '../common/GridItem';
 import {
   Box,
   Card,
@@ -267,7 +268,7 @@ const ReportList: React.FC = () => {
             </Box>
             
             <Grid container spacing={3}>
-              <Grid item xs={12} md={4}>
+              <GridItem xs={12} md={4}>
                 <FormControl fullWidth>
                   <InputLabel>Status</InputLabel>
                   <Select
@@ -281,11 +282,11 @@ const ReportList: React.FC = () => {
                     <MenuItem value="rejected">Rejected</MenuItem>
                   </Select>
                 </FormControl>
-              </Grid>
+              </GridItem>
               
               {showFilters && (
                 <>
-                  <Grid item xs={12} md={4}>
+                  <GridItem xs={12} md={4}>
                     <DatePicker
                       label="Start Date"
                       value={filters.startDate}
@@ -294,9 +295,9 @@ const ReportList: React.FC = () => {
                       }
                       slotProps={{ textField: { fullWidth: true } }}
                     />
-                  </Grid>
+                  </GridItem>
                   
-                  <Grid item xs={12} md={4}>
+                  <GridItem xs={12} md={4}>
                     <DatePicker
                       label="End Date"
                       value={filters.endDate}
@@ -305,11 +306,11 @@ const ReportList: React.FC = () => {
                       }
                       slotProps={{ textField: { fullWidth: true } }}
                     />
-                  </Grid>
+                  </GridItem>
                   
                   {(user?.role === 'admin' || user?.role === 'district_pastor') && (
                     <>
-                      <Grid item xs={12} md={6}>
+                      <GridItem xs={12} md={6}>
                         <FormControl fullWidth>
                           <InputLabel>Area Supervisor</InputLabel>
                           <Select
@@ -330,9 +331,9 @@ const ReportList: React.FC = () => {
                             ))}
                           </Select>
                         </FormControl>
-                      </Grid>
+                      </GridItem>
                       
-                      <Grid item xs={12} md={6}>
+                      <GridItem xs={12} md={6}>
                         <FormControl fullWidth>
                           <InputLabel>CITH Centre</InputLabel>
                           <Select
@@ -355,11 +356,11 @@ const ReportList: React.FC = () => {
                             }
                           </Select>
                         </FormControl>
-                      </Grid>
+                      </GridItem>
                     </>
                   )}
                   
-                  <Grid item xs={12}>
+                  <GridItem xs={12}>
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <Button 
                         variant="contained" 
@@ -369,7 +370,7 @@ const ReportList: React.FC = () => {
                         Apply Filters
                       </Button>
                     </Box>
-                  </Grid>
+                  </GridItem>
                 </>
               )}
             </Grid>

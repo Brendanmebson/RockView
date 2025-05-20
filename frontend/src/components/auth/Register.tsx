@@ -141,26 +141,32 @@ const Register: React.FC = () => {
     if (districts.length === 0 && !fetchingDistricts) {
       // Set some default districts if none are fetched
       console.log("Setting fallback districts");
-      setDistricts([
-        {
-          _id: 'fallback1',
-          name: 'Festac District',
-          districtNumber: 1,
-          pastorName: 'Pastor Johnson'
-        },
-        {
-          _id: 'fallback2',
-          name: 'Ikeja District',
-          districtNumber: 2,
-          pastorName: 'Pastor Williams'
-        },
-        {
-          _id: 'fallback3',
-          name: 'Lekki District',
-          districtNumber: 3,
-          pastorName: 'Pastor James'
-        }
-      ]);
+  setDistricts([
+  {
+    _id: 'fallback1',
+    name: 'Festac District',
+    districtNumber: 1,
+    pastorName: 'Pastor Johnson',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    _id: 'fallback2',
+    name: 'Ikeja District',
+    districtNumber: 2,
+    pastorName: 'Pastor Williams',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    _id: 'fallback3',
+    name: 'Lekki District',
+    districtNumber: 3,
+    pastorName: 'Pastor James',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  }
+]);
     }
   }, [districts, fetchingDistricts]);
 

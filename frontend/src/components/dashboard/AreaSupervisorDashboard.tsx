@@ -157,7 +157,7 @@ const AreaSupervisorDashboard: React.FC = () => {
       {/* Summary Stats Cards */}
       {summary && (
         <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
+          <GridItem xs={12} md={3}>
             <Card>
               <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
@@ -176,8 +176,8 @@ const AreaSupervisorDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
+          </GridItem>
+          <GridItem xs={12} md={3}>
             <Card>
               <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
@@ -192,8 +192,8 @@ const AreaSupervisorDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
+          </GridItem>
+          <GridItem xs={12} md={3}>
             <Card>
               <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
@@ -213,8 +213,8 @@ const AreaSupervisorDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
+          </GridItem>
+          <GridItem xs={12} md={3}>
             <Card>
               <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
@@ -229,13 +229,13 @@ const AreaSupervisorDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </GridItem>
         </Grid>
       )}
 
       <Grid container spacing={3}>
         {/* Attendance Trends Chart */}
-        <Grid item xs={12} md={8}>
+        <GridItem xs={12} md={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Area Attendance Trends</Typography>
@@ -253,10 +253,10 @@ const AreaSupervisorDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* Centre Comparison Radar Chart */}
-        <Grid item xs={12} md={4}>
+        <GridItem xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Centre Performance</Typography>
@@ -274,10 +274,10 @@ const AreaSupervisorDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* Offerings Trend */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Offering Trends</Typography>
@@ -292,10 +292,10 @@ const AreaSupervisorDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
-        
+        </GridItem>
+
         {/* Centres Card */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Supervised Centres</Typography>
@@ -325,10 +325,10 @@ const AreaSupervisorDashboard: React.FC = () => {
               </TableContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
 
         {/* Pending Reports Card */}
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -389,7 +389,7 @@ const AreaSupervisorDashboard: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
       </Grid>
     </Box>
   );

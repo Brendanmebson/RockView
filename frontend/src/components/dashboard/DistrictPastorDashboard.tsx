@@ -243,7 +243,7 @@ const DistrictPastorDashboard: React.FC = () => {
       {/* Summary Statistics */}
       {summary && (
         <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
+          <GridItem xs={12} md={3}>
             <Card>
               <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
@@ -261,8 +261,8 @@ const DistrictPastorDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
+          </GridItem>
+          <GridItem xs={12} md={3}>
             <Card>
               <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
@@ -277,8 +277,8 @@ const DistrictPastorDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
+          </GridItem>
+          <GridItem xs={12} md={3}>
             <Card>
               <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
@@ -298,8 +298,8 @@ const DistrictPastorDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
-          <Grid item xs={12} md={3}>
+          </GridItem>
+          <GridItem xs={12} md={3}>
             <Card>
               <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
                 <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
@@ -314,14 +314,14 @@ const DistrictPastorDashboard: React.FC = () => {
                 </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </GridItem>
         </Grid>
       )}
 
       {/* Charts and Analytics */}
       <Grid container spacing={3}>
         {/* District Growth Trend */}
-        <Grid item xs={12} md={8}>
+        <GridItem xs={12} md={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>District Growth Trends</Typography>
@@ -339,10 +339,10 @@ const DistrictPastorDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* First Timer Conversion Funnel */}
-        <Grid item xs={12} md={4}>
+        <GridItem xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>First Timer Conversion</Typography>
@@ -371,10 +371,10 @@ const DistrictPastorDashboard: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* Area Performance Comparison */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Area Performance</Typography>
@@ -391,10 +391,10 @@ const DistrictPastorDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* Centre Distribution Treemap */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Centre Size Distribution</Typography>
@@ -402,7 +402,7 @@ const DistrictPastorDashboard: React.FC = () => {
                 <Treemap
                   data={centreTreemapData}
                   dataKey="size"
-                  ratio={4/3}
+                  // Remove ratio={4/3} or check documentation if it's supported
                   stroke="#fff"
                   fill="#8884d8"
                   content={<CustomizedContent colors={COLORS} />}
@@ -410,10 +410,10 @@ const DistrictPastorDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
-                
+        </GridItem>
+
         {/* Reports for Final Approval */}
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -476,7 +476,7 @@ const DistrictPastorDashboard: React.FC = () => {
               )}
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
       </Grid>
     </Box>
   );

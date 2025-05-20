@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import GridItem from '../common/GridItem';
 import {
   Box,
   Card,
@@ -190,7 +191,7 @@ const AdminDashboard: React.FC = () => {
 
       {/* Summary stats cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={3}>
+        <GridItem xs={12} md={3}>
           <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/users')}>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
@@ -202,8 +203,8 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} md={3}>
           <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/districts')}>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
@@ -215,8 +216,8 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} md={3}>
           <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/area-supervisors')}>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
@@ -228,8 +229,8 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
+        </GridItem>
+        <GridItem xs={12} md={3}>
           <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/cith-centres')}>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
@@ -241,12 +242,12 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
       </Grid>
 
       <Grid container spacing={3}>
         {/* District Performance Comparison */}
-        <Grid item xs={12} md={8}>
+        <GridItem xs={12} md={8}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>District Performance</Typography>
@@ -264,10 +265,10 @@ const AdminDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* System User Distribution */}
-        <Grid item xs={12} md={4}>
+        <GridItem xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>User Distribution</Typography>
@@ -292,10 +293,10 @@ const AdminDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
-        
+        </GridItem>
+
         {/* Attendance Growth Trend */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Attendance Growth Trend</Typography>
@@ -311,10 +312,10 @@ const AdminDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
-        
+        </GridItem>
+
         {/* Offering Growth Trend */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Offering Growth Trend</Typography>
@@ -330,10 +331,10 @@ const AdminDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
-        
+        </GridItem>
+
         {/* Centre Performance Scatter Plot */}
-        <Grid item xs={12}>
+        <GridItem xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Centre Performance Analysis</Typography>
@@ -372,10 +373,10 @@ const AdminDashboard: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </Grid>
-        
+        </GridItem>
+
         {/* Quick Action Links */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -425,10 +426,10 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
         
         {/* Recent Reports */}
-        <Grid item xs={12} md={6}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Recent Reports</Typography>
@@ -486,7 +487,7 @@ const AdminDashboard: React.FC = () => {
               </Box>
             </CardContent>
           </Card>
-        </Grid>
+        </GridItem>
       </Grid>
     </Box>
   );
