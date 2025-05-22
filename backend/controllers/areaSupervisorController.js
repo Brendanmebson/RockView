@@ -1,3 +1,4 @@
+// backend/controllers/areaSupervisorController.js
 const AreaSupervisor = require('../models/AreaSupervisor');
 const CithCentre = require('../models/CithCentre');
 
@@ -13,8 +14,30 @@ const getAreaSupervisors = async (req, res) => {
       query.districtId = req.user.districtId;
     }
     
+    // Filter by district if provided
+    if (req.query.districtId) {
+      query.districtId = req.query.districtId;
+    }
+    
     const areaSupervisors = await AreaSupervisor.find(query).populate('districtId');
     res.json(areaSupervisors);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Get area supervisor by ID
+// @route   GET /api/area-supervisors/:id
+// @access  Private
+const getAreaSupervisorById = async (req, res) => {
+  try {
+    const areaSupervisor = await AreaSupervisor.findById(req.params.id).populate('districtId');
+    
+    if (!areaSupervisor) {
+      return res.status(404).json({ message: 'Area supervisor not found' });
+    }
+    
+    res.json(areaSupervisor);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -83,6 +106,7 @@ const deleteAreaSupervisor = async (req, res) => {
 
 module.exports = {
   getAreaSupervisors,
+  getAreaSupervisorById,
   createAreaSupervisor,
   updateAreaSupervisor,
   deleteAreaSupervisor,

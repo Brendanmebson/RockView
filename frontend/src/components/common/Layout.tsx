@@ -18,6 +18,7 @@ import {
   Divider,
   Badge,
   Tooltip,
+  Chip,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -43,7 +44,7 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const { user, logout } = useAuth();
+  const { user, userCentre, userArea, userDistrict, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -119,6 +120,40 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
+  // Add this function to render user context
+  const renderUserContext = () => {
+    if (!user) return null;
+
+    return (
+      <Box sx={{ p: 2, background: 'rgba(0,0,0,0.03)', borderRadius: 2, m: 2, mt: 0 }}>
+        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+          Your Church Information
+        </Typography>
+        
+        {userCentre && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Home size={16} color="#D69E2E" />
+            <Typography variant="body2">{userCentre.name}</Typography>
+          </Box>
+        )}
+        
+        {userArea && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <MapPin size={16} color="#ED8936" />
+            <Typography variant="body2">{userArea.name}</Typography>
+          </Box>
+        )}
+        
+        {userDistrict && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Building size={16} color="#4A5568" />
+            <Typography variant="body2">{userDistrict.name}</Typography>
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
   const drawer = (
     <motion.div
       initial={{ opacity: 0 }}
@@ -163,6 +198,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {getRoleDisplayName(user?.role || '')}
         </Typography>
       </Box>
+
+      {/* Add User Context Information */}
+      {renderUserContext()}
 
       <List sx={{ px: 2 }}>
         <AnimatePresence>

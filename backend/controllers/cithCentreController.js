@@ -1,3 +1,4 @@
+// backend/controllers/cithCentreController.js
 const CithCentre = require('../models/CithCentre');
 const AreaSupervisor = require('../models/AreaSupervisor');
 
@@ -18,8 +19,52 @@ const getCithCentres = async (req, res) => {
       query.areaSupervisorId = { $in: areaSupervisorIds };
     }
     
+    // Filter by area supervisor IDs if provided
+    if (req.query.areaSupervisorIds) {
+      const areaSupervisorIds = req.query.areaSupervisorIds.split(',');
+      query.areaSupervisorId = { $in: areaSupervisorIds };
+    }
+    
+    // Filter by a single area supervisor ID if provided
+    if (req.query.areaSupervisorId) {
+      query.areaSupervisorId = req.query.areaSupervisorId;
+    }
+    
     const cithCentres = await CithCentre.find(query).populate('areaSupervisorId');
     res.json(cithCentres);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Get CITH centre by ID
+// @route   GET /api/cith-centres/:id
+// @access  Private
+const getCithCentreById = async (req, res) => {
+  try {
+    const { populate } = req.query;
+    
+    let query = CithCentre.findById(req.params.id);
+    
+    // If populate=true, include nested information
+    if (populate === 'true') {
+      query = query.populate({
+        path: 'areaSupervisorId',
+        populate: {
+          path: 'districtId'
+        }
+      });
+    } else {
+      query = query.populate('areaSupervisorId');
+    }
+    
+    const cithCentre = await query;
+    
+    if (!cithCentre) {
+      return res.status(404).json({ message: 'CITH centre not found' });
+    }
+    
+    res.json(cithCentre);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -82,6 +127,7 @@ const deleteCithCentre = async (req, res) => {
 
 module.exports = {
   getCithCentres,
+  getCithCentreById,
   createCithCentre,
   updateCithCentre,
   deleteCithCentre,

@@ -22,10 +22,13 @@ const getPublicDistricts = async (req, res) => {
 // @access  Public
 const getPublicAreaSupervisors = async (req, res) => {
   try {
+    // Make sure we fully populate the district information
     const areaSupervisors = await AreaSupervisor.find()
-      .populate('districtId', 'name')
+      .populate('districtId', '_id name districtNumber pastorName')
       .select('_id name supervisorName districtId contactEmail contactPhone');
+    
     console.log(`Sending ${areaSupervisors.length} area supervisors to client`);
+    console.log('First area supervisor example:', areaSupervisors[0]);
     res.json(areaSupervisors);
   } catch (error) {
     console.error('Error fetching public area supervisors:', error);

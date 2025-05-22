@@ -86,7 +86,7 @@ const Register: React.FC = () => {
   useEffect(() => {
     const testAPI = async () => {
       try {
-        console.log("Testing API connection...");
+        console.log("Testing API connectivity...");
         const response = await axios.get(`${API_URL}/public/districts`);
         console.log("API Response:", response.data);
       } catch (error) {
@@ -97,38 +97,71 @@ const Register: React.FC = () => {
     testAPI();
   }, [API_URL]);
 
+  // Debug API Response in more detail
+  useEffect(() => {
+    // Debug API calls
+    const testAPI = async () => {
+      try {
+        console.log("Testing API connectivity...");
+        
+        // Test Districts API
+        const districtsResp = await axios.get(`${API_URL}/public/districts`);
+        console.log("Districts API response:", districtsResp.data);
+        
+        // Test Area Supervisors API
+        const areasResp = await axios.get(`${API_URL}/public/area-supervisors`);
+        console.log("Area Supervisors API response:", areasResp.data);
+        
+        // If we select a district, test filtering
+        if (districtsResp.data.length > 0) {
+          const firstDistrictId = districtsResp.data[0]._id;
+          console.log(`Testing filtering for district ID: ${firstDistrictId}`);
+          
+          const filteredAreas = areasResp.data.filter(
+            (            area: { districtId: { _id: any; }; }) => area.districtId && area.districtId._id === firstDistrictId
+          );
+          console.log(`Found ${filteredAreas.length} area supervisors for district ${firstDistrictId}`);
+        }
+      } catch (error) {
+        console.error("API Test Failed:", error);
+      }
+    };
+    
+    testAPI();
+  }, [API_URL])
+
   // Fetch districts on component mount
   useEffect(() => {
     fetchDistricts();
   }, []);
 
   // Filter area supervisors when district is selected
-  // In Register.tsx, improve the useEffect that filters area supervisors
-useEffect(() => {
-  if (formData.districtId && areaSupervisors.length > 0) {
-    console.log("Filtering area supervisors for district:", formData.districtId);
-    console.log("Available area supervisors:", areaSupervisors);
-    
-    // Make sure we're comparing string IDs
-    const districtId = formData.districtId.toString();
-    
-    const filtered = areaSupervisors.filter(
-      (sup) => sup.districtId && sup.districtId._id 
-        ? sup.districtId._id.toString() === districtId 
-        : false
-    );
-    
-    console.log("Filtered area supervisors:", filtered);
-    setFilteredAreaSupervisors(filtered);
-    
-    // Clear area supervisor selection if selected area not in filtered list
-    if (formData.areaSupervisorId && !filtered.some(area => area._id === formData.areaSupervisorId)) {
-      setFormData(prev => ({ ...prev, areaSupervisorId: '' }));
+  useEffect(() => {
+    if (formData.districtId && areaSupervisors.length > 0) {
+      console.log("Filtering area supervisors for district:", formData.districtId);
+      console.log("Available area supervisors:", areaSupervisors);
+      
+      // Make sure we're comparing string IDs
+      const districtId = formData.districtId.toString();
+      
+      const filtered = areaSupervisors.filter(
+        (sup) => sup.districtId && sup.districtId._id 
+          ? sup.districtId._id.toString() === districtId 
+          : false
+      );
+      
+      console.log("Filtered area supervisors:", filtered);
+      setFilteredAreaSupervisors(filtered);
+      
+      // Clear area supervisor selection if selected area not in filtered list
+      if (formData.areaSupervisorId && !filtered.some(area => area._id === formData.areaSupervisorId)) {
+        setFormData(prev => ({ ...prev, areaSupervisorId: '' }));
+      }
+    } else {
+      setFilteredAreaSupervisors([]);
     }
-  } else {
-    setFilteredAreaSupervisors([]);
-  }
-}, [formData.districtId, areaSupervisors]);
+  }, [formData.districtId, areaSupervisors]);
+
   // Filter CITH centres when area supervisor is selected
   useEffect(() => {
     if (formData.areaSupervisorId && cithCentres.length > 0) {
@@ -151,32 +184,32 @@ useEffect(() => {
     if (districts.length === 0 && !fetchingDistricts) {
       // Set some default districts if none are fetched
       console.log("Setting fallback districts");
-  setDistricts([
-  {
-    _id: 'fallback1',
-    name: 'Festac District',
-    districtNumber: 1,
-    pastorName: 'Pastor Johnson',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    _id: 'fallback2',
-    name: 'Ikeja District',
-    districtNumber: 2,
-    pastorName: 'Pastor Williams',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    _id: 'fallback3',
-    name: 'Lekki District',
-    districtNumber: 3,
-    pastorName: 'Pastor James',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-]);
+      setDistricts([
+        {
+          _id: 'fallback1',
+          name: 'Festac District',
+          districtNumber: 1,
+          pastorName: 'Pastor Johnson',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: 'fallback2',
+          name: 'Ikeja District',
+          districtNumber: 2,
+          pastorName: 'Pastor Williams',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          _id: 'fallback3',
+          name: 'Lekki District',
+          districtNumber: 3,
+          pastorName: 'Pastor James',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ]);
     }
   }, [districts, fetchingDistricts]);
 
@@ -208,21 +241,21 @@ useEffect(() => {
 
   const fetchDropdownData = async () => {
     try {
-      if (formData.role === 'area_supervisor' || formData.role === 'cith_centre') {
-        setFetchingAreas(true);
-        const areasResponse = await axios.get(`${API_URL}/public/area-supervisors`);
-        console.log("Fetched area supervisors:", areasResponse.data);
-        setAreaSupervisors(areasResponse.data);
-        setFetchingAreas(false);
-      }
+      // Fetch all data at once to ensure everything is loaded properly
+      const [districtsResponse, areasResponse, centresResponse] = await Promise.all([
+        axios.get(`${API_URL}/public/districts`),
+        axios.get(`${API_URL}/public/area-supervisors`),
+        axios.get(`${API_URL}/public/cith-centres`)
+      ]);
       
-      if (formData.role === 'cith_centre') {
-        setFetchingCentres(true);
-        const centresResponse = await axios.get(`${API_URL}/public/cith-centres`);
-        console.log("Fetched CITH centres:", centresResponse.data);
-        setCithCentres(centresResponse.data);
-        setFetchingCentres(false);
-      }
+      setDistricts(districtsResponse.data);
+      setAreaSupervisors(areasResponse.data);
+      setCithCentres(centresResponse.data);
+      
+      console.log("Fetched districts:", districtsResponse.data);
+      console.log("Fetched area supervisors:", areasResponse.data);
+      console.log("Fetched CITH centres:", centresResponse.data);
+      
     } catch (error) {
       console.error('Error fetching dropdown data:', error);
       setError('Failed to load selection options. Please try again.');
@@ -879,7 +912,7 @@ useEffect(() => {
                 borderRadius: 4,
                 background: 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(10px)',
-}}
+              }}
             >
               <Box
                 sx={{
@@ -904,103 +937,103 @@ useEffect(() => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       mb: 2,
-                     boxShadow: '0 4px 20px rgba(214, 158, 46, 0.3)',
-                   }}
-                 >
-                   <Church size={40} color="white" />
-                 </Box>
-               </motion.div>
+                      boxShadow: '0 4px 20px rgba(214, 158, 46, 0.3)',
+                    }}
+                  >
+                    <Church size={40} color="white" />
+                  </Box>
+                </motion.div>
 
-               <Typography component="h1" variant="h4" color="primary" sx={{ mb: 1 }}>
-                 Join ClearView
-               </Typography>
-               <Typography variant="h6" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
-                 Become part of our church management family
-               </Typography>
+                <Typography component="h1" variant="h4" color="primary" sx={{ mb: 1 }}>
+                  Join ClearView
+                </Typography>
+                <Typography variant="h6" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
+                  Become part of our church management family
+                </Typography>
 
-               {/* Stepper */}
-               <Box sx={{ width: '100%', mb: 4 }}>
-                 <Stepper activeStep={activeStep} alternativeLabel>
-                   {steps.map((label) => (
-                     <Step key={label}>
-                       <StepLabel>{label}</StepLabel>
-                     </Step>
-                   ))}
-                 </Stepper>
-               </Box>
+                {/* Stepper */}
+                <Box sx={{ width: '100%', mb: 4 }}>
+                  <Stepper activeStep={activeStep} alternativeLabel>
+                    {steps.map((label) => (
+                      <Step key={label}>
+                        <StepLabel>{label}</StepLabel>
+                      </Step>
+                    ))}
+                  </Stepper>
+                </Box>
 
-               {error && (
-                 <motion.div
-                   initial={{ opacity: 0, y: -10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   style={{ width: '100%', marginBottom: 16 }}
-                 >
-                   <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
-                 </motion.div>
-               )}
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{ width: '100%', marginBottom: 16 }}
+                  >
+                    <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
+                  </motion.div>
+                )}
 
-               {/* Form */}
-               <form style={{ width: '100%' }}>
-                 {renderStepContent(activeStep)}
-                 
-                 <Box sx={{ display: 'flex', flexDirection: 'row', pt: 3 }}>
-                   <Button
-                     color="inherit"
-                     disabled={activeStep === 0}
-                     onClick={handleBack}
-                     sx={{ mr: 1 }}
-                   >
-                     Back
-                   </Button>
-                   <Box sx={{ flex: '1 1 auto' }} />
-                   {activeStep === steps.length - 1 ? (
-                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                       <Button
-                         variant="contained"
-                         onClick={handleSubmit}
-                         disabled={loading}
-                         startIcon={loading ? <CircularProgress size={20} /> : null}
-                         sx={{
-                           background: 'linear-gradient(45deg, #D69E2E, #ED8936)',
-                           '&:hover': {
-                             background: 'linear-gradient(45deg, #B7791F, #C05621)',
-                           },
-                         }}
-                       >
-                         {loading ? 'Creating Account...' : 'Join Church'}
-                       </Button>
-                     </motion.div>
-                   ) : (
-                     <Button onClick={handleNext} variant="contained">
-                       Next
-                     </Button>
-                   )}
-                 </Box>
-               </form>
+                {/* Form */}
+                <form style={{ width: '100%' }}>
+                  {renderStepContent(activeStep)}
+                  
+                  <Box sx={{ display: 'flex', flexDirection: 'row', pt: 3 }}>
+                    <Button
+                      color="inherit"
+                      disabled={activeStep === 0}
+                      onClick={handleBack}
+                      sx={{ mr: 1 }}
+                    >
+                      Back
+                    </Button>
+                    <Box sx={{ flex: '1 1 auto' }} />
+                    {activeStep === steps.length - 1 ? (
+                      <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          variant="contained"
+                          onClick={handleSubmit}
+                          disabled={loading}
+                          startIcon={loading ? <CircularProgress size={20} /> : null}
+                          sx={{
+                            background: 'linear-gradient(45deg, #D69E2E, #ED8936)',
+                            '&:hover': {
+                              background: 'linear-gradient(45deg, #B7791F, #C05621)',
+                            },
+                          }}
+                        >
+                          {loading ? 'Creating Account...' : 'Join Church'}
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <Button onClick={handleNext} variant="contained">
+                        Next
+                      </Button>
+                    )}
+                  </Box>
+                </form>
 
-               <Box textAlign="center" sx={{ mt: 3 }}>
-                 <Link
-                   component={RouterLink}
-                   to="/login"
-                   variant="body2"
-                   sx={{
-                     color: 'secondary.main',
-                     textDecoration: 'none',
-                     '&:hover': {
-                       textDecoration: 'underline',
-                     },
-                   }}
-                 >
-                   Already part of our church? Sign In
-                 </Link>
-               </Box>
-             </Box>
-           </Paper>
-         </AnimatedCard>
-       </Container>
-     </Box>
-   </PageContainer>
- );
+                <Box textAlign="center" sx={{ mt: 3 }}>
+                  <Link
+                    component={RouterLink}
+                    to="/login"
+                    variant="body2"
+                    sx={{
+                      color: 'secondary.main',
+                      textDecoration: 'none',
+                      '&:hover': {
+                        textDecoration: 'underline',
+                      },
+                    }}
+                  >
+                    Already part of our church? Sign In
+                  </Link>
+                </Box>
+              </Box>
+            </Paper>
+          </AnimatedCard>
+        </Container>
+      </Box>
+    </PageContainer>
+  );
 };
 
 export default Register;

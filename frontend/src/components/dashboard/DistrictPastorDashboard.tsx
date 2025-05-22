@@ -16,30 +16,77 @@ import {
   Button,
   Avatar,
   Divider,
+  Paper,
 } from '@mui/material';
-import { CheckCircle, Cancel, Download, PeopleAlt, AttachMoney, TrendingUp, 
-         Assessment, Group } from '@mui/icons-material';
+import { 
+  CheckCircle, 
+  Cancel, 
+  Download, 
+  PeopleAlt, 
+  AttachMoney, 
+  TrendingUp, 
+  Assessment, 
+  Group, 
+  People,
+  Business 
+} from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, 
          LineChart, Line, PieChart, Pie, Cell, ComposedChart, Area, Scatter, 
          Treemap } from 'recharts';
 import api from '../../services/api';
-import { WeeklyReport, ReportSummary, AreaSupervisor, CithCentre } from '../../types';
+import { WeeklyReport, ReportSummary, AreaSupervisor, CithCentre, District } from '../../types';
+import { useAuth } from '../../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const DistrictPastorDashboard: React.FC = () => {
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [pendingReports, setPendingReports] = useState<WeeklyReport[]>([]);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [districtInfo, setDistrictInfo] = useState<District | null>(null);
   const [areaSupervisors, setAreaSupervisors] = useState<AreaSupervisor[]>([]);
   const [centres, setCentres] = useState<CithCentre[]>([]);
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [areaComparisonData, setAreaComparisonData] = useState<any[]>([]);
   const [conversionData, setConversionData] = useState<any[]>([]);
   const [centreTreemapData, setCentreTreemapData] = useState<any[]>([]);
+  const { user, userDistrict } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+    
+    // Set context from auth context
+    if (userDistrict) setDistrictInfo(userDistrict);
+    
+    // If not available in auth context, fetch it
+    if (!userDistrict && user?.districtId) {
+      fetchUserContext();
+    }
+  }, [user, userDistrict]);
+
+  const fetchUserContext = async () => {
+    if (!user || !user.districtId) return;
+    
+    try {
+      // Fetch District info
+      const districtResponse = await api.get(`/districts/${user.districtId}`);
+      setDistrictInfo(districtResponse.data);
+      
+      // Fetch Area Supervisors in this district
+      const areasResponse = await api.get(`/area-supervisors?districtId=${user.districtId}`);
+      setAreaSupervisors(areasResponse.data);
+      
+      // Fetch all centres in the district's areas
+      if (areasResponse.data.length > 0) {
+        const areaIds = areasResponse.data.map((area: AreaSupervisor) => area._id).join(',');
+        const centresResponse = await api.get(`/cith-centres?areaSupervisorIds=${areaIds}`);
+        setCentres(centresResponse.data);
+      }
+    } catch (error) {
+      console.error("Error fetching user context:", error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -112,9 +159,11 @@ const DistrictPastorDashboard: React.FC = () => {
     // Map centres to areas
     const centresToArea: {[key: string]: string} = {};
     centres.forEach(centre => {
-      centresToArea[centre._id] = centre.areaSupervisorId._id;
-      if (areaData[centre.areaSupervisorId._id]) {
-        areaData[centre.areaSupervisorId._id].centres++;
+      if (centre.areaSupervisorId && typeof centre.areaSupervisorId === 'object') {
+        centresToArea[centre._id] = centre.areaSupervisorId._id;
+        if (areaData[centre.areaSupervisorId._id]) {
+          areaData[centre.areaSupervisorId._id].centres++;
+        }
       }
     });
     
@@ -151,10 +200,15 @@ const DistrictPastorDashboard: React.FC = () => {
     const centreData: {[key: string]: any} = {};
     
     centres.forEach(centre => {
+      let areaName = 'Unknown Area';
+      if (centre.areaSupervisorId && typeof centre.areaSupervisorId === 'object') {
+        areaName = centre.areaSupervisorId.name;
+      }
+      
       centreData[centre._id] = { 
         name: centre.name, 
         size: 0,
-        area: centre.areaSupervisorId.name
+        area: areaName
       };
     });
     
@@ -227,6 +281,68 @@ const DistrictPastorDashboard: React.FC = () => {
 
   return (
     <Box>
+      {/* Context Banner */}
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          background: 'linear-gradient(90deg, #4A5568 0%, #2D3748 100%)',
+          color: 'white',
+          borderRadius: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Business />
+            <Typography variant="subtitle1" fontWeight="bold">
+              {districtInfo ? districtInfo.name : 'Loading...'}
+            </Typography>
+            {districtInfo && (
+              <Chip 
+                label={`District ${districtInfo.districtNumber}`} 
+                size="small" 
+                sx={{ 
+                  bgcolor: 'rgba(255,255,255,0.15)', 
+                  color: 'white',
+                  '& .MuiChip-label': { fontWeight: 500 }
+                }} 
+              />
+            )}
+          </Box>
+          
+          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <People />
+            <Typography variant="subtitle1">
+              District Pastor: {districtInfo ? districtInfo.pastorName : 'Loading...'}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Chip 
+              label={`${areaSupervisors.length} Areas`} 
+              size="small" 
+              sx={{ 
+                bgcolor: 'secondary.main', 
+                color: 'white',
+                '& .MuiChip-label': { fontWeight: 500 }
+              }} 
+            />
+            <Chip 
+              label={`${centres.length} CITH Centres`} 
+              size="small" 
+              sx={{ 
+                bgcolor: 'primary.main', 
+                color: 'white',
+                '& .MuiChip-label': { fontWeight: 500 }
+              }} 
+            />
+          </Box>
+        </Box>
+      </Paper>
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           District Pastor Dashboard
@@ -402,7 +518,6 @@ const DistrictPastorDashboard: React.FC = () => {
                 <Treemap
                   data={centreTreemapData}
                   dataKey="size"
-                  // Remove ratio={4/3} or check documentation if it's supported
                   stroke="#fff"
                   fill="#8884d8"
                   content={<CustomizedContent colors={COLORS} />}
@@ -436,7 +551,7 @@ const DistrictPastorDashboard: React.FC = () => {
                     {pendingReports.map((report) => (
                       <TableRow key={report._id}>
                         <TableCell>{report.cithCentreId.name}</TableCell>
-                        <TableCell>{report.cithCentreId.areaSupervisorId.name}</TableCell>
+                        <TableCell>{report.cithCentreId.areaSupervisorId?.name || 'Unknown'}</TableCell>
                         <TableCell>{new Date(report.week).toDateString()}</TableCell>
                         <TableCell>
                           {report.data.male + report.data.female + report.data.children}
@@ -475,7 +590,7 @@ const DistrictPastorDashboard: React.FC = () => {
                 </Typography>
               )}
             </CardContent>
-          </Card>
+            </Card>
         </GridItem>
       </Grid>
     </Box>

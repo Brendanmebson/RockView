@@ -15,28 +15,76 @@ import {
   TableRow,
   Paper,
   Chip,
-  Divider,
   Avatar,
+  Divider,
 } from '@mui/material';
-import { Add, TrendingUp, People, AttachMoney, Assignment } from '@mui/icons-material';
+import { 
+  Add, 
+  TrendingUp, 
+  People, 
+  AttachMoney, 
+  Assignment, 
+  LocationOn, 
+  Business, 
+  Domain 
+} from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, 
          LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import api from '../../services/api';
-import { WeeklyReport } from '../../types';
+import { WeeklyReport, CithCentre, AreaSupervisor, District } from '../../types';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { motion } from 'framer-motion';
 
 const CithCentreDashboard: React.FC = () => {
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [loading, setLoading] = useState(false);
+  const [centreInfo, setCentreInfo] = useState<CithCentre | null>(null);
+  const [areaInfo, setAreaInfo] = useState<AreaSupervisor | null>(null);
+  const [districtInfo, setDistrictInfo] = useState<District | null>(null);
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [offeringData, setOfferingData] = useState<any[]>([]);
   const [demographicData, setDemographicData] = useState<any[]>([]);
   const [firstTimerData, setFirstTimerData] = useState<any[]>([]);
   const navigate = useNavigate();
+  const { user, userCentre, userArea, userDistrict } = useAuth();
 
   useEffect(() => {
     fetchReports();
-  }, []);
+    
+    // Set context from auth context
+    if (userCentre) setCentreInfo(userCentre);
+    if (userArea) setAreaInfo(userArea);
+    if (userDistrict) setDistrictInfo(userDistrict);
+    
+    // If not available in auth context, fetch it
+    if (!userCentre && user?.cithCentreId) {
+      fetchUserContext();
+    }
+  }, [user, userCentre, userArea, userDistrict]);
+
+  const fetchUserContext = async () => {
+    if (!user || !user.cithCentreId) return;
+    
+    try {
+      // Fetch CITH Centre info with populated relations
+      const centreResponse = await api.get(`/cith-centres/${user.cithCentreId}?populate=true`);
+      const centre = centreResponse.data;
+      setCentreInfo(centre);
+      
+      // If the centre has area supervisor info, set it
+      if (centre.areaSupervisorId) {
+        setAreaInfo(centre.areaSupervisorId);
+        
+        // If the area has district info, set it
+        if (centre.areaSupervisorId.districtId) {
+          setDistrictInfo(centre.areaSupervisorId.districtId);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user context:", error);
+    }
+  };
 
   const fetchReports = async () => {
     setLoading(true);
@@ -117,6 +165,45 @@ const CithCentreDashboard: React.FC = () => {
 
   return (
     <Box>
+      {/* Context Banner */}
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          background: 'linear-gradient(90deg, #4A5568 0%, #2D3748 100%)',
+          color: 'white',
+          borderRadius: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LocationOn />
+            <Typography variant="subtitle1">
+              {centreInfo ? centreInfo.name : 'Loading...'}
+            </Typography>
+          </Box>
+          
+          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Business />
+            <Typography variant="subtitle1">
+              {areaInfo ? areaInfo.name : 'Loading...'}
+            </Typography>
+          </Box>
+          
+          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Domain />
+            <Typography variant="subtitle1">
+              {districtInfo ? districtInfo.name : 'Loading...'}
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">CITH Centre Dashboard</Typography>
         <Button

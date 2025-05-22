@@ -16,6 +16,7 @@ import {
   TableRow,
   Chip,
   Divider,
+  Paper,
 } from '@mui/material';
 import { 
   People, 
@@ -25,7 +26,9 @@ import {
   PeopleAlt, 
   AttachMoney, 
   TrendingUp, 
-  AccountTree 
+  AccountTree,
+  Map,
+  LocationCity
 } from '@mui/icons-material';
 import { 
   BarChart as ReBarChart, 
@@ -49,6 +52,7 @@ import {
 } from 'recharts';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
+import { District, AreaSupervisor, CithCentre } from '../../types';
 
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -61,6 +65,9 @@ const AdminDashboard: React.FC = () => {
     totalOfferings: 0,
     totalFirstTimers: 0,
   });
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [areaSupervisors, setAreaSupervisors] = useState<AreaSupervisor[]>([]);
+  const [centres, setCentres] = useState<CithCentre[]>([]);
   const [districtData, setDistrictData] = useState<any[]>([]);
   const [usersByRole, setUsersByRole] = useState<any[]>([]);
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
@@ -73,7 +80,24 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     fetchStats();
     fetchChartData();
+    fetchOrganizationData();
   }, []);
+
+  const fetchOrganizationData = async () => {
+    try {
+      const [districtsRes, areasRes, centresRes] = await Promise.all([
+        api.get('/districts'),
+        api.get('/area-supervisors'),
+        api.get('/cith-centres')
+      ]);
+      
+      setDistricts(districtsRes.data);
+      setAreaSupervisors(areasRes.data);
+      setCentres(centresRes.data);
+    } catch (error) {
+      console.error("Error fetching organization data:", error);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -185,6 +209,61 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <Box>
+      {/* Organization Overview */}
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          background: 'linear-gradient(90deg, #4A5568 0%, #2D3748 100%)',
+          color: 'white',
+          borderRadius: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            Church Organization Overview
+          </Typography>
+          
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LocationCity fontSize="small" />
+              <Typography variant="body2">
+                {districts.length} Districts
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Map fontSize="small" />
+              <Typography variant="body2">
+                {areaSupervisors.length} Areas
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Home fontSize="small" />
+              <Typography variant="body2">
+                {centres.length} CITH Centres
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <BarChart fontSize="small" />
+              <Typography variant="body2">
+                {stats.totalReports} Reports
+              </Typography>
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <People fontSize="small" />
+              <Typography variant="body2">
+                {stats.totalUsers} Users
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Paper>
+
       <Typography variant="h4" gutterBottom>
         Admin Dashboard
       </Typography>
