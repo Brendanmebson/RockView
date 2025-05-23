@@ -65,38 +65,40 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     navigate('/login');
   };
 
-  const menuItems = React.useMemo(() => {
-    if (!user) return [];
+const menuItems = React.useMemo(() => {
+  if (!user) return [];
 
-    const common = [
-      { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', color: '#4A5568' },
-      { text: 'Reports', icon: <BarChart />, path: '/reports', color: '#48BB78' },
-    ];
+  const common = [
+    { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', color: '#4A5568' },
+    { text: 'Reports', icon: <BarChart />, path: '/reports', color: '#48BB78' },
+    { text: 'Settings', icon: <Settings />, path: '/settings', color: '#805AD5' },
+  ];
 
-    switch (user.role) {
-      case 'admin':
-        return [
-          ...common,
-          { text: 'Districts', icon: <Building size={20} />, path: '/districts', color: '#E53E3E' },
-          { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#ED8936' },
-          { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
-          { text: 'Users', icon: <People />, path: '/users', color: '#805AD5' },
-        ];
-      case 'district_pastor':
-        return [
-          ...common,
-          { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#ED8936' },
-          { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
-        ];
-      case 'area_supervisor':
-        return [
-          ...common,
-          { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
-        ];
-      default:
-        return common;
-    }
-  }, [user]);
+  switch (user.role) {
+    case 'admin':
+      return [
+        ...common,
+        { text: 'Districts', icon: <Building size={20} />, path: '/districts', color: '#E53E3E' },
+        { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#ED8936' },
+        { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
+        { text: 'Users', icon: <People />, path: '/users', color: '#805AD5' },
+        { text: 'Position Requests', icon: <People />, path: '/admin/position-requests', color: '#DD6B20' },
+      ];
+    case 'district_pastor':
+      return [
+        ...common,
+        { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#ED8936' },
+        { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
+      ];
+    case 'area_supervisor':
+      return [
+        ...common,
+        { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
+      ];
+    default:
+      return common;
+  }
+}, [user]);
 
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();

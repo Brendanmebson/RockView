@@ -1,6 +1,6 @@
+// frontend/src/types/index.ts
 export interface User {
   _id: string;
-  username: string;
   email: string;
   name: string;
   role: 'cith_centre' | 'area_supervisor' | 'district_pastor' | 'admin';

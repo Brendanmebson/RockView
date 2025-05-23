@@ -1,5 +1,9 @@
 // backend/controllers/authController.js
 const User = require('../models/User');
+const PositionChangeRequest = require('../models/PositionChangeRequest');
+const CithCentre = require('../models/CithCentre');
+const AreaSupervisor = require('../models/AreaSupervisor');
+const District = require('../models/District');
 const generateToken = require('../utils/generateToken');
 
 // @desc    Register user
@@ -7,30 +11,58 @@ const generateToken = require('../utils/generateToken');
 // @access  Public
 const register = async (req, res) => {
   try {
-    const { username, email, password, name, role, cithCentreId, areaSupervisorId, districtId } = req.body;
+    const { email, password, name, role, cithCentreId, areaSupervisorId, districtId } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ $or: [{ email }, { username }] });
+    const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: 'Email already in use' });
     }
 
     // Create user data object
     const userData = {
-      username,
       email,
       password,
       name,
       role,
     };
 
-    // Add role-specific IDs
-    if (role === 'cith_centre' && cithCentreId) {
-      userData.cithCentreId = cithCentreId;
-    } else if (role === 'area_supervisor' && areaSupervisorId) {
-      userData.areaSupervisorId = areaSupervisorId;
-    } else if (role === 'district_pastor' && districtId) {
+    // Check position constraints based on role
+    if (role === 'district_pastor') {
+      // Check if this district already has a pastor
+      const existingPastor = await User.findOne({ role: 'district_pastor', districtId });
+      if (existingPastor) {
+        return res.status(400).json({ 
+          message: 'This district already has a pastor assigned' 
+        });
+      }
       userData.districtId = districtId;
+    } else if (role === 'area_supervisor') {
+      // Check if this area already has a supervisor
+      const existingSupervisor = await User.findOne({ 
+        role: 'area_supervisor', 
+        areaSupervisorId 
+      });
+      
+      if (existingSupervisor) {
+        return res.status(400).json({ 
+          message: 'This area already has a supervisor assigned' 
+        });
+      }
+      userData.areaSupervisorId = areaSupervisorId;
+    } else if (role === 'cith_centre') {
+      // Check if this centre already has 2 leaders
+      const centreLeadersCount = await User.countDocuments({ 
+        role: 'cith_centre', 
+        cithCentreId 
+      });
+      
+      if (centreLeadersCount >= 2) {
+        return res.status(400).json({ 
+          message: 'This CITH centre already has the maximum number of leaders (2)' 
+        });
+      }
+      userData.cithCentreId = cithCentreId;
     }
 
     // Create user
@@ -38,7 +70,6 @@ const register = async (req, res) => {
 
     res.status(201).json({
       _id: user._id,
-      username: user.username,
       email: user.email,
       name: user.name,
       role: user.role,
@@ -72,7 +103,6 @@ const login = async (req, res) => {
     // Build user context 
     const userResponse = {
       _id: user._id,
-      username: user.username,
       email: user.email,
       name: user.name,
       role: user.role
@@ -143,19 +173,224 @@ const updateProfile = async (req, res) => {
     // Only update allowed fields
     if (req.body.name) user.name = req.body.name;
     if (req.body.email) user.email = req.body.email;
-    if (req.body.username) user.username = req.body.username;
-    if (req.body.password) user.password = req.body.password;
 
-    // Don't allow updating role or associations through this endpoint
     const updatedUser = await user.save();
 
     res.json({
       _id: updatedUser._id,
-      username: updatedUser.username,
       email: updatedUser.email,
       name: updatedUser.name,
       role: updatedUser.role,
     });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Change user password
+// @route   PUT /api/auth/change-password
+// @access  Private
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    
+    // Fetch user with password
+    const user = await User.findById(req.user._id).select('+password');
+    
+    // Verify current password
+    if (!user || !(await user.comparePassword(currentPassword))) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+    
+    // Update password
+    user.password = newPassword;
+    await user.save();
+    
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Delete user account (self)
+// @route   DELETE /api/auth/delete-account
+// @access  Private
+const deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Prevent deletion of the last admin
+    if (user.role === 'admin') {
+      const adminCount = await User.countDocuments({ role: 'admin' });
+      if (adminCount <= 1) {
+        return res.status(400).json({ message: 'Cannot delete the only admin account' });
+      }
+    }
+    
+    await User.findByIdAndDelete(req.user._id);
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Submit position change request
+// @route   POST /api/auth/position-change-request
+// @access  Private
+const submitPositionChangeRequest = async (req, res) => {
+  try {
+    const { newRole, targetId } = req.body;
+    
+    // Validate role
+    if (!['cith_centre', 'area_supervisor', 'district_pastor'].includes(newRole)) {
+      return res.status(400).json({ message: 'Invalid role requested' });
+    }
+    
+    // Check if the position is already taken
+    if (newRole === 'district_pastor') {
+      const existingPastor = await User.findOne({ 
+        role: 'district_pastor', 
+        districtId: targetId 
+      });
+      
+      if (existingPastor) {
+        return res.status(400).json({ 
+          message: 'This district already has a pastor assigned' 
+        });
+      }
+    } else if (newRole === 'area_supervisor') {
+      const existingSupervisor = await User.findOne({ 
+        role: 'area_supervisor', 
+        areaSupervisorId: targetId 
+      });
+      
+      if (existingSupervisor) {
+        return res.status(400).json({ 
+          message: 'This area already has a supervisor assigned' 
+        });
+      }
+    } else if (newRole === 'cith_centre') {
+      // Check if centre already has the maximum number of leaders
+      const existingLeaders = await User.countDocuments({ 
+        role: 'cith_centre', 
+        cithCentreId: targetId 
+      });
+      
+      if (existingLeaders >= 2) {
+        return res.status(400).json({ 
+          message: 'This CITH centre already has the maximum number of leaders (2)' 
+        });
+      }
+    }
+    
+    // Create position change request
+    await PositionChangeRequest.create({
+      userId: req.user._id,
+      currentRole: req.user.role,
+      newRole,
+      targetId,
+      status: 'pending',
+    });
+    
+    res.status(201).json({ message: 'Position change request submitted successfully' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Get position change requests (admin only)
+// @route   GET /api/auth/position-change-requests
+// @access  Private/Admin
+const getPositionChangeRequests = async (req, res) => {
+  try {
+    const requests = await PositionChangeRequest.find()
+      .populate('userId', 'name email')
+      .populate('reviewedBy', 'name email')
+      .sort({ createdAt: -1 });
+    
+    res.json(requests);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Approve position change request
+// @route   PUT /api/auth/position-change-requests/:id/approve
+// @access  Private/Admin
+const approvePositionChangeRequest = async (req, res) => {
+  try {
+    const request = await PositionChangeRequest.findById(req.params.id);
+    
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+    
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'Request is not pending' });
+    }
+    
+    // Update user role and associations
+    const user = await User.findById(request.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Clear previous associations
+    user.cithCentreId = undefined;
+    user.areaSupervisorId = undefined;
+    user.districtId = undefined;
+    
+    // Set new role and association
+    user.role = request.newRole;
+    if (request.newRole === 'district_pastor') {
+      user.districtId = request.targetId;
+    } else if (request.newRole === 'area_supervisor') {
+      user.areaSupervisorId = request.targetId;
+    } else if (request.newRole === 'cith_centre') {
+      user.cithCentreId = request.targetId;
+    }
+    
+    await user.save();
+    
+    // Update request status
+    request.status = 'approved';
+    request.reviewedBy = req.user._id;
+    request.reviewedAt = new Date();
+    await request.save();
+    
+    res.json({ message: 'Position change request approved successfully' });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Reject position change request
+// @route   PUT /api/auth/position-change-requests/:id/reject
+// @access  Private/Admin
+const rejectPositionChangeRequest = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const request = await PositionChangeRequest.findById(req.params.id);
+    
+    if (!request) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+    
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'Request is not pending' });
+    }
+    
+    request.status = 'rejected';
+    request.rejectionReason = reason;
+    request.reviewedBy = req.user._id;
+    request.reviewedAt = new Date();
+    await request.save();
+    
+    res.json({ message: 'Position change request rejected successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -166,11 +401,6 @@ const updateProfile = async (req, res) => {
 // @access  Private/Admin
 const getUsers = async (req, res) => {
   try {
-    // Only allow admins to access this route (middleware should check this)
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to access this resource' });
-    }
-
     const users = await User.find({})
       .select('-password')
       .populate('cithCentreId', 'name')
@@ -183,145 +413,16 @@ const getUsers = async (req, res) => {
   }
 };
 
-// @desc    Get user by ID (admin only)
-// @route   GET /api/auth/users/:id
-// @access  Private/Admin
-const getUserById = async (req, res) => {
-  try {
-    // Only allow admins to access this route (middleware should check this)
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to access this resource' });
-    }
-
-    const user = await User.findById(req.params.id)
-      .select('-password')
-      .populate({
-        path: 'cithCentreId',
-        populate: {
-          path: 'areaSupervisorId',
-          populate: {
-            path: 'districtId'
-          }
-        }
-      })
-      .populate({
-        path: 'areaSupervisorId',
-        populate: {
-          path: 'districtId'
-        }
-      })
-      .populate('districtId');
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    res.json(user);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-// @desc    Update user (admin only)
-// @route   PUT /api/auth/users/:id
-// @access  Private/Admin
-const updateUser = async (req, res) => {
-  try {
-    // Only allow admins to access this route (middleware should check this)
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to access this resource' });
-    }
-
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Allow updating all fields for admin
-    if (req.body.name) user.name = req.body.name;
-    if (req.body.email) user.email = req.body.email;
-    if (req.body.username) user.username = req.body.username;
-    if (req.body.password) user.password = req.body.password;
-    if (req.body.role) user.role = req.body.role;
-    if (req.body.isActive !== undefined) user.isActive = req.body.isActive;
-
-    // Update associations based on role
-    if (req.body.role === 'cith_centre') {
-      user.cithCentreId = req.body.cithCentreId;
-      user.areaSupervisorId = undefined;
-      user.districtId = undefined;
-    } else if (req.body.role === 'area_supervisor') {
-      user.areaSupervisorId = req.body.areaSupervisorId;
-      user.cithCentreId = undefined;
-      user.districtId = undefined;
-    } else if (req.body.role === 'district_pastor') {
-      user.districtId = req.body.districtId;
-      user.cithCentreId = undefined;
-      user.areaSupervisorId = undefined;
-    } else if (req.body.role === 'admin') {
-      user.cithCentreId = undefined;
-      user.areaSupervisorId = undefined;
-      user.districtId = undefined;
-    }
-
-    const updatedUser = await user.save();
-
-    res.json({
-      _id: updatedUser._id,
-      username: updatedUser.username,
-      email: updatedUser.email,
-      name: updatedUser.name,
-      role: updatedUser.role,
-      isActive: updatedUser.isActive,
-      cithCentreId: updatedUser.cithCentreId,
-      areaSupervisorId: updatedUser.areaSupervisorId,
-      districtId: updatedUser.districtId,
-    });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-// @desc    Delete user (admin only)
-// @route   DELETE /api/auth/users/:id
-// @access  Private/Admin
-const deleteUser = async (req, res) => {
-  try {
-    // Only allow admins to access this route (middleware should check this)
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Not authorized to access this resource' });
-    }
-
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Check if user is also an admin
-    if (user.role === 'admin') {
-      // Get count of admin users
-      const adminCount = await User.countDocuments({ role: 'admin' });
-      if (adminCount <= 1) {
-        return res.status(400).json({ message: 'Cannot delete the only admin user' });
-      }
-    }
-
-    await user.remove();
-    res.json({ message: 'User removed' });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
 module.exports = {
   register,
   login,
   getProfile,
   updateProfile,
+  changePassword,
+  deleteAccount,
+  submitPositionChangeRequest,
+  getPositionChangeRequests,
+  approvePositionChangeRequest,
+  rejectPositionChangeRequest,
   getUsers,
-  getUserById,
-  updateUser,
-  deleteUser,
 };

@@ -1,20 +1,35 @@
+// frontend/src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { churchTheme } from './theme/churchTheme';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Layout from './components/common/Layout';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import DashboardMain from './components/dashboard/DashboardMain';
 import ReportForm from './components/reports/ReportForm';
 import ReportList from './components/reports/ReportList';
+import ReportDetail from './components/reports/ReportDetail';
+import SettingsPage from './components/settings/SettingsPage';
+import AdminPositionRequests from './components/admin/AdminPositionRequests';
 import { AnimatePresence } from 'framer-motion';
 
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const PrivateRoute: React.FC<{ 
+  children: React.ReactNode;
+  requiredRole?: string[];
+}> = ({ children, requiredRole }) => {
   const { user, token } = useAuth();
-  return user && token ? <>{children}</> : <Navigate to="/login" />;
+  
+  if (!user || !token) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (requiredRole && !requiredRole.includes(user.role)) {
+    return <Navigate to="/dashboard" />;
+  }
+  
+  return <>{children}</>;
 };
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -24,7 +39,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={churchTheme}>
+    <ThemeProvider>
       <CssBaseline />
       <AuthProvider>
         <Router>
@@ -77,9 +92,39 @@ const App: React.FC = () => {
               <Route
                 path="/reports/new"
                 element={
-                  <PrivateRoute>
+                  <PrivateRoute requiredRole={['cith_centre']}>
                     <Layout>
                       <ReportForm />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/reports/:id"
+                element={
+                  <PrivateRoute>
+                    <Layout>
+                      <ReportDetail />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <PrivateRoute>
+                    <Layout>
+                      <SettingsPage />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/position-requests"
+                element={
+                  <PrivateRoute requiredRole={['admin']}>
+                    <Layout>
+                      <AdminPositionRequests />
                     </Layout>
                   </PrivateRoute>
                 }

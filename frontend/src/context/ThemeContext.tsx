@@ -33,6 +33,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           default: darkMode ? '#121212' : '#F7FAFC',
           paper: darkMode ? '#1E1E1E' : '#FFFFFF',
         },
+        text: {
+          primary: darkMode ? '#FFFFFF' : '#2D3748',
+          secondary: darkMode ? '#B0BEC5' : '#4A5568',
+        },
       },
     });
   }, [darkMode]);

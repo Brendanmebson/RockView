@@ -1,3 +1,4 @@
+// backend/controllers/reportController.js
 const WeeklyReport = require('../models/WeeklyReport');
 const CithCentre = require('../models/CithCentre');
 const AreaSupervisor = require('../models/AreaSupervisor');
@@ -102,6 +103,51 @@ const getReports = async (req, res) => {
       currentPage: page,
       total: count,
     });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// @desc    Get a single report by ID
+// @route   GET /api/reports/:id
+// @access  Private
+const getReportById = async (req, res) => {
+  try {
+    const report = await WeeklyReport.findById(req.params.id)
+      .populate('cithCentreId')
+      .populate('submittedBy', '-password')
+      .populate('areaApprovedBy', '-password')
+      .populate('districtApprovedBy', '-password')
+      .populate('rejectedBy', '-password');
+    
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Check if user has permission to view this report
+    if (req.user.role === 'cith_centre') {
+      // CITH centre can only view their own reports
+      if (report.cithCentreId._id.toString() !== req.user.cithCentreId.toString()) {
+        return res.status(403).json({ message: 'Not authorized to view this report' });
+      }
+    } else if (req.user.role === 'area_supervisor') {
+      // Area supervisor can only view reports from their centres
+      const centre = await CithCentre.findById(report.cithCentreId._id);
+      if (centre.areaSupervisorId.toString() !== req.user.areaSupervisorId.toString()) {
+        return res.status(403).json({ message: 'Not authorized to view this report' });
+      }
+    } else if (req.user.role === 'district_pastor') {
+      // District pastor can only view reports from their district
+      const centre = await CithCentre.findById(report.cithCentreId._id).populate('areaSupervisorId');
+      const area = await AreaSupervisor.findById(centre.areaSupervisorId);
+      
+      if (area.districtId.toString() !== req.user.districtId.toString()) {
+        return res.status(403).json({ message: 'Not authorized to view this report' });
+      }
+    }
+    // Admin can view all reports
+    
+    res.json(report);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -256,7 +302,7 @@ const getReportSummary = async (req, res) => {
     ]);
     
     res.json(summary[0] || {});
-  } catch (error) {
+} catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
@@ -264,6 +310,7 @@ const getReportSummary = async (req, res) => {
 module.exports = {
   submitReport,
   getReports,
+  getReportById,
   approveReport,
   rejectReport,
   getReportSummary,

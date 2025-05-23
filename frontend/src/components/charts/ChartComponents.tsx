@@ -31,7 +31,7 @@ import {
 interface ChartContainerProps {
   title: string;
   height?: number;
-  children: React.ReactNode;
+  children: React.ReactElement;
 }
 
 export const ChartContainer: React.FC<ChartContainerProps> = ({ 
@@ -258,7 +258,42 @@ export const DistrictComparisonChart = ({ data }: { data: any[] }) => {
 
 export const OrganizationTreemapChart = ({ data }: { data: any[] }) => {
   const COLORS = ['#8889DD', '#9597E4', '#8DC77B', '#A5D297', '#E2CF45', '#F8C12D'];
-  
+
+  // Custom content function for Treemap
+  const renderCustomTreemapContent = (props: any) => {
+    const { root, depth, x, y, width, height, index, name } = props;
+    
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          style={{
+            fill: depth < 2 
+              ? COLORS[Math.floor((index / (root?.children?.length || 1)) * COLORS.length) % COLORS.length]
+              : 'rgba(255,255,255,0.3)',
+            stroke: '#fff',
+            strokeWidth: 2 / (depth + 1e-10),
+            strokeOpacity: 1 / (depth + 1e-10),
+          }}
+        />
+        {depth === 1 && width > 50 && height > 20 && (
+          <text
+            x={x + width / 2}
+            y={y + height / 2 + 7}
+            textAnchor="middle"
+            fill="#fff"
+            fontSize={12}
+          >
+            {name}
+          </text>
+        )}
+      </g>
+    );
+  };
+
   return (
     <ChartContainer title="Organization Structure Analysis" height={400}>
       <Treemap
@@ -266,38 +301,7 @@ export const OrganizationTreemapChart = ({ data }: { data: any[] }) => {
         dataKey="size"
         stroke="#fff"
         fill="#8884d8"
-        content={React.memo((props: any) => {
-          const { root, depth, x, y, width, height, index, name } = props;
-          return (
-            <g>
-              <rect
-                x={x}
-                y={y}
-                width={width}
-                height={height}
-                style={{
-                  fill: depth < 2 
-                    ? COLORS[Math.floor((index / root.children.length) * COLORS.length) % COLORS.length]
-                    : 'rgba(255,255,255,0.3)',
-                  stroke: '#fff',
-                  strokeWidth: 2 / (depth + 1e-10),
-                  strokeOpacity: 1 / (depth + 1e-10),
-                }}
-              />
-              {depth === 1 && width > 50 && height > 20 && (
-                <text
-                  x={x + width / 2}
-                  y={y + height / 2 + 7}
-                  textAnchor="middle"
-                  fill="#fff"
-                  fontSize={12}
-                >
-                  {name}
-                </text>
-              )}
-            </g>
-          );
-        })}
+        content={renderCustomTreemapContent as any}
       />
     </ChartContainer>
   );
