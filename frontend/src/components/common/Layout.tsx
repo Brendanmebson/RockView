@@ -1,3 +1,4 @@
+// frontend/src/components/common/Layout.tsx (Updated messaging integration)
 import React from 'react';
 import {
   AppBar,
@@ -28,12 +29,15 @@ import {
   Settings,
   ExitToApp,
   Notifications,
+  Message,
 } from '@mui/icons-material';
 import { Church, Building, Home, Users, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageContainer } from './AnimatedComponents';
+import { useEffect, useState } from 'react';
+import api from '../../services/api';
 
 const drawerWidth = 280;
 
@@ -44,9 +48,26 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const { user, userCentre, userArea, userDistrict, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // Fetch unread count every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await api.get('/messages/unread/count');
+      setUnreadCount(response.data.count);
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -76,6 +97,7 @@ const menuItems = React.useMemo(() => {
   const common = [
     { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', color: '#4A5568' },
     { text: 'Reports', icon: <BarChart />, path: '/reports', color: '#48BB78' },
+    { text: 'Messages', icon: <Message />, path: '/messages', color: '#9F7AEA', badge: unreadCount },
     { text: 'Settings', icon: <Settings />, path: '/settings', color: '#805AD5' },
   ];
 
@@ -86,7 +108,7 @@ const menuItems = React.useMemo(() => {
         { text: 'Districts', icon: <Building size={20} />, path: '/districts', color: '#E53E3E' },
         { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#ED8936' },
         { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
-        { text: 'Users', icon: <People />, path: '/users', color: '#805AD5' },
+        { text: 'Users', icon: <People />, path: '/admin/users', color: '#805AD5' },
         { text: 'Position Requests', icon: <People />, path: '/admin/position-requests', color: '#DD6B20' },
       ];
     case 'district_pastor':
@@ -103,7 +125,7 @@ const menuItems = React.useMemo(() => {
     default:
       return common;
   }
-}, [user]);
+}, [user, unreadCount]);
 
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
@@ -237,7 +259,13 @@ const menuItems = React.useMemo(() => {
                   }}
                 >
                   <ListItemIcon sx={{ color: item.color, minWidth: 40 }}>
-                    {item.icon}
+                    {item.badge && item.badge > 0 ? (
+                      <Badge badgeContent={item.badge} color="error">
+                        {item.icon}
+                      </Badge>
+                    ) : (
+                      item.icon
+                    )}
                   </ListItemIcon>
                   <ListItemText 
                     primary={item.text}
@@ -300,6 +328,7 @@ const menuItems = React.useMemo(() => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: 'text.primary' }}>
             {location.pathname === '/dashboard' && '🏠 '}
             {location.pathname === '/reports' && '📊 '}
+            {location.pathname === '/messages' && '💬 '}
             {location.pathname === '/districts' && '🏘️ '}
             {location.pathname === '/area-supervisors' && '👥 '}
             {location.pathname === '/cith-centres' && '⛪ '}
@@ -308,6 +337,14 @@ const menuItems = React.useMemo(() => {
           </Typography>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Tooltip title="Messages">
+              <IconButton color="primary" onClick={() => navigate('/messages')}>
+                <Badge badgeContent={unreadCount} color="error">
+                  <Message />
+                </Badge>
+              </IconButton>
+            </Tooltip>
+            
             <Tooltip title="Notifications">
               <IconButton color="primary">
                 <Badge badgeContent={3} color="secondary">
@@ -383,48 +420,48 @@ const menuItems = React.useMemo(() => {
           sx={{
             display: { xs: 'block', sm: 'none' },
             '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: drawerWidth,
-              background: '#fff',
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { 
-              boxSizing: 'border-box', 
-              width: drawerWidth,
-              background: '#fff',
-              borderRight: '1px solid rgba(0,0,0,0.1)',
-            },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      
-      <Box
-        component="main"
-        sx={{ 
-          flexGrow: 1, 
-          p: 3, 
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          minHeight: '100vh',
-          background: '#f8f9fa',
-        }}
-      >
-        <Toolbar />
-        <PageContainer>
-          {children}
-        </PageContainer>
-      </Box>
-    </Box>
-  );
+             boxSizing: 'border-box', 
+             width: drawerWidth,
+             background: '#fff',
+           },
+         }}
+       >
+         {drawer}
+       </Drawer>
+       <Drawer
+         variant="permanent"
+         sx={{
+           display: { xs: 'none', sm: 'block' },
+           '& .MuiDrawer-paper': { 
+             boxSizing: 'border-box', 
+             width: drawerWidth,
+             background: '#fff',
+             borderRight: '1px solid rgba(0,0,0,0.1)',
+           },
+         }}
+         open
+       >
+         {drawer}
+       </Drawer>
+     </Box>
+     
+     <Box
+       component="main"
+       sx={{ 
+         flexGrow: 1, 
+         p: 3, 
+         width: { sm: `calc(100% - ${drawerWidth}px)` },
+         minHeight: '100vh',
+         background: '#f8f9fa',
+       }}
+     >
+       <Toolbar />
+       <PageContainer>
+         {children}
+       </PageContainer>
+     </Box>
+   </Box>
+ );
 };
 
 export default Layout;

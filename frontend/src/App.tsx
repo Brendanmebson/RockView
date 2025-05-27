@@ -13,6 +13,10 @@ import ReportList from './components/reports/ReportList';
 import ReportDetail from './components/reports/ReportDetail';
 import SettingsPage from './components/settings/SettingsPage';
 import AdminPositionRequests from './components/admin/AdminPositionRequests';
+import UserManagement from './components/admin/UserManagement';
+import MessageList from './components/messages/MessageList';
+import ComposeMessage from './components/messages/ComposeMessage';
+import MessageDetail from './components/messages/MessageDetail';
 import { AnimatePresence } from 'framer-motion';
 
 const PrivateRoute: React.FC<{ 
@@ -125,6 +129,46 @@ const App: React.FC = () => {
                   <PrivateRoute requiredRole={['admin']}>
                     <Layout>
                       <AdminPositionRequests />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <PrivateRoute requiredRole={['admin']}>
+                    <Layout>
+                      <UserManagement />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/messages"
+                element={
+                  <PrivateRoute>
+                    <Layout>
+                      <MessageList />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/messages/compose"
+                element={
+                  <PrivateRoute>
+                    <Layout>
+                      <ComposeMessage />
+                    </Layout>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/messages/:id"
+                element={
+                  <PrivateRoute>
+                    <Layout>
+                      <MessageDetail />
                     </Layout>
                   </PrivateRoute>
                 }

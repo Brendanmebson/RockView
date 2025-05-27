@@ -20,6 +20,13 @@ export interface District {
   description?: string;
   createdAt: string;
   updatedAt: string;
+  // Add optional fields for assignment status
+  isAssigned?: boolean;
+  assignedPastor?: {
+    name: string;
+    email: string;
+  };
+  displayText?: string;
 }
 
 export interface AreaSupervisor {
@@ -31,6 +38,13 @@ export interface AreaSupervisor {
   contactPhone?: string;
   createdAt: string;
   updatedAt: string;
+  // Add optional fields for assignment status
+  isAssigned?: boolean;
+  assignedSupervisor?: {
+    name: string;
+    email: string;
+  };
+  displayText?: string;
 }
 
 export interface CithCentre {
@@ -43,6 +57,31 @@ export interface CithCentre {
   contactPhone?: string;
   createdAt: string;
   updatedAt: string;
+  // Add optional fields for assignment status
+  isAssigned?: boolean;
+  assignedLeaders?: {
+    name: string;
+    email: string;
+  }[];
+  displayText?: string;
+}
+
+// Add detailed user interface for admin management
+export interface UserWithDetails extends User {
+  cithCentreDetails?: {
+    _id: string;
+    name: string;
+    location: string;
+  };
+  areaSupervisorDetails?: {
+    _id: string;
+    name: string;
+  };
+  districtDetails?: {
+    _id: string;
+    name: string;
+    districtNumber: number;
+  };
 }
 
 export interface WeeklyReportData {
@@ -96,4 +135,36 @@ export interface AuthContextType {
   register: (userData: any) => Promise<void>;
   logout: () => void;
   loading: boolean;
+}
+
+export interface Message {
+  _id: string;
+  from: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  to: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  subject: string;
+  content: string;
+  isRead: boolean;
+  priority: 'low' | 'normal' | 'high' | 'urgent';
+  category: 'general' | 'report' | 'announcement' | 'prayer_request' | 'administrative';
+  createdAt: string;
+  updatedAt: string;
+  readAt?: string;
+  replyTo?: {
+    _id: string;
+    subject: string;
+    content: string;
+    from: {
+      name: string;
+    };
+  };
 }

@@ -1,3 +1,4 @@
+// backend/server.js
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -26,7 +27,6 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Routes
-// Add this line with your other route imports
 app.use('/api/public', require('./routes/publicRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/districts', require('./routes/districtRoutes'));
@@ -34,6 +34,8 @@ app.use('/api/area-supervisors', require('./routes/areaSupervisorRoutes'));
 app.use('/api/cith-centres', require('./routes/cithCentreRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/export', require('./routes/exportRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
 
 // Error handler
 app.use(errorHandler);

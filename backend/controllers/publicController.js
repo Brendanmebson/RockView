@@ -28,7 +28,9 @@ const getPublicDistricts = async (req, res) => {
           } : null,
           displayText: assignedPastor ? 
             `Pastored by ${assignedPastor.name}` : 
-            'Unassigned'
+            'Unassigned',
+          // Override pastorName to show assignment status
+          pastorName: assignedPastor ? assignedPastor.name : 'Unassigned'
         };
       })
     );
@@ -68,7 +70,7 @@ const getPublicAreaSupervisors = async (req, res) => {
           displayText: assignedSupervisor ? 
             `Supervised by ${assignedSupervisor.name}` : 
             'Unassigned',
-          // Update the supervisorName to show assignment status
+          // Override supervisorName to show assignment status
           supervisorName: assignedSupervisor ? 
             assignedSupervisor.name : 
             'Unassigned'
@@ -108,7 +110,7 @@ const getPublicCithCentres = async (req, res) => {
           displayText: assignedLeaders.length > 0 ? 
             `Led by ${assignedLeaders.map(leader => leader.name).join(', ')}` : 
             'Unassigned',
-          // Update the leaderName to show assignment status
+          // Override leaderName to show assignment status
           leaderName: assignedLeaders.length > 0 ? 
             assignedLeaders.map(leader => leader.name).join(', ') : 
             'Unassigned'
