@@ -344,155 +344,154 @@ const ReportForm: React.FC = () => {
                       </Typography>
                     </Divider>
                   </GridItem>
-
                   {/* Offerings and Testimonies Section */}
-                  <GridItem xs={12} md={6}>
-                    <TextField
-                      label="Offerings ($)"
-                      type="number"
-                      value={reportData.offerings}
-                      onChange={handleChange('offerings')}
-                      fullWidth
-                      inputProps={{ min: 0, step: 0.01 }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <AttachMoney />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </GridItem>
+                 <GridItem xs={12} md={6}>
+                   <TextField
+                     label="Offerings (₦)"
+                     type="number"
+                     value={reportData.offerings}
+                     onChange={handleChange('offerings')}
+                     fullWidth
+                     inputProps={{ min: 0, step: 0.01 }}
+                     InputProps={{
+                       startAdornment: (
+                         <InputAdornment position="start">
+                           ₦
+                         </InputAdornment>
+                       ),
+                     }}
+                   />
+                 </GridItem>
 
-                  <GridItem xs={12} md={6}>
-                    <TextField
-                      label="Number of Testimonies"
-                      type="number"
-                      value={reportData.numberOfTestimonies}
-                      onChange={handleChange('numberOfTestimonies')}
-                      fullWidth
-                      inputProps={{ min: 0 }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Comment />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </GridItem>
+                 <GridItem xs={12} md={6}>
+                   <TextField
+                     label="Number of Testimonies"
+                     type="number"
+                     value={reportData.numberOfTestimonies}
+                     onChange={handleChange('numberOfTestimonies')}
+                     fullWidth
+                     inputProps={{ min: 0 }}
+                     InputProps={{
+                       startAdornment: (
+                         <InputAdornment position="start">
+                           <Comment />
+                         </InputAdornment>
+                       ),
+                     }}
+                   />
+                 </GridItem>
 
-                  <GridItem xs={12}>
-                    <Divider>
-                      <Typography variant="subtitle2" color="textSecondary">
-                        First Timers Information
-                      </Typography>
-                    </Divider>
-                  </GridItem>
+                 <GridItem xs={12}>
+                   <Divider>
+                     <Typography variant="subtitle2" color="textSecondary">
+                       First Timers Information
+                     </Typography>
+                   </Divider>
+                 </GridItem>
 
-                  {/* First Timers Section */}
-                  <GridItem xs={12} md={4}>
-                    <TextField
-                      label="Number of First Timers"
-                      type="number"
-                      value={reportData.numberOfFirstTimers}
-                      onChange={handleChange('numberOfFirstTimers')}
-                      fullWidth
-                      inputProps={{ min: 0 }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <PersonAdd />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </GridItem>
+                 {/* First Timers Section */}
+                 <GridItem xs={12} md={4}>
+                   <TextField
+                     label="Number of First Timers"
+                     type="number"
+                     value={reportData.numberOfFirstTimers}
+                     onChange={handleChange('numberOfFirstTimers')}
+                     fullWidth
+                     inputProps={{ min: 0 }}
+                     InputProps={{
+                       startAdornment: (
+                         <InputAdornment position="start">
+                           <PersonAdd />
+                         </InputAdornment>
+                       ),
+                     }}
+                   />
+                 </GridItem>
 
-                  <GridItem xs={12} md={4}>
-                    <TextField
-                      label="First Timers Followed Up"
-                      type="number"
-                      value={reportData.firstTimersFollowedUp}
-                      onChange={handleChange('firstTimersFollowedUp')}
-                      fullWidth
-                      inputProps={{ min: 0, max: reportData.numberOfFirstTimers }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Check />
-                          </InputAdornment>
-                        ),
-                      }}
-                      error={reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers}
-                      helperText={reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers ? 
-                        'Cannot exceed first timers' : ''}
-                    />
-                  </GridItem>
+                 <GridItem xs={12} md={4}>
+                   <TextField
+                     label="First Timers Followed Up"
+                     type="number"
+                     value={reportData.firstTimersFollowedUp}
+                     onChange={handleChange('firstTimersFollowedUp')}
+                     fullWidth
+                     inputProps={{ min: 0, max: reportData.numberOfFirstTimers }}
+                     InputProps={{
+                       startAdornment: (
+                         <InputAdornment position="start">
+                           <Check />
+                         </InputAdornment>
+                       ),
+                     }}
+                     error={reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers}
+                     helperText={reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers ? 
+                       'Cannot exceed first timers' : ''}
+                   />
+                 </GridItem>
 
-                  <GridItem xs={12} md={4}>
-                    <TextField
-                      label="First Timers Converted to CITH"
-                      type="number"
-                      value={reportData.firstTimersConvertedToCITH}
-                      onChange={handleChange('firstTimersConvertedToCITH')}
-                      fullWidth
-                      inputProps={{ min: 0, max: reportData.firstTimersFollowedUp }}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Church fontSize="small" />
-                          </InputAdornment>
-                        ),
-                      }}
-                      error={reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp}
-                      helperText={reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp ? 
-                        'Cannot exceed followed up' : ''}
-                    />
-                  </GridItem>
-                  
-                  {/* Remarks Section */}
-                  <GridItem xs={12}>
-                    <TextField
-                      label="Remarks"
-                      multiline
-                      rows={4}
-                      value={reportData.remarks}
-                      onChange={handleChange('remarks')}
-                      fullWidth
-                      placeholder="Enter any additional comments, prayer points, or notable events"
-                    />
-                  </GridItem>
+                 <GridItem xs={12} md={4}>
+                   <TextField
+                     label="First Timers Converted to CITH"
+                     type="number"
+                     value={reportData.firstTimersConvertedToCITH}
+                     onChange={handleChange('firstTimersConvertedToCITH')}
+                     fullWidth
+                     inputProps={{ min: 0, max: reportData.firstTimersFollowedUp }}
+                     InputProps={{
+                       startAdornment: (
+                         <InputAdornment position="start">
+                           <Church fontSize="small" />
+                         </InputAdornment>
+                       ),
+                     }}
+                     error={reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp}
+                     helperText={reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp ? 
+                       'Cannot exceed followed up' : ''}
+                   />
+                 </GridItem>
+                 
+                 {/* Remarks Section */}
+                 <GridItem xs={12}>
+                   <TextField
+                     label="Remarks"
+                     multiline
+                     rows={4}
+                     value={reportData.remarks}
+                     onChange={handleChange('remarks')}
+                     fullWidth
+                     placeholder="Enter any additional comments, prayer points, or notable events"
+                   />
+                 </GridItem>
 
-                  {/* Submit Buttons */}
-                  <GridItem xs={12}>
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                      <Button
-                        variant="contained"
-                        type="submit"
-                        disabled={loading}
-                        startIcon={loading ? <CircularProgress size={20} /> : <SaveOutlined />}
-                        sx={{ px: 4 }}
-                      >
-                        {loading ? 'Submitting...' : 'Submit Report'}
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        onClick={() => navigate('/reports')}
-                        startIcon={<ArrowBackOutlined />}
-                      >
-                        Cancel
-                      </Button>
-                    </Box>
-                  </GridItem>
-                </Grid>
-              </form>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </Box>
-    </LocalizationProvider>
-  );
+                 {/* Submit Buttons */}
+                 <GridItem xs={12}>
+                   <Box sx={{ display: 'flex', gap: 2 }}>
+                     <Button
+                       variant="contained"
+                       type="submit"
+                       disabled={loading}
+                       startIcon={loading ? <CircularProgress size={20} /> : <SaveOutlined />}
+                       sx={{ px: 4 }}
+                     >
+                       {loading ? 'Submitting...' : 'Submit Report'}
+                     </Button>
+                     <Button
+                       variant="outlined"
+                       onClick={() => navigate('/reports')}
+                       startIcon={<ArrowBackOutlined />}
+                     >
+                       Cancel
+                     </Button>
+                   </Box>
+                 </GridItem>
+               </Grid>
+             </form>
+           </CardContent>
+         </Card>
+       </motion.div>
+     </Box>
+   </LocalizationProvider>
+ );
 };
 
 export default ReportForm;

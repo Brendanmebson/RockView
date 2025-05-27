@@ -185,9 +185,9 @@ const AreaSupervisorDashboard: React.FC = () => {
                 </Avatar>
                 <Box>
                   <Typography variant="body2" color="textSecondary">Total Offerings</Typography>
-                  <Typography variant="h5">${summary.totalOfferings}</Typography>
+                  <Typography variant="h5">₦{summary.totalOfferings.toLocaleString()}</Typography>
                   <Typography variant="caption" color="textSecondary">
-                    Avg: ${Math.round(summary.totalOfferings / (summary.totalReports || 1))} per service
+                    Avg: ₦{Math.round(summary.totalOfferings / (summary.totalReports || 1)).toLocaleString()} per service
                   </Typography>
                 </Box>
               </CardContent>
@@ -354,7 +354,7 @@ const AreaSupervisorDashboard: React.FC = () => {
                         <TableCell>
                           {report.data.male + report.data.female + report.data.children}
                         </TableCell>
-                        <TableCell>${report.data.offerings}</TableCell>
+                        <TableCell>₦{report.data.offerings.toLocaleString()}</TableCell>
                         <TableCell>{report.data.numberOfFirstTimers}</TableCell>
                         <TableCell>
                           <Button

@@ -224,7 +224,7 @@ const ReportDetail: React.FC = () => {
                   <TableBody>
                     <TableRow>
                       <TableCell component="th">Offerings</TableCell>
-                      <TableCell align="right">${report.data.offerings}</TableCell>
+                      <TableCell align="right">₦{report.data.offerings.toLocaleString()}</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell component="th">Number of Testimonies</TableCell>
@@ -248,138 +248,138 @@ const ReportDetail: React.FC = () => {
 
               <TableContainer component={Paper} elevation={0}>
                 <Table>
-                    <TableBody>
-                    <TableRow>
-                      <TableCell component="th">Number of First Timers</TableCell>
-                      <TableCell align="right">{report.data.numberOfFirstTimers}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell component="th">First Timers Followed Up</TableCell>
-                      <TableCell align="right">{report.data.firstTimersFollowedUp}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell component="th">First Timers Converted to CITH</TableCell>
-                      <TableCell align="right">{report.data.firstTimersConvertedToCITH}</TableCell>
-                    </TableRow>
-                    {report.data.numberOfFirstTimers > 0 && (
-                      <>
-                        <TableRow>
-                          <TableCell component="th">Follow-up Rate</TableCell>
-                          <TableCell align="right">
-                            {((report.data.firstTimersFollowedUp / report.data.numberOfFirstTimers) * 100).toFixed(1)}%
-                          </TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell component="th">Conversion Rate</TableCell>
-                          <TableCell align="right">
-                            {((report.data.firstTimersConvertedToCITH / report.data.numberOfFirstTimers) * 100).toFixed(1)}%
-                          </TableCell>
-                        </TableRow>
-                      </>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
-        </GridItem>
+                  <TableBody>
+                   <TableRow>
+                     <TableCell component="th">Number of First Timers</TableCell>
+                     <TableCell align="right">{report.data.numberOfFirstTimers}</TableCell>
+                   </TableRow>
+                   <TableRow>
+                     <TableCell component="th">First Timers Followed Up</TableCell>
+                     <TableCell align="right">{report.data.firstTimersFollowedUp}</TableCell>
+                   </TableRow>
+                   <TableRow>
+                     <TableCell component="th">First Timers Converted to CITH</TableCell>
+                     <TableCell align="right">{report.data.firstTimersConvertedToCITH}</TableCell>
+                   </TableRow>
+                   {report.data.numberOfFirstTimers > 0 && (
+                     <>
+                       <TableRow>
+                         <TableCell component="th">Follow-up Rate</TableCell>
+                         <TableCell align="right">
+                           {((report.data.firstTimersFollowedUp / report.data.numberOfFirstTimers) * 100).toFixed(1)}%
+                         </TableCell>
+                       </TableRow>
+                       <TableRow>
+                         <TableCell component="th">Conversion Rate</TableCell>
+                         <TableCell align="right">
+                           {((report.data.firstTimersConvertedToCITH / report.data.numberOfFirstTimers) * 100).toFixed(1)}%
+                         </TableCell>
+                       </TableRow>
+                     </>
+                   )}
+                 </TableBody>
+               </Table>
+             </TableContainer>
+           </CardContent>
+         </Card>
+       </GridItem>
 
-        {/* Remarks */}
-        {report.data.remarks && (
-          <GridItem xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Remarks
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
-                <Typography variant="body1">{report.data.remarks}</Typography>
-              </CardContent>
-            </Card>
-          </GridItem>
-        )}
+       {/* Remarks */}
+       {report.data.remarks && (
+         <GridItem xs={12}>
+           <Card>
+             <CardContent>
+               <Typography variant="h6" gutterBottom>
+                 Remarks
+               </Typography>
+               <Divider sx={{ mb: 2 }} />
+               <Typography variant="body1">{report.data.remarks}</Typography>
+             </CardContent>
+           </Card>
+         </GridItem>
+       )}
 
-        {/* Approval Information */}
-        {(report.status === 'area_approved' || report.status === 'district_approved') && (
-          <GridItem xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Approval Information
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
+       {/* Approval Information */}
+       {(report.status === 'area_approved' || report.status === 'district_approved') && (
+         <GridItem xs={12}>
+           <Card>
+             <CardContent>
+               <Typography variant="h6" gutterBottom>
+                 Approval Information
+               </Typography>
+               <Divider sx={{ mb: 2 }} />
 
-                <Grid container spacing={2}>
-                  {report.areaApprovedBy && (
-                    <GridItem xs={12} md={6}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckCircle color="info" />
-                        <Typography>
-                          Area Approved by: {report.areaApprovedBy.name}
-                          {report.areaApprovedAt && (
-                            <Typography variant="caption" display="block" color="textSecondary">
-                              on {new Date(report.areaApprovedAt).toLocaleString()}
-                            </Typography>
-                          )}
-                        </Typography>
-                      </Box>
-                    </GridItem>
-                  )}
+               <Grid container spacing={2}>
+                 {report.areaApprovedBy && (
+                   <GridItem xs={12} md={6}>
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                       <CheckCircle color="info" />
+                       <Typography>
+                         Area Approved by: {report.areaApprovedBy.name}
+                         {report.areaApprovedAt && (
+                           <Typography variant="caption" display="block" color="textSecondary">
+                             on {new Date(report.areaApprovedAt).toLocaleString()}
+                           </Typography>
+                         )}
+                       </Typography>
+                     </Box>
+                   </GridItem>
+                 )}
 
-                  {report.districtApprovedBy && (
-                    <GridItem xs={12} md={6}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <CheckCircle color="success" />
-                        <Typography>
-                          District Approved by: {report.districtApprovedBy.name}
-                          {report.districtApprovedAt && (
-                            <Typography variant="caption" display="block" color="textSecondary">
-                              on {new Date(report.districtApprovedAt).toLocaleString()}
-                            </Typography>
-                          )}
-                        </Typography>
-                      </Box>
-                    </GridItem>
-                  )}
-                </Grid>
-              </CardContent>
-            </Card>
-          </GridItem>
-        )}
+                 {report.districtApprovedBy && (
+                   <GridItem xs={12} md={6}>
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                       <CheckCircle color="success" />
+                       <Typography>
+                         District Approved by: {report.districtApprovedBy.name}
+                         {report.districtApprovedAt && (
+                           <Typography variant="caption" display="block" color="textSecondary">
+                             on {new Date(report.districtApprovedAt).toLocaleString()}
+                           </Typography>
+                         )}
+                       </Typography>
+                     </Box>
+                   </GridItem>
+                 )}
+               </Grid>
+             </CardContent>
+           </Card>
+         </GridItem>
+       )}
 
-        {/* Rejection Information */}
-        {report.status === 'rejected' && report.rejectionReason && (
-          <GridItem xs={12}>
-            <Card sx={{ bgcolor: 'error.light' }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom color="error">
-                  Rejection Information
-                </Typography>
-                <Divider sx={{ mb: 2 }} />
+       {/* Rejection Information */}
+       {report.status === 'rejected' && report.rejectionReason && (
+         <GridItem xs={12}>
+           <Card sx={{ bgcolor: 'error.light' }}>
+             <CardContent>
+               <Typography variant="h6" gutterBottom color="error">
+                 Rejection Information
+               </Typography>
+               <Divider sx={{ mb: 2 }} />
 
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                  <Cancel color="error" sx={{ mt: 0.5 }} />
-                  <Box>
-                    <Typography color="error">
-                      Rejected by: {report.rejectedBy?.name || 'Unknown'}
-                      {report.rejectedAt && (
-                        <Typography variant="caption" display="block" color="error.dark">
-                          on {new Date(report.rejectedAt).toLocaleString()}
-                        </Typography>
-                      )}
-                    </Typography>
-                    <Typography variant="body1" color="error.dark" sx={{ mt: 1 }}>
-                      Reason: {report.rejectionReason}
-                    </Typography>
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-        )}
-      </Grid>
-    </Box>
-  );
+               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                 <Cancel color="error" sx={{ mt: 0.5 }} />
+                 <Box>
+                   <Typography color="error">
+                     Rejected by: {report.rejectedBy?.name || 'Unknown'}
+                     {report.rejectedAt && (
+                       <Typography variant="caption" display="block" color="error.dark">
+                         on {new Date(report.rejectedAt).toLocaleString()}
+                       </Typography>
+                     )}
+                   </Typography>
+                   <Typography variant="body1" color="error.dark" sx={{ mt: 1 }}>
+                     Reason: {report.rejectionReason}
+                   </Typography>
+                 </Box>
+               </Box>
+             </CardContent>
+           </Card>
+         </GridItem>
+       )}
+     </Grid>
+   </Box>
+ );
 };
 
 export default ReportDetail;

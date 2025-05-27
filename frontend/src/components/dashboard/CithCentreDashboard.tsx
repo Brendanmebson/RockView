@@ -224,217 +224,217 @@ const CithCentreDashboard: React.FC = () => {
                 <People />
               </Avatar>
               <Box>
-                <Typography variant="body2" color="textSecondary">Total Attendance</Typography>
-                <Typography variant="h5">
-                  {reports.length > 0 ? 
-                    reports[0].data.male + reports[0].data.female + reports[0].data.children 
-                    : 0}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                <AttachMoney />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Offerings</Typography>
-                <Typography variant="h5">
-                  ${reports.length > 0 ? reports[0].data.offerings : 0}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                <TrendingUp />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">First Timers</Typography>
-                <Typography variant="h5">
-                  {reports.length > 0 ? reports[0].data.numberOfFirstTimers : 0}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                <Assignment />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Reports</Typography>
-                <Typography variant="h5">{reports.length}</Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-      </Grid>
+               <Typography variant="body2" color="textSecondary">Total Attendance</Typography>
+               <Typography variant="h5">
+                 {reports.length > 0 ? 
+                   reports[0].data.male + reports[0].data.female + reports[0].data.children 
+                   : 0}
+               </Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+       <GridItem xs={12} md={3}>
+         <Card>
+           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+             <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+               <AttachMoney />
+             </Avatar>
+             <Box>
+               <Typography variant="body2" color="textSecondary">Offerings</Typography>
+               <Typography variant="h5">
+                 ₦{reports.length > 0 ? reports[0].data.offerings.toLocaleString() : 0}
+               </Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+       <GridItem xs={12} md={3}>
+         <Card>
+           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+             <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+               <TrendingUp />
+             </Avatar>
+             <Box>
+               <Typography variant="body2" color="textSecondary">First Timers</Typography>
+               <Typography variant="h5">
+                 {reports.length > 0 ? reports[0].data.numberOfFirstTimers : 0}
+               </Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+       <GridItem xs={12} md={3}>
+         <Card>
+           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+             <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+               <Assignment />
+             </Avatar>
+             <Box>
+               <Typography variant="body2" color="textSecondary">Reports</Typography>
+               <Typography variant="h5">{reports.length}</Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+     </Grid>
 
-      {/* Charts Section */}
-      <Grid container spacing={3}>
-        {/* Attendance Trend Line Chart */}
-        <GridItem xs={12} md={8}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Attendance Trends</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={attendanceData}>
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" activeDot={{ r: 8 }} />
-                  <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" />
-                  <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" />
-                  <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </GridItem>
-        
-        {/* Demographic Pie Chart */}
-        <GridItem xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Demographics</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={demographicData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {demographicData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </GridItem>
-        
-        {/* Offerings Bar Chart */}
-        <GridItem xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Offering Trends</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={offeringData}>
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="amount" name="Offering Amount" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </GridItem>
-        
-        {/* First Timer Conversion Funnel */}
-        <GridItem xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>First Timer Conversion</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={firstTimerData}>
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#8884d8" stroke="#8884d8" />
-                  <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#82ca9d" stroke="#82ca9d" />
-                  <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#ffc658" stroke="#ffc658" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </GridItem>
-        
-        {/* Recent Reports Table */}
-        <GridItem xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Recent Reports
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Week</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Total Attendance</TableCell>
-                      <TableCell>Offerings</TableCell>
-                      <TableCell>First Timers</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {reports.map((report) => (
-                      <TableRow key={report._id}>
-                        <TableCell>
-                          {new Date(report.week).toDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={report.status.replace('_', ' ').toUpperCase()}
-                            color={getStatusColor(report.status)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {report.data.male + report.data.female + report.data.children}
-                        </TableCell>
-                        <TableCell>${report.data.offerings}</TableCell>
-                        <TableCell>{report.data.numberOfFirstTimers}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="small"
-                            onClick={() => navigate(`/reports/${report._id}`)}
-                            variant="outlined"
-                          >
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              {reports.length === 0 && !loading && (
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 3 }}>
-                  No reports found. Submit your first report to see data.
-                </Typography>
-              )}
-              {loading && (
-                <Typography variant="body2" sx={{ textAlign: 'center', py: 3 }}>
-                  Loading reports...
-                </Typography>
-              )}
-            </CardContent>
-          </Card>
-        </GridItem>
-      </Grid>
-    </Box>
-  );
+     {/* Charts Section */}
+     <Grid container spacing={3}>
+       {/* Attendance Trend Line Chart */}
+       <GridItem xs={12} md={8}>
+         <Card>
+           <CardContent>
+             <Typography variant="h6" gutterBottom>Attendance Trends</Typography>
+             <ResponsiveContainer width="100%" height={300}>
+               <LineChart data={attendanceData}>
+                 <XAxis dataKey="week" />
+                 <YAxis />
+                 <Tooltip />
+                 <Legend />
+                 <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" activeDot={{ r: 8 }} />
+                 <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" />
+                 <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" />
+                 <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={2} />
+               </LineChart>
+             </ResponsiveContainer>
+           </CardContent>
+         </Card>
+       </GridItem>
+       
+       {/* Demographic Pie Chart */}
+       <GridItem xs={12} md={4}>
+         <Card>
+           <CardContent>
+             <Typography variant="h6" gutterBottom>Demographics</Typography>
+             <ResponsiveContainer width="100%" height={300}>
+               <PieChart>
+                 <Pie
+                   data={demographicData}
+                   cx="50%"
+                   cy="50%"
+                   labelLine={false}
+                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                   outerRadius={80}
+                   fill="#8884d8"
+                   dataKey="value"
+                 >
+                   {demographicData.map((entry, index) => (
+                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                   ))}
+                 </Pie>
+                 <Tooltip />
+               </PieChart>
+             </ResponsiveContainer>
+           </CardContent>
+         </Card>
+       </GridItem>
+       
+       {/* Offerings Bar Chart */}
+       <GridItem xs={12} md={6}>
+         <Card>
+           <CardContent>
+             <Typography variant="h6" gutterBottom>Offering Trends</Typography>
+             <ResponsiveContainer width="100%" height={300}>
+               <BarChart data={offeringData}>
+                 <XAxis dataKey="week" />
+                 <YAxis />
+                 <Tooltip />
+                 <Legend />
+                 <Bar dataKey="amount" name="Offering Amount" fill="#8884d8" />
+               </BarChart>
+             </ResponsiveContainer>
+           </CardContent>
+         </Card>
+       </GridItem>
+       
+       {/* First Timer Conversion Funnel */}
+       <GridItem xs={12} md={6}>
+         <Card>
+           <CardContent>
+             <Typography variant="h6" gutterBottom>First Timer Conversion</Typography>
+             <ResponsiveContainer width="100%" height={300}>
+               <AreaChart data={firstTimerData}>
+                 <XAxis dataKey="week" />
+                 <YAxis />
+                 <Tooltip />
+                 <Legend />
+                 <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#8884d8" stroke="#8884d8" />
+                 <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#82ca9d" stroke="#82ca9d" />
+                 <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#ffc658" stroke="#ffc658" />
+               </AreaChart>
+             </ResponsiveContainer>
+           </CardContent>
+         </Card>
+       </GridItem>
+       
+       {/* Recent Reports Table */}
+       <GridItem xs={12}>
+         <Card>
+           <CardContent>
+             <Typography variant="h6" gutterBottom>
+               Recent Reports
+             </Typography>
+             <TableContainer>
+               <Table>
+                 <TableHead>
+                   <TableRow>
+                     <TableCell>Week</TableCell>
+                     <TableCell>Status</TableCell>
+                     <TableCell>Total Attendance</TableCell>
+                     <TableCell>Offerings</TableCell>
+                     <TableCell>First Timers</TableCell>
+                     <TableCell>Actions</TableCell>
+                   </TableRow>
+                 </TableHead>
+                 <TableBody>
+                   {reports.map((report) => (
+                     <TableRow key={report._id}>
+                       <TableCell>
+                         {new Date(report.week).toDateString()}
+                       </TableCell>
+                       <TableCell>
+                         <Chip
+                           label={report.status.replace('_', ' ').toUpperCase()}
+                           color={getStatusColor(report.status)}
+                           size="small"
+                         />
+                       </TableCell>
+                       <TableCell>
+                         {report.data.male + report.data.female + report.data.children}
+                       </TableCell>
+                       <TableCell>₦{report.data.offerings.toLocaleString()}</TableCell>
+                       <TableCell>{report.data.numberOfFirstTimers}</TableCell>
+                       <TableCell>
+                         <Button
+                           size="small"
+                           onClick={() => navigate(`/reports/${report._id}`)}
+                           variant="outlined"
+                         >
+                           View
+                         </Button>
+                       </TableCell>
+                     </TableRow>
+                   ))}
+                 </TableBody>
+               </Table>
+             </TableContainer>
+             {reports.length === 0 && !loading && (
+               <Typography variant="body2" sx={{ textAlign: 'center', py: 3 }}>
+                 No reports found. Submit your first report to see data.
+               </Typography>
+             )}
+             {loading && (
+               <Typography variant="body2" sx={{ textAlign: 'center', py: 3 }}>
+                 Loading reports...
+               </Typography>
+             )}
+           </CardContent>
+         </Card>
+       </GridItem>
+     </Grid>
+   </Box>
+ );
 };
 
 export default CithCentreDashboard;

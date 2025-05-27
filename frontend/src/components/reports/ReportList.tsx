@@ -406,7 +406,7 @@ const ReportList: React.FC = () => {
                           <TableCell>
                             {report.data.male + report.data.female + report.data.children}
                           </TableCell>
-                          <TableCell>${report.data.offerings}</TableCell>
+                          <TableCell>₦{report.data.offerings.toLocaleString()}</TableCell>
                           <TableCell>{report.data.numberOfFirstTimers}</TableCell>
                           <TableCell>
                             <Chip

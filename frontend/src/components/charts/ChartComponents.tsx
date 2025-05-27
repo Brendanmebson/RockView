@@ -226,7 +226,7 @@ export const CentrePerformanceScatterChart = ({ data }: { data: any[] }) => {
       <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
         <CartesianGrid />
         <XAxis type="number" dataKey="attendance" name="Attendance" unit=" people" />
-        <YAxis type="number" dataKey="offerings" name="Offerings" unit=" $" />
+        <YAxis type="number" dataKey="offerings" name="Offerings" unit=" ₦" />
         <ZAxis type="number" dataKey="firstTimers" range={[40, 160]} name="First Timers" />
         <Tooltip cursor={{ strokeDasharray: '3 3' }} />
         <Legend />

@@ -60,6 +60,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     setAnchorEl(null);
   };
 
+  const handleMenuItemClick = (path: string) => {
+    handleClose();
+    navigate(path);
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -342,7 +347,7 @@ const menuItems = React.useMemo(() => {
                 },
               }}
             >
-              <MenuItem onClick={handleClose} sx={{ py: 1.5, px: 2 }}>
+              <MenuItem onClick={() => handleMenuItemClick('/settings')} sx={{ py: 1.5, px: 2 }}>
                 <ListItemIcon>
                   <Settings fontSize="small" />
                 </ListItemIcon>
