@@ -157,11 +157,45 @@ const UserManagement: React.FC = () => {
 
   const openEditDialog = (user: UserWithDetails) => {
     setSelectedUser(user);
+    
+    let targetId = '';
+    let districtId = '';
+    let areaId = '';
+    
+    // Handle both string and object references
+    if (user.cithCentreId) {
+      if (typeof user.cithCentreId === 'object') {
+        targetId = user.cithCentreId._id;
+      } else {
+        targetId = user.cithCentreId;
+      }
+    }
+    
+    if (user.areaSupervisorId) {
+      if (typeof user.areaSupervisorId === 'object') {
+        targetId = user.areaSupervisorId._id;
+        areaId = user.areaSupervisorId._id;
+      } else {
+        targetId = user.areaSupervisorId;
+        areaId = user.areaSupervisorId;
+      }
+    }
+    
+    if (user.districtId) {
+      if (typeof user.districtId === 'object') {
+        targetId = user.districtId._id;
+        districtId = user.districtId._id;
+      } else {
+        targetId = user.districtId;
+        districtId = user.districtId;
+      }
+    }
+    
     setEditForm({
       role: user.role,
-      targetId: user.cithCentreId?._id || user.areaSupervisorId?._id || user.districtId?._id || '',
-      districtId: user.districtId?._id || '',
-      areaId: user.areaSupervisorId?._id || '',
+      targetId,
+      districtId,
+      areaId,
     });
     setEditDialogOpen(true);
   };
@@ -217,14 +251,29 @@ const UserManagement: React.FC = () => {
 
   const getAssignmentText = (user: UserWithDetails) => {
     if (user.districtId) {
-      return `${user.districtId.name} (District ${user.districtId.districtNumber})`;
+      if (typeof user.districtId === 'object') {
+        return `${user.districtId.name} (District ${user.districtId.districtNumber})`;
+      } else {
+        return 'District Assignment';
+      }
     }
+    
     if (user.areaSupervisorId) {
-      return user.areaSupervisorId.name;
+      if (typeof user.areaSupervisorId === 'object') {
+        return user.areaSupervisorId.name;
+      } else {
+        return 'Area Assignment';
+      }
     }
+    
     if (user.cithCentreId) {
-      return `${user.cithCentreId.name} - ${user.cithCentreId.location}`;
+      if (typeof user.cithCentreId === 'object') {
+        return `${user.cithCentreId.name} - ${user.cithCentreId.location}`;
+      } else {
+        return 'Centre Assignment';
+      }
     }
+    
     return 'No assignment';
   };
 

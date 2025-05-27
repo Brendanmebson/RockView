@@ -20,7 +20,6 @@ export interface District {
   description?: string;
   createdAt: string;
   updatedAt: string;
-  // Add optional fields for assignment status
   isAssigned?: boolean;
   assignedPastor?: {
     name: string;
@@ -38,7 +37,6 @@ export interface AreaSupervisor {
   contactPhone?: string;
   createdAt: string;
   updatedAt: string;
-  // Add optional fields for assignment status
   isAssigned?: boolean;
   assignedSupervisor?: {
     name: string;
@@ -57,7 +55,6 @@ export interface CithCentre {
   contactPhone?: string;
   createdAt: string;
   updatedAt: string;
-  // Add optional fields for assignment status
   isAssigned?: boolean;
   assignedLeaders?: {
     name: string;
@@ -66,18 +63,39 @@ export interface CithCentre {
   displayText?: string;
 }
 
-// Add detailed user interface for admin management
-export interface UserWithDetails extends User {
-  cithCentreDetails?: {
+// Separate interface for populated user data - does NOT extend User
+export interface PopulatedUser {
+  _id: string;
+  email: string;
+  name: string;
+  role: 'cith_centre' | 'area_supervisor' | 'district_pastor' | 'admin';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  cithCentreId?: CithCentre;
+  areaSupervisorId?: AreaSupervisor;
+  districtId?: District;
+}
+
+// Interface for user data that might be partially populated - does NOT extend User
+export interface UserWithDetails {
+  _id: string;
+  email: string;
+  name: string;
+  role: 'cith_centre' | 'area_supervisor' | 'district_pastor' | 'admin';
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  cithCentreId?: string | {
     _id: string;
     name: string;
     location: string;
   };
-  areaSupervisorDetails?: {
+  areaSupervisorId?: string | {
     _id: string;
     name: string;
   };
-  districtDetails?: {
+  districtId?: string | {
     _id: string;
     name: string;
     districtNumber: number;
@@ -99,18 +117,48 @@ export interface WeeklyReportData {
 
 export interface WeeklyReport {
   _id: string;
-  cithCentreId: CithCentre;
+  cithCentreId: {
+    _id: string;
+    name: string;
+    location: string;
+    leaderName: string;
+    areaSupervisorId?: {
+      _id: string;
+      name: string;
+      districtId?: {
+        _id: string;
+        name: string;
+        districtNumber: number;
+      };
+    };
+  };
   week: string;
   data: WeeklyReportData;
   status: 'pending' | 'area_approved' | 'district_approved' | 'rejected';
-  submittedBy: User;
+  submittedBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   submittedAt: string;
-  areaApprovedBy?: User;
+  areaApprovedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   areaApprovedAt?: string;
-  districtApprovedBy?: User;
+  districtApprovedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   districtApprovedAt?: string;
   rejectionReason?: string;
-  rejectedBy?: User;
+  rejectedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   rejectedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -167,4 +215,174 @@ export interface Message {
       name: string;
     };
   };
+}
+
+// Dashboard data interfaces
+export interface DashboardStats {
+  totalUsers: number;
+  totalDistricts: number;
+  totalAreaSupervisors: number;
+  totalCithCentres: number;
+  totalReports: number;
+  totalAttendance: number;
+  totalOfferings: number;
+  totalFirstTimers: number;
+}
+
+export interface ChartDataPoint {
+  name: string;
+  value: number;
+}
+
+export interface AttendanceData {
+  week: string;
+  male: number;
+  female: number;
+  children: number;
+  total: number;
+}
+
+export interface OfferingData {
+  week: string;
+  amount: number;
+}
+
+export interface PerformanceData {
+  name: string;
+  attendance: number;
+  offerings: number;
+  firstTimers: number;
+  district?: string;
+}
+
+// Form interfaces
+export interface ReportFormData extends WeeklyReportData {
+  week: Date | null;
+}
+
+export interface UserFormData {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  cithCentreId?: string;
+  areaSupervisorId?: string;
+  districtId?: string;
+}
+
+export interface DistrictFormData {
+  name: string;
+  districtNumber: number;
+  pastorName: string;
+  description?: string;
+}
+
+export interface AreaSupervisorFormData {
+  name: string;
+  districtId: string;
+  supervisorName: string;
+  contactEmail?: string;
+  contactPhone?: string;
+}
+
+export interface CithCentreFormData {
+  name: string;
+  areaSupervisorId: string;
+  location: string;
+  leaderName: string;
+  contactEmail?: string;
+  contactPhone?: string;
+}
+
+// Filter interfaces
+export interface ReportFilters {
+  status: string;
+  page: number;
+  startDate: string | null;
+  endDate: string | null;
+  cithCentreId: string;
+  areaSupervisorId: string;
+}
+
+export interface UserFilters {
+  role: string;
+  isActive: boolean | null;
+  search: string;
+}
+
+// API response interfaces
+export interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  totalPages: number;
+  currentPage: number;
+  total: number;
+}
+
+export interface ReportsResponse {
+  reports: WeeklyReport[];
+  totalPages: number;
+  currentPage: number;
+  total: number;
+}
+
+// Error handling interfaces
+export interface ApiError {
+  message: string;
+  status?: number;
+  code?: string;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
+// Utility type for safe property access
+export type SafeString = string | null | undefined;
+export type SafeNumber = number | null | undefined;
+
+// Helper interfaces for type guards
+export interface HasId {
+  _id: string;
+}
+
+export interface HasName {
+  name: string;
+}
+
+export interface HasEmail {
+  email: string;
+}
+
+// Type guards and utility types
+export type StringOrObject<T> = string | T;
+
+export interface IdNamePair {
+  _id: string;
+  name: string;
+}
+
+export interface BasicUser extends IdNamePair {
+  email: string;
+  role: string;
+}
+
+export interface BasicCentre extends IdNamePair {
+  location: string;
+}
+
+export interface BasicArea extends IdNamePair {
+  supervisorName: string;
+}
+
+export interface BasicDistrict extends IdNamePair {
+  districtNumber: number;
+  pastorName: string;
 }

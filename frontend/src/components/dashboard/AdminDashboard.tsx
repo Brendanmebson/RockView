@@ -1,3 +1,4 @@
+// frontend/src/components/dashboard/AdminDashboard.tsx
 import React, { useEffect, useState } from 'react';
 import GridItem from '../common/GridItem';
 import {
@@ -17,6 +18,8 @@ import {
   Chip,
   Divider,
   Paper,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { 
   People, 
@@ -44,7 +47,6 @@ import {
   Pie, 
   Cell, 
   Treemap, 
-  Sankey,
   Scatter,
   ScatterChart,
   CartesianGrid,
@@ -74,35 +76,74 @@ const AdminDashboard: React.FC = () => {
   const [offeringData, setOfferingData] = useState<any[]>([]);
   const [centrePerformanceData, setCentrePerformanceData] = useState<any[]>([]);
   const [recentReports, setRecentReports] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchStats();
-    fetchChartData();
-    fetchOrganizationData();
+    fetchDashboardData();
   }, []);
 
-  const fetchOrganizationData = async () => {
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError('');
     try {
-      const [districtsRes, areasRes, centresRes] = await Promise.all([
+      // Fetch all data concurrently with error handling for each
+      const [
+        statsResult,
+        districtsResult,
+        areasResult,
+        centresResult,
+        reportsResult
+      ] = await Promise.allSettled([
+        fetchStats(),
         api.get('/districts'),
         api.get('/area-supervisors'),
-        api.get('/cith-centres')
+        api.get('/cith-centres'),
+        api.get('/reports?limit=10')
       ]);
-      
-      setDistricts(districtsRes.data);
-      setAreaSupervisors(areasRes.data);
-      setCentres(centresRes.data);
-    } catch (error) {
-      console.error("Error fetching organization data:", error);
+
+      // Handle districts
+      if (districtsResult.status === 'fulfilled') {
+        setDistricts(districtsResult.value.data || []);
+      }
+
+      // Handle area supervisors
+      if (areasResult.status === 'fulfilled') {
+        setAreaSupervisors(areasResult.value.data || []);
+      }
+
+      // Handle centres
+      if (centresResult.status === 'fulfilled') {
+        setCentres(centresResult.value.data || []);
+      }
+
+      // Handle reports
+      if (reportsResult.status === 'fulfilled') {
+        const reports = reportsResult.value.data?.reports || [];
+        setRecentReports(reports);
+        processChartData(reports);
+      }
+
+      // Process chart data with the fetched data
+      processDistrictData(
+        districtsResult.status === 'fulfilled' ? districtsResult.value.data || [] : [],
+        areasResult.status === 'fulfilled' ? areasResult.value.data || [] : [],
+        centresResult.status === 'fulfilled' ? centresResult.value.data || [] : []
+      );
+
+    } catch (error: any) {
+      console.error('Error fetching dashboard data:', error);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchStats = async () => {
     try {
-      // This would need to be implemented in the backend
-      // For demo purposes, using simulated data
+      // In a real implementation, you'd have endpoints for these stats
+      // For now, using mock data
       setStats({
         totalUsers: 50,
         totalDistricts: 6,
@@ -118,39 +159,64 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchChartData = async () => {
-    setLoading(true);
+  const processDistrictData = (districts: any[], areas: any[], centres: any[]) => {
     try {
-      // Fetch data for charts
-      const [districtsResponse, reportsResponse, usersResponse] = await Promise.all([
-        api.get('/districts'),
-        api.get('/reports?limit=10'),
-        api.get('/users') // This endpoint would need to be implemented
-      ]);
-      
-      const districts = districtsResponse.data;
-      const reports = reportsResponse.data.reports;
-      
-      // Simulate user data by role if the endpoint doesn't exist
-      const mockUsersByRole = [
+      // Safely process district data
+      const mockDistrictData = districts.map(district => {
+        if (!district || !district.name) return null;
+        
+        // Count areas in this district
+        const areasInDistrict = areas.filter(area => 
+          area && area.districtId && 
+          (typeof area.districtId === 'string' ? 
+            area.districtId === district._id : 
+            area.districtId._id === district._id)
+        );
+
+        // Count centres in this district
+        const centresInDistrict = centres.filter(centre => {
+          if (!centre || !centre.areaSupervisorId) return false;
+          
+          const areaSupervisorId = typeof centre.areaSupervisorId === 'string' ? 
+            centre.areaSupervisorId : 
+            centre.areaSupervisorId._id;
+            
+          return areasInDistrict.some(area => area && area._id === areaSupervisorId);
+        });
+
+        return {
+          name: district.name,
+          centres: centresInDistrict.length,
+          supervisors: areasInDistrict.length,
+          attendance: Math.floor(Math.random() * 1000) + 2000, // Mock data
+          offerings: Math.floor(Math.random() * 2000) + 4000 // Mock data
+        };
+      }).filter(Boolean); // Remove null entries
+
+      setDistrictData(mockDistrictData);
+    } catch (error) {
+      console.error('Error processing district data:', error);
+      setDistrictData([]);
+    }
+  };
+
+  const processChartData = (reports: any[]) => {
+    try {
+      // Safely process reports data
+      const validReports = reports.filter(report => 
+        report && 
+        report.data && 
+        typeof report.data === 'object'
+      );
+
+      // Set user role distribution
+      setUsersByRole([
         { name: 'CITH Centre Leaders', value: 96 },
         { name: 'Area Supervisors', value: 24 },
         { name: 'District Pastors', value: 6 },
         { name: 'Administrators', value: 4 }
-      ];
-      setUsersByRole(mockUsersByRole);
-      
-      // Process district data (would be fetched in real implementation)
-      const mockDistrictData = [
-        { name: 'Festac', centres: 17, supervisors: 4, attendance: 3500, offerings: 7000 },
-        { name: 'Ikeja', centres: 15, supervisors: 4, attendance: 2800, offerings: 5600 },
-        { name: 'Lekki', centres: 20, supervisors: 5, attendance: 4200, offerings: 8400 },
-        { name: 'Surulere', centres: 14, supervisors: 3, attendance: 2100, offerings: 4200 },
-        { name: 'Victoria Island', centres: 18, supervisors: 5, attendance: 3800, offerings: 7600 },
-        { name: 'Yaba', centres: 12, supervisors: 3, attendance: 1800, offerings: 3600 }
-      ];
-      setDistrictData(mockDistrictData);
-      
+      ]);
+
       // Process attendance data
       const mockAttendanceData = [
         { month: 'Jan', attendance: 8500 },
@@ -165,7 +231,7 @@ const AdminDashboard: React.FC = () => {
         { month: 'Oct', attendance: 12500 }
       ];
       setAttendanceData(mockAttendanceData);
-      
+
       // Process offering data
       const mockOfferingData = [
         { month: 'Jan', offerings: 17000 },
@@ -180,8 +246,8 @@ const AdminDashboard: React.FC = () => {
         { month: 'Oct', offerings: 25000 }
       ];
       setOfferingData(mockOfferingData);
-      
-      // Process centre performance data (attendance vs offerings)
+
+      // Process centre performance data
       const mockCentrePerformance = [
         { name: 'Agric Ojo', attendance: 120, offerings: 240, firstTimers: 5, district: 'Festac' },
         { name: 'FHA Satellite', attendance: 150, offerings: 300, firstTimers: 7, district: 'Festac' },
@@ -195,17 +261,32 @@ const AdminDashboard: React.FC = () => {
         { name: 'Adelabu', attendance: 110, offerings: 220, firstTimers: 4, district: 'Surulere' }
       ];
       setCentrePerformanceData(mockCentrePerformance);
-      
-      // Set recent reports
-      setRecentReports(reports);
+
     } catch (error) {
-      console.error('Error fetching chart data:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error processing chart data:', error);
     }
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box>
+        <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
+        <Button onClick={fetchDashboardData} variant="contained">
+          Retry
+        </Button>
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -271,7 +352,7 @@ const AdminDashboard: React.FC = () => {
       {/* Summary stats cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <GridItem xs={12} md={3}>
-          <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/users')}>
+          <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/users')}>
             <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
               <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
                 <PeopleAlt />
@@ -330,18 +411,26 @@ const AdminDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>District Performance</Typography>
-              <ResponsiveContainer width="100%" height={350}>
-                <ReBarChart data={districtData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="attendance" fill="#8884d8" name="Attendance" />
-                  <Bar dataKey="offerings" fill="#82ca9d" name="Offerings" />
-                  <Bar dataKey="centres" fill="#ffc658" name="Centres" />
-                </ReBarChart>
-              </ResponsiveContainer>
+              {districtData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                  <ReBarChart data={districtData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="attendance" fill="#8884d8" name="Attendance" />
+                    <Bar dataKey="offerings" fill="#82ca9d" name="Offerings" />
+                    <Bar dataKey="centres" fill="#ffc658" name="Centres" />
+                  </ReBarChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No district data available
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </GridItem>
@@ -351,25 +440,33 @@ const AdminDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>User Distribution</Typography>
-              <ResponsiveContainer width="100%" height={350}>
-                <PieChart>
-                  <Pie
-                    data={usersByRole}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {usersByRole.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              {usersByRole.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                  <PieChart>
+                    <Pie
+                      data={usersByRole}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {usersByRole.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No user data available
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </GridItem>
@@ -379,16 +476,24 @@ const AdminDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Attendance Growth Trend</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={attendanceData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="attendance" stroke="#8884d8" activeDot={{ r: 8 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              {attendanceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={attendanceData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="attendance" stroke="#8884d8" activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No attendance data available
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </GridItem>
@@ -398,16 +503,24 @@ const AdminDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Offering Growth Trend</Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={offeringData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="offerings" stroke="#82ca9d" activeDot={{ r: 8 }} />
-                </LineChart>
-              </ResponsiveContainer>
+              {offeringData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={offeringData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="offerings" stroke="#82ca9d" activeDot={{ r: 8 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No offering data available
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </GridItem>
@@ -420,36 +533,44 @@ const AdminDashboard: React.FC = () => {
               <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
                 Bubble size represents number of first timers
               </Typography>
-              <ResponsiveContainer width="100%" height={400}>
-                <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                  <CartesianGrid />
-                  <XAxis type="number" dataKey="attendance" name="Attendance" unit=" people" />
-                  <YAxis type="number" dataKey="offerings" name="Offerings" unit=" $" />
-                  <ZAxis type="number" dataKey="firstTimers" range={[40, 160]} name="First Timers" />
-                  <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                  <Legend />
-                  <Scatter 
-                    name="Festac District" 
-                    data={centrePerformanceData.filter(d => d.district === 'Festac')} 
-                    fill="#8884d8" 
-                  />
-                  <Scatter 
-                    name="Ikeja District" 
-                    data={centrePerformanceData.filter(d => d.district === 'Ikeja')} 
-                    fill="#82ca9d" 
-                  />
-                  <Scatter 
-                    name="Lekki District" 
-                    data={centrePerformanceData.filter(d => d.district === 'Lekki')} 
-                    fill="#ffc658" 
-                  />
-                  <Scatter 
-                    name="Surulere District" 
-                    data={centrePerformanceData.filter(d => d.district === 'Surulere')} 
-                    fill="#ff7300" 
-                  />
-                </ScatterChart>
-              </ResponsiveContainer>
+              {centrePerformanceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={400}>
+                  <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                    <CartesianGrid />
+                    <XAxis type="number" dataKey="attendance" name="Attendance" unit=" people" />
+                    <YAxis type="number" dataKey="offerings" name="Offerings" unit=" $" />
+                    <ZAxis type="number" dataKey="firstTimers" range={[40, 160]} name="First Timers" />
+                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                    <Legend />
+                    <Scatter 
+                      name="Festac District" 
+                      data={centrePerformanceData.filter(d => d.district === 'Festac')} 
+                      fill="#8884d8" 
+                    />
+                    <Scatter 
+                      name="Ikeja District" 
+                      data={centrePerformanceData.filter(d => d.district === 'Ikeja')} 
+                      fill="#82ca9d" 
+                    />
+                    <Scatter 
+                      name="Lekki District" 
+                      data={centrePerformanceData.filter(d => d.district === 'Lekki')} 
+                      fill="#ffc658" 
+                    />
+                    <Scatter 
+                      name="Surulere District" 
+                      data={centrePerformanceData.filter(d => d.district === 'Surulere')} 
+                      fill="#ff7300" 
+                    />
+                  </ScatterChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No performance data available
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </GridItem>
@@ -488,7 +609,7 @@ const AdminDashboard: React.FC = () => {
                 </Button>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate('/users')}
+                  onClick={() => navigate('/admin/users')}
                   fullWidth
                   startIcon={<People />}
                 >
@@ -512,45 +633,50 @@ const AdminDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Recent Reports</Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Centre</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Attendance</TableCell>
-                      <TableCell>Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {recentReports.slice(0, 5).map((report) => (
-                      <TableRow key={report._id}>
-                        <TableCell>{report.cithCentreId.name}</TableCell>
-                        <TableCell>{new Date(report.week).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          {report.data.male + report.data.female + report.data.children}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={report.status.replace('_', ' ').toUpperCase()}
-                            color={
-                              report.status === 'district_approved' 
-                                ? 'success' 
-                                : report.status === 'area_approved' 
-                                ? 'info' 
-                                : report.status === 'pending' 
-                                ? 'warning' 
-                                : 'error'
-                            }
-                            size="small"
-                          />
-                        </TableCell>
+              {recentReports.length > 0 ? (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Centre</TableCell>
+                        <TableCell>Date</TableCell>
+                        <TableCell>Attendance</TableCell>
+                        <TableCell>Status</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              {recentReports.length === 0 && (
+                    </TableHead>
+                    <TableBody>
+                      {recentReports.slice(0, 5).map((report) => (
+                        <TableRow key={report._id}>
+                          <TableCell>
+                            {report.cithCentreId?.name || 'Unknown Centre'}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(report.week).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={report.status.replace('_', ' ').toUpperCase()}
+                              color={
+                                report.status === 'district_approved' 
+                                  ? 'success' 
+                                  : report.status === 'area_approved' 
+                                  ? 'info' 
+                                  : report.status === 'pending' 
+                                  ? 'warning' 
+                                  : 'error'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
                 <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ py: 2 }}>
                   No recent reports available
                 </Typography>

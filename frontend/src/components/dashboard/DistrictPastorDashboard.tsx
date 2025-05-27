@@ -550,8 +550,12 @@ const DistrictPastorDashboard: React.FC = () => {
                    {pendingReports.map((report) => (
                      <TableRow key={report._id}>
                        <TableCell>{report.cithCentreId.name}</TableCell>
-                       <TableCell>{report.cithCentreId.areaSupervisorId?.name || 'Unknown'}</TableCell>
-                       <TableCell>{new Date(report.week).toDateString()}</TableCell>
+                      <TableCell>
+                        {typeof report.cithCentreId.areaSupervisorId === 'object' && report.cithCentreId.areaSupervisorId?.name 
+                          ? report.cithCentreId.areaSupervisorId.name 
+                          : 'Unknown'}
+                      </TableCell> 
+                      <TableCell>{new Date(report.week).toDateString()}</TableCell>
                        <TableCell>
                          {report.data.male + report.data.female + report.data.children}
                        </TableCell>

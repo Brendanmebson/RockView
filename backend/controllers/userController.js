@@ -167,27 +167,27 @@ const updateUserRole = async (req, res) => {
       user.districtId = targetId;
     } else if (role === 'area_supervisor') {
       user.areaSupervisorId = targetId;
-    } else if (role === 'cith_centre') {
-      user.cithCentreId = targetId;
-    }
-    
-    await user.save();
-    
-    const updatedUser = await User.findById(user._id)
-      .select('-password')
-      .populate('cithCentreId', 'name location')
-      .populate('areaSupervisorId', 'name')
-      .populate('districtId', 'name districtNumber');
-    
-    res.json(updatedUser);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
+} else if (role === 'cith_centre') {
+     user.cithCentreId = targetId;
+   }
+   
+   await user.save();
+   
+   const updatedUser = await User.findById(user._id)
+     .select('-password')
+     .populate('cithCentreId', 'name location')
+     .populate('areaSupervisorId', 'name')
+     .populate('districtId', 'name districtNumber');
+   
+   res.json(updatedUser);
+ } catch (error) {
+   res.status(400).json({ message: error.message });
+ }
 };
 
 module.exports = {
-  getAllUsers,
-  getUsersByHierarchy,
-  deleteUser,
-  updateUserRole,
+ getAllUsers,
+ getUsersByHierarchy,
+ deleteUser,
+ updateUserRole,
 };

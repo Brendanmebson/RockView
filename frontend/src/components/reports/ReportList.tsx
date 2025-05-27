@@ -1,3 +1,4 @@
+// frontend/src/components/reports/ReportList.tsx
 import React, { useEffect, useState } from 'react';
 import GridItem from '../common/GridItem';
 import {
@@ -88,12 +89,18 @@ const ReportList: React.FC = () => {
 
   const fetchCentresAndSupervisors = async () => {
     try {
-      const [centresResponse, supervisorsResponse] = await Promise.all([
+      const [centresResponse, supervisorsResponse] = await Promise.allSettled([
         api.get('/cith-centres'),
         api.get('/area-supervisors')
       ]);
-      setCentres(centresResponse.data);
-      setAreaSupervisors(supervisorsResponse.data);
+      
+      if (centresResponse.status === 'fulfilled') {
+        setCentres(centresResponse.value.data || []);
+      }
+      
+      if (supervisorsResponse.status === 'fulfilled') {
+        setAreaSupervisors(supervisorsResponse.value.data || []);
+      }
     } catch (error) {
       console.error('Error fetching filters data:', error);
     }
@@ -124,11 +131,33 @@ const ReportList: React.FC = () => {
       }
       
       const response = await api.get(`/reports?${params}`);
-      setReports(response.data.reports);
-      setTotalPages(response.data.totalPages);
+      const reportsData = response.data?.reports || [];
+      
+      // Ensure all reports have valid structure
+      const validatedReports = reportsData.map((report: any) => ({
+        ...report,
+        cithCentreId: report.cithCentreId || { name: 'Unknown Centre', _id: '', location: '' },
+        data: report.data || {
+          male: 0,
+          female: 0,
+          children: 0,
+          offerings: 0,
+          numberOfFirstTimers: 0,
+          numberOfTestimonies: 0,
+          firstTimersFollowedUp: 0,
+          firstTimersConvertedToCITH: 0,
+          modeOfMeeting: 'physical',
+          remarks: ''
+        },
+        submittedBy: report.submittedBy || { name: 'Unknown User', _id: '', email: '' }
+      }));
+      
+      setReports(validatedReports);
+      setTotalPages(response.data?.totalPages || 1);
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to fetch reports');
       console.error('Error fetching reports:', error);
+      setReports([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -216,6 +245,25 @@ const ReportList: React.FC = () => {
     return user?.role === 'area_supervisor' || user?.role === 'district_pastor';
   };
 
+  const getSafeCentreName = (report: WeeklyReport) => {
+    if (!report || !report.cithCentreId) return 'Unknown Centre';
+    if (typeof report.cithCentreId === 'string') return 'Centre ID: ' + report.cithCentreId;
+    return report.cithCentreId.name || 'Unknown Centre';
+  };
+
+  const getSafeReportData = (report: WeeklyReport) => {
+    if (!report || !report.data) {
+      return { male: 0, female: 0, children: 0, offerings: 0, numberOfFirstTimers: 0 };
+    }
+    return {
+      male: report.data.male || 0,
+      female: report.data.female || 0,
+      children: report.data.children || 0,
+      offerings: report.data.offerings || 0,
+      numberOfFirstTimers: report.data.numberOfFirstTimers || 0
+    };
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box>
@@ -244,7 +292,7 @@ const ReportList: React.FC = () => {
         </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
             {error}
           </Alert>
         )}
@@ -326,7 +374,7 @@ const ReportList: React.FC = () => {
                             <MenuItem value="">All Areas</MenuItem>
                             {areaSupervisors.map(area => (
                               <MenuItem key={area._id} value={area._id}>
-                                {area.name}
+                                {area.name || 'Unknown Area'}
                               </MenuItem>
                             ))}
                           </Select>
@@ -344,13 +392,17 @@ const ReportList: React.FC = () => {
                           >
                             <MenuItem value="">All Centres</MenuItem>
                             {centres
-                              .filter(centre => 
-                                !filters.areaSupervisorId || 
-                                centre.areaSupervisorId._id === filters.areaSupervisorId
-                              )
+                              .filter(centre => {
+                                if (!filters.areaSupervisorId) return true;
+                                if (!centre.areaSupervisorId) return false;
+                                const areaSupervisorId = typeof centre.areaSupervisorId === 'string' ? 
+                                  centre.areaSupervisorId : 
+                                  centre.areaSupervisorId._id;
+                                return areaSupervisorId === filters.areaSupervisorId;
+                              })
                               .map(centre => (
                                 <MenuItem key={centre._id} value={centre._id}>
-                                  {centre.name}
+                                  {centre.name || 'Unknown Centre'}
                                 </MenuItem>
                               ))
                             }
@@ -366,6 +418,7 @@ const ReportList: React.FC = () => {
                         variant="contained" 
                         onClick={fetchReports}
                         startIcon={<Search />}
+                        disabled={loading}
                       >
                         Apply Filters
                       </Button>
@@ -399,66 +452,71 @@ const ReportList: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {reports.map((report) => (
-                        <TableRow key={report._id}>
-                          <TableCell>{report.cithCentreId.name}</TableCell>
-                          <TableCell>{new Date(report.week).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            {report.data.male + report.data.female + report.data.children}
-                          </TableCell>
-                          <TableCell>₦{report.data.offerings.toLocaleString()}</TableCell>
-                          <TableCell>{report.data.numberOfFirstTimers}</TableCell>
-                          <TableCell>
-                            <Chip
-                              label={report.status.replace('_', ' ').toUpperCase()}
-                              color={getStatusColor(report.status)}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                              <Button
+                      {reports.map((report) => {
+                        const safeData = getSafeReportData(report);
+                        return (
+                          <TableRow key={report._id}>
+                            <TableCell>{getSafeCentreName(report)}</TableCell>
+                            <TableCell>
+                              {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
+                            </TableCell>
+                            <TableCell>
+                              {safeData.male + safeData.female + safeData.children}
+                            </TableCell>
+                            <TableCell>₦{safeData.offerings.toLocaleString()}</TableCell>
+                            <TableCell>{safeData.numberOfFirstTimers}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={(report.status || 'unknown').replace('_', ' ').toUpperCase()}
+                                color={getStatusColor(report.status)}
                                 size="small"
-                                variant="outlined"
-                                startIcon={<Visibility />}
-                                onClick={() => navigate(`/reports/${report._id}`)}
-                              >
-                                View
-                              </Button>
-                              
-                              {/* Approval buttons for area supervisors and district pastors */}
-                              {canApproveReports() && report.status === 
-                                (user?.role === 'area_supervisor' ? 'pending' : 'area_approved') && (
-                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                  <Button
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                    startIcon={<CheckCircle />}
-                                    onClick={() => handleApprove(report._id)}
-                                  >
-                                    Approve
-                                  </Button>
-                                  <Button
-                                    size="small"
-                                    color="error"
-                                    variant="outlined"
-                                    startIcon={<Cancel />}
-                                    onClick={() => handleReject(report._id)}
-                                  >
-                                    Reject
-                                  </Button>
-                                </Box>
-                              )}
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  startIcon={<Visibility />}
+                                  onClick={() => navigate(`/reports/${report._id}`)}
+                                >
+                                  View
+                                </Button>
+                                
+                                {/* Approval buttons for area supervisors and district pastors */}
+                                {canApproveReports() && report.status === 
+                                  (user?.role === 'area_supervisor' ? 'pending' : 'area_approved') && (
+                                  <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Button
+                                      size="small"
+                                      color="success"
+                                      variant="outlined"
+                                      startIcon={<CheckCircle />}
+                                      onClick={() => handleApprove(report._id)}
+                                    >
+                                      Approve
+                                    </Button>
+                                    <Button
+                                      size="small"
+                                      color="error"
+                                      variant="outlined"
+                                      startIcon={<Cancel />}
+                                      onClick={() => handleReject(report._id)}
+                                    >
+                                      Reject
+                                    </Button>
+                                  </Box>
+                                )}
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </TableContainer>
                 
-                {reports.length === 0 && (
+                {reports.length === 0 && !loading && (
                   <Box sx={{ py: 4, textAlign: 'center' }}>
                     <Typography variant="body1" color="textSecondary">
                       No reports found

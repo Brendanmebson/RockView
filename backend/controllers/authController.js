@@ -403,9 +403,10 @@ const getUsers = async (req, res) => {
   try {
     const users = await User.find({})
       .select('-password')
-      .populate('cithCentreId', 'name')
+      .populate('cithCentreId', 'name location')
       .populate('areaSupervisorId', 'name')
-      .populate('districtId', 'name');
+      .populate('districtId', 'name districtNumber')
+      .sort({ createdAt: -1 });
     
     res.json(users);
   } catch (error) {
