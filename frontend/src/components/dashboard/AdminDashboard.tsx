@@ -45,12 +45,7 @@ import {
   Line, 
   PieChart, 
   Pie, 
-  Cell, 
-  Treemap, 
-  Scatter,
-  ScatterChart,
-  CartesianGrid,
-  ZAxis
+  Cell
 } from 'recharts';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -74,8 +69,11 @@ const AdminDashboard: React.FC = () => {
   const [usersByRole, setUsersByRole] = useState<any[]>([]);
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [offeringData, setOfferingData] = useState<any[]>([]);
-  const [centrePerformanceData, setCentrePerformanceData] = useState<any[]>([]);
   const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [thisMonthStats, setThisMonthStats] = useState({
+    reports: 0,
+    members: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -88,41 +86,103 @@ const AdminDashboard: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      // Fetch all data concurrently with error handling for each
       const [
-        statsResult,
+        usersResult,
         districtsResult,
         areasResult,
         centresResult,
-        reportsResult
+        reportsResult,
+        summaryResult
       ] = await Promise.allSettled([
-        fetchStats(),
+        api.get('/auth/users'),
         api.get('/districts'),
         api.get('/area-supervisors'),
         api.get('/cith-centres'),
-        api.get('/reports?limit=10')
+        api.get('/reports?limit=10'),
+        api.get('/reports/summary')
       ]);
+
+      // Handle users - exclude admins from count
+      if (usersResult.status === 'fulfilled') {
+        const allUsers = usersResult.value.data || [];
+        const nonAdminUsers = allUsers.filter((user: any) => user.role !== 'admin');
+        setStats(prev => ({ ...prev, totalUsers: nonAdminUsers.length }));
+        
+        // Set user role distribution (excluding admins)
+        type UserRole = 'cith_centre' | 'area_supervisor' | 'district_pastor';
+        const roleCount = {
+          cith_centre: 0,
+          area_supervisor: 0,
+          district_pastor: 0
+        };
+        
+        nonAdminUsers.forEach((user: { role: UserRole }) => {
+          if (roleCount.hasOwnProperty(user.role)) {
+            roleCount[user.role]++;
+          }
+        });
+        
+        setUsersByRole([
+          { name: 'CITH Centre Leaders', value: roleCount.cith_centre },
+          { name: 'Area Supervisors', value: roleCount.area_supervisor },
+          { name: 'District Pastors', value: roleCount.district_pastor }
+        ]);
+      }
 
       // Handle districts
       if (districtsResult.status === 'fulfilled') {
-        setDistricts(districtsResult.value.data || []);
+        const districtsData = districtsResult.value.data || [];
+        setDistricts(districtsData);
+        setStats(prev => ({ ...prev, totalDistricts: districtsData.length }));
       }
 
       // Handle area supervisors
       if (areasResult.status === 'fulfilled') {
-        setAreaSupervisors(areasResult.value.data || []);
+        const areasData = areasResult.value.data || [];
+        setAreaSupervisors(areasData);
+        setStats(prev => ({ ...prev, totalAreaSupervisors: areasData.length }));
       }
 
       // Handle centres
       if (centresResult.status === 'fulfilled') {
-        setCentres(centresResult.value.data || []);
+        const centresData = centresResult.value.data || [];
+        setCentres(centresData);
+        setStats(prev => ({ ...prev, totalCithCentres: centresData.length }));
       }
 
       // Handle reports
       if (reportsResult.status === 'fulfilled') {
         const reports = reportsResult.value.data?.reports || [];
         setRecentReports(reports);
-        processChartData(reports);
+        setStats(prev => ({ ...prev, totalReports: reports.length }));
+        
+        // Calculate this month's stats from actual reports
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const thisMonthReports = reports.filter((report: any) => {
+          const reportDate = new Date(report.week || report.createdAt);
+          return reportDate.getMonth() === currentMonth && reportDate.getFullYear() === currentYear;
+        });
+        
+        const thisMonthAttendance = thisMonthReports.reduce((total: number, report: any) => {
+          return total + (report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0);
+        }, 0);
+        
+        setThisMonthStats({
+          reports: thisMonthReports.length,
+          members: thisMonthAttendance
+        });
+      }
+
+      // Handle summary for totals
+      if (summaryResult.status === 'fulfilled') {
+        const summary = summaryResult.value.data || {};
+        setStats(prev => ({
+          ...prev,
+          totalAttendance: (summary.totalMale || 0) + (summary.totalFemale || 0) + (summary.totalChildren || 0),
+          totalOfferings: summary.totalOfferings || 0,
+          totalFirstTimers: summary.totalFirstTimers || 0
+        }));
       }
 
       // Process chart data with the fetched data
@@ -130,6 +190,10 @@ const AdminDashboard: React.FC = () => {
         districtsResult.status === 'fulfilled' ? districtsResult.value.data || [] : [],
         areasResult.status === 'fulfilled' ? areasResult.value.data || [] : [],
         centresResult.status === 'fulfilled' ? centresResult.value.data || [] : []
+      );
+
+      processChartData(
+        reportsResult.status === 'fulfilled' ? reportsResult.value.data?.reports || [] : []
       );
 
     } catch (error: any) {
@@ -140,32 +204,11 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const fetchStats = async () => {
-    try {
-      // In a real implementation, you'd have endpoints for these stats
-      // For now, using mock data
-      setStats({
-        totalUsers: 50,
-        totalDistricts: 6,
-        totalAreaSupervisors: 24,
-        totalCithCentres: 96,
-        totalReports: 500,
-        totalAttendance: 12500,
-        totalOfferings: 25000,
-        totalFirstTimers: 350,
-      });
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-    }
-  };
-
   const processDistrictData = (districts: any[], areas: any[], centres: any[]) => {
     try {
-      // Safely process district data
       const mockDistrictData = districts.map(district => {
         if (!district || !district.name) return null;
         
-        // Count areas in this district
         const areasInDistrict = areas.filter(area => 
           area && area.districtId && 
           (typeof area.districtId === 'string' ? 
@@ -173,7 +216,6 @@ const AdminDashboard: React.FC = () => {
             area.districtId._id === district._id)
         );
 
-        // Count centres in this district
         const centresInDistrict = centres.filter(centre => {
           if (!centre || !centre.areaSupervisorId) return false;
           
@@ -188,10 +230,10 @@ const AdminDashboard: React.FC = () => {
           name: district.name,
           centres: centresInDistrict.length,
           supervisors: areasInDistrict.length,
-          attendance: Math.floor(Math.random() * 1000) + 2000, // Mock data
-          offerings: Math.floor(Math.random() * 2000) + 4000 // Mock data
+          attendance: 0, // Will be calculated from actual reports
+          offerings: 0   // Will be calculated from actual reports
         };
-      }).filter(Boolean); // Remove null entries
+      }).filter(Boolean);
 
       setDistrictData(mockDistrictData);
     } catch (error) {
@@ -202,68 +244,63 @@ const AdminDashboard: React.FC = () => {
 
   const processChartData = (reports: any[]) => {
     try {
-      // Safely process reports data
       const validReports = reports.filter(report => 
         report && 
         report.data && 
         typeof report.data === 'object'
       );
 
-      // Set user role distribution
-      setUsersByRole([
-        { name: 'CITH Centre Leaders', value: 96 },
-        { name: 'Area Supervisors', value: 24 },
-        { name: 'District Pastors', value: 6 },
-        { name: 'Administrators', value: 4 }
-      ]);
+      // Process attendance data from actual reports
+      if (validReports.length > 0) {
+        const monthlyData: {[key: string]: any} = {};
+        
+        validReports.forEach(report => {
+          try {
+            const date = new Date(report.week || report.createdAt);
+            const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+            
+            if (!monthlyData[monthKey]) {
+              monthlyData[monthKey] = { month: monthKey, attendance: 0 };
+            }
+            
+            monthlyData[monthKey].attendance += (report.data.male || 0) + 
+              (report.data.female || 0) + (report.data.children || 0);
+          } catch (err) {
+            console.warn('Error processing report for attendance data:', err);
+          }
+        });
+        
+        setAttendanceData(Object.values(monthlyData));
 
-      // Process attendance data
-      const mockAttendanceData = [
-        { month: 'Jan', attendance: 8500 },
-        { month: 'Feb', attendance: 9200 },
-        { month: 'Mar', attendance: 9800 },
-        { month: 'Apr', attendance: 10300 },
-        { month: 'May', attendance: 11000 },
-        { month: 'Jun', attendance: 10500 },
-        { month: 'Jul', attendance: 11200 },
-        { month: 'Aug', attendance: 11800 },
-        { month: 'Sep', attendance: 12300 },
-        { month: 'Oct', attendance: 12500 }
-      ];
-      setAttendanceData(mockAttendanceData);
-
-      // Process offering data
-      const mockOfferingData = [
-        { month: 'Jan', offerings: 17000 },
-        { month: 'Feb', offerings: 18400 },
-        { month: 'Mar', offerings: 19600 },
-        { month: 'Apr', offerings: 20600 },
-        { month: 'May', offerings: 22000 },
-        { month: 'Jun', offerings: 21000 },
-        { month: 'Jul', offerings: 22400 },
-        { month: 'Aug', offerings: 23600 },
-        { month: 'Sep', offerings: 24600 },
-        { month: 'Oct', offerings: 25000 }
-      ];
-      setOfferingData(mockOfferingData);
-
-      // Process centre performance data
-      const mockCentrePerformance = [
-        { name: 'Agric Ojo', attendance: 120, offerings: 240, firstTimers: 5, district: 'Festac' },
-        { name: 'FHA Satellite', attendance: 150, offerings: 300, firstTimers: 7, district: 'Festac' },
-        { name: 'Community Road', attendance: 80, offerings: 160, firstTimers: 3, district: 'Festac' },
-        { name: 'Ikeja GRA', attendance: 200, offerings: 400, firstTimers: 10, district: 'Ikeja' },
-        { name: 'Allen Avenue', attendance: 180, offerings: 360, firstTimers: 8, district: 'Ikeja' },
-        { name: 'Lekki Phase 1', attendance: 250, offerings: 500, firstTimers: 12, district: 'Lekki' },
-        { name: 'Chevron Drive', attendance: 220, offerings: 440, firstTimers: 11, district: 'Lekki' },
-        { name: 'Ajah', attendance: 170, offerings: 340, firstTimers: 6, district: 'Lekki' },
-        { name: 'Adeniran Ogunsanya', attendance: 130, offerings: 260, firstTimers: 5, district: 'Surulere' },
-        { name: 'Adelabu', attendance: 110, offerings: 220, firstTimers: 4, district: 'Surulere' }
-      ];
-      setCentrePerformanceData(mockCentrePerformance);
+        // Process offering data from actual reports
+        const offeringMonthlyData: {[key: string]: any} = {};
+        
+        validReports.forEach(report => {
+          try {
+            const date = new Date(report.week || report.createdAt);
+            const monthKey = date.toLocaleDateString('en-US', { month: 'short' });
+            
+            if (!offeringMonthlyData[monthKey]) {
+              offeringMonthlyData[monthKey] = { month: monthKey, offerings: 0 };
+            }
+            
+            offeringMonthlyData[monthKey].offerings += report.data.offerings || 0;
+          } catch (err) {
+            console.warn('Error processing report for offering data:', err);
+          }
+        });
+        
+        setOfferingData(Object.values(offeringMonthlyData));
+      } else {
+        // No reports yet, set empty data
+        setAttendanceData([]);
+        setOfferingData([]);
+      }
 
     } catch (error) {
       console.error('Error processing chart data:', error);
+      setAttendanceData([]);
+      setOfferingData([]);
     }
   };
 
@@ -331,14 +368,14 @@ const AdminDashboard: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <BarChart fontSize="small" />
               <Typography variant="body2">
-                {stats.totalReports} Reports
+                {recentReports.length} Reports
               </Typography>
             </Box>
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <People fontSize="small" />
               <Typography variant="body2">
-                {stats.totalUsers} Users
+                {stats.totalUsers} Users (Non-Admin)
               </Typography>
             </Box>
           </Box>
@@ -360,6 +397,7 @@ const AdminDashboard: React.FC = () => {
               <Box>
                 <Typography variant="body2" color="textSecondary">Total Users</Typography>
                 <Typography variant="h5">{stats.totalUsers}</Typography>
+                <Typography variant="caption" color="textSecondary">Excludes admins</Typography>
               </Box>
             </CardContent>
           </Card>
@@ -410,24 +448,22 @@ const AdminDashboard: React.FC = () => {
         <GridItem xs={12} md={8}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>District Performance</Typography>
+              <Typography variant="h6" gutterBottom>District Structure</Typography>
               {districtData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                   <ReBarChart data={districtData}>
-                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="attendance" fill="#8884d8" name="Attendance" />
-                    <Bar dataKey="offerings" fill="#82ca9d" name="Offerings" />
-                    <Bar dataKey="centres" fill="#ffc658" name="Centres" />
+                    <Bar dataKey="centres" fill="#ffc658" name="CITH Centres" />
+                    <Bar dataKey="supervisors" fill="#82ca9d" name="Area Supervisors" />
                   </ReBarChart>
                 </ResponsiveContainer>
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
-                    No district data available
+                    District structure visualization
                   </Typography>
                 </Box>
               )}
@@ -440,11 +476,11 @@ const AdminDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>User Distribution</Typography>
-              {usersByRole.length > 0 ? (
+              {usersByRole.length > 0 && usersByRole.some(role => role.value > 0) ? (
                 <ResponsiveContainer width="100%" height={350}>
                   <PieChart>
                     <Pie
-                      data={usersByRole}
+                      data={usersByRole.filter(role => role.value > 0)}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -453,7 +489,7 @@ const AdminDashboard: React.FC = () => {
                       fill="#8884d8"
                       dataKey="value"
                     >
-                      {usersByRole.map((entry, index) => (
+                      {usersByRole.filter(role => role.value > 0).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -463,7 +499,7 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
-                    No user data available
+                    No users assigned to roles yet
                   </Typography>
                 </Box>
               )}
@@ -479,7 +515,6 @@ const AdminDashboard: React.FC = () => {
               {attendanceData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={attendanceData}>
-                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
@@ -490,7 +525,7 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
-                    No attendance data available
+                    No attendance data available yet
                   </Typography>
                 </Box>
               )}
@@ -506,7 +541,6 @@ const AdminDashboard: React.FC = () => {
               {offeringData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart data={offeringData}>
-                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
                     <Tooltip />
@@ -517,57 +551,7 @@ const AdminDashboard: React.FC = () => {
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
-                    No offering data available
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </GridItem>
-
-        {/* Centre Performance Scatter Plot */}
-        <GridItem xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Centre Performance Analysis</Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                Bubble size represents number of first timers
-              </Typography>
-              {centrePerformanceData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={400}>
-                  <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                    <CartesianGrid />
-                    <XAxis type="number" dataKey="attendance" name="Attendance" unit=" people" />
-                    <YAxis type="number" dataKey="offerings" name="Offerings" unit=" $" />
-                    <ZAxis type="number" dataKey="firstTimers" range={[40, 160]} name="First Timers" />
-                    <Tooltip cursor={{ strokeDasharray: '3 3' }} />
-                    <Legend />
-                    <Scatter 
-                      name="Festac District" 
-                      data={centrePerformanceData.filter(d => d.district === 'Festac')} 
-                      fill="#8884d8" 
-                    />
-                    <Scatter 
-                      name="Ikeja District" 
-                      data={centrePerformanceData.filter(d => d.district === 'Ikeja')} 
-                      fill="#82ca9d" 
-                    />
-                    <Scatter 
-                      name="Lekki District" 
-                      data={centrePerformanceData.filter(d => d.district === 'Lekki')} 
-                      fill="#ffc658" 
-                    />
-                    <Scatter 
-                      name="Surulere District" 
-                      data={centrePerformanceData.filter(d => d.district === 'Surulere')} 
-                      fill="#ff7300" 
-                    />
-                  </ScatterChart>
-                </ResponsiveContainer>
-              ) : (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    No performance data available
+                    No offering data available yet
                   </Typography>
                 </Box>
               )}
@@ -651,7 +635,7 @@ const AdminDashboard: React.FC = () => {
                             {report.cithCentreId?.name || 'Unknown Centre'}
                           </TableCell>
                           <TableCell>
-                            {new Date(report.week).toLocaleDateString()}
+                            {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
                           </TableCell>
                           <TableCell>
                             {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
@@ -678,7 +662,7 @@ const AdminDashboard: React.FC = () => {
                 </TableContainer>
               ) : (
                 <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ py: 2 }}>
-                  No recent reports available
+                  No reports submitted yet
                 </Typography>
               )}
               <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
@@ -694,6 +678,33 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </GridItem>
       </Grid>
+
+      {/* This Month Activity - Updated to show actual data */}
+      <Box sx={{ position: 'fixed', bottom: 80, right: 16, zIndex: 1000 }}>
+        <Paper 
+          elevation={6} 
+          sx={{ 
+            p: 2, 
+            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', 
+            borderRadius: 3,
+            minWidth: 200
+          }}
+        >
+          <Typography variant="caption" color="textSecondary" gutterBottom>
+            📊 This Month's Activity
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+            <Box textAlign="center">
+              <Typography variant="h6" color="primary">{thisMonthStats.reports}</Typography>
+              <Typography variant="caption">Reports</Typography>
+            </Box>
+            <Box textAlign="center">
+              <Typography variant="h6" color="success.main">{thisMonthStats.members}</Typography>
+              <Typography variant="caption">Attendance</Typography>
+            </Box>
+          </Box>
+        </Paper>
+      </Box>
     </Box>
   );
 };

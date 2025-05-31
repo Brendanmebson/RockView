@@ -1,3 +1,4 @@
+// frontend/src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -15,7 +16,6 @@ import MessageDetail from './components/messages/MessageDetail';
 import ComposeMessage from './components/messages/ComposeMessage';
 import SettingsPage from './components/settings/SettingsPage';
 import UserManagement from './components/admin/UserManagement';
-import AdminPositionRequests from './components/admin/AdminPositionRequests';
 import DistrictManagement from './components/admin/DistrictManagement';
 import AreaSupervisorManagement from './components/admin/AreaSupervisorManagement';
 import CithCentreManagement from './components/admin/CithCentreManagement';
@@ -51,7 +51,6 @@ function App() {
               
               {/* Admin Routes */}
               <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><Layout><UserManagement /></Layout></ProtectedRoute>} />
-              <Route path="/admin/position-requests" element={<ProtectedRoute roles={['admin']}><Layout><AdminPositionRequests /></Layout></ProtectedRoute>} />
               <Route path="/districts" element={<ProtectedRoute roles={['admin']}><Layout><DistrictManagement /></Layout></ProtectedRoute>} />
               <Route path="/area-supervisors" element={<ProtectedRoute roles={['admin', 'district_pastor']}><Layout><AreaSupervisorManagement /></Layout></ProtectedRoute>} />
               <Route path="/cith-centres" element={<ProtectedRoute roles={['admin', 'district_pastor', 'area_supervisor']}><Layout><CithCentreManagement /></Layout></ProtectedRoute>} />

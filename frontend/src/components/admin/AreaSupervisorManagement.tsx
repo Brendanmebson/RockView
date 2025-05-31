@@ -45,8 +45,6 @@ const AreaSupervisorManagement: React.FC = () => {
     name: '',
     districtId: '',
     supervisorName: '',
-    contactEmail: '',
-    contactPhone: '',
   });
 
   useEffect(() => {
@@ -108,8 +106,6 @@ const AreaSupervisorManagement: React.FC = () => {
         ? areaSupervisor.districtId 
         : areaSupervisor.districtId?._id || '',
       supervisorName: areaSupervisor.supervisorName || '',
-      contactEmail: areaSupervisor.contactEmail || '',
-      contactPhone: areaSupervisor.contactPhone || '',
     });
     setDialogOpen(true);
   };
@@ -136,8 +132,6 @@ const AreaSupervisorManagement: React.FC = () => {
       name: '',
       districtId: '',
       supervisorName: '',
-      contactEmail: '',
-      contactPhone: '',
     });
   };
 
@@ -192,8 +186,6 @@ const AreaSupervisorManagement: React.FC = () => {
                     <TableCell>Area Name</TableCell>
                     <TableCell>District</TableCell>
                     <TableCell>Supervisor</TableCell>
-                    <TableCell>Contact Email</TableCell>
-                    <TableCell>Contact Phone</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
@@ -205,8 +197,6 @@ const AreaSupervisorManagement: React.FC = () => {
                         {getDistrictName(areaSupervisor)} (District {getDistrictNumber(areaSupervisor)})
                       </TableCell>
                       <TableCell>{areaSupervisor.supervisorName || 'TBD'}</TableCell>
-                      <TableCell>{areaSupervisor.contactEmail || 'N/A'}</TableCell>
-                      <TableCell>{areaSupervisor.contactPhone || 'N/A'}</TableCell>
                       <TableCell>
                         <Tooltip title="Edit">
                           <IconButton onClick={() => handleEdit(areaSupervisor)} color="primary">
@@ -268,19 +258,6 @@ const AreaSupervisorManagement: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, supervisorName: e.target.value })}
               fullWidth
               required
-            />
-            <TextField
-              label="Contact Email"
-              type="email"
-              value={formData.contactEmail}
-              onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Contact Phone"
-              value={formData.contactPhone}
-              onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-              fullWidth
             />
           </Box>
         </DialogContent>
