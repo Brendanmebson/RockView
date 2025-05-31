@@ -500,6 +500,41 @@ const rejectReport = async (req, res) => {
   }
 };
 
+// @desc    Delete report
+// @route   DELETE /api/reports/:id
+// @access  Private
+const deleteReport = async (req, res) => {
+  try {
+    const report = await WeeklyReport.findById(req.params.id);
+    
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Check permissions
+    if (req.user.role === 'admin') {
+      // Admin can delete any report
+    } else if (req.user.role === 'cith_centre') {
+      // CITH centre can only delete their own reports if pending or rejected
+      if (report.submittedBy.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'You can only delete your own reports' });
+      }
+      if (report.status !== 'pending' && report.status !== 'rejected') {
+        return res.status(400).json({ message: 'You can only delete pending or rejected reports' });
+      }
+    } else {
+      return res.status(403).json({ message: 'Not authorized to delete reports' });
+    }
+    
+    await WeeklyReport.findByIdAndDelete(req.params.id);
+    
+    res.json({ message: 'Report deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting report:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 // @desc    Get aggregated report data
 // @route   GET /api/reports/summary
 // @access  Private
@@ -530,311 +565,287 @@ const getReportSummary = async (req, res) => {
         matchQuery.cithCentreId = req.user.cithCentreId;
       } else if (req.user.role === 'area_supervisor') {
         if (!req.user.areaSupervisorId) {
-         return res.status(400).json({ message: 'User not associated with any area' });
-       }
-       const cithCentres = await CithCentre.find({ areaSupervisorId: req.user.areaSupervisorId });
-       const cithCentreIds = cithCentres.map(cc => cc._id);
-       matchQuery.cithCentreId = { $in: cithCentreIds };
-     } else if (req.user.role === 'district_pastor') {
-       if (!req.user.districtId) {
-         return res.status(400).json({ message: 'User not associated with any district' });
-       }
-       const areaSupervisors = await AreaSupervisor.find({ districtId: req.user.districtId });
-       const areaSupervisorIds = areaSupervisors.map(as => as._id);
-       const cithCentres = await CithCentre.find({ areaSupervisorId: { $in: areaSupervisorIds } });
-       const cithCentreIds = cithCentres.map(cc => cc._id);
-       matchQuery.cithCentreId = { $in: cithCentreIds };
-     }
-     // Admin can see all reports - no additional filtering needed
-   } catch (error) {
-     console.error('Error applying role-based filtering for summary:', error);
-     return res.status(500).json({ message: 'Error filtering reports for summary' });
-   }
-   
-   // Only include approved reports for summary
-   matchQuery.status = 'district_approved';
-   
-   try {
-     const summary = await WeeklyReport.aggregate([
-       { $match: matchQuery },
-       {
-         $group: {
-           _id: null,
-           totalMale: { $sum: '$data.male' },
-           totalFemale: { $sum: '$data.female' },
-           totalChildren: { $sum: '$data.children' },
-           totalOfferings: { $sum: '$data.offerings' },
-           totalTestimonies: { $sum: '$data.numberOfTestimonies' },
-           totalFirstTimers: { $sum: '$data.numberOfFirstTimers' },
-           totalFirstTimersFollowedUp: { $sum: '$data.firstTimersFollowedUp' },
-           totalFirstTimersConverted: { $sum: '$data.firstTimersConvertedToCITH' },
-           totalReports: { $sum: 1 },
-         },
-       },
-     ]);
-     
-     // Return default values if no data found
-     const defaultSummary = {
-       totalMale: 0,
-       totalFemale: 0,
-       totalChildren: 0,
-       totalOfferings: 0,
-       totalTestimonies: 0,
-       totalFirstTimers: 0,
-       totalFirstTimersFollowedUp: 0,
-       totalFirstTimersConverted: 0,
-       totalReports: 0,
-     };
-     
-     res.json(summary[0] || defaultSummary);
-   } catch (error) {
-     console.error('Error aggregating report summary:', error);
-     res.status(500).json({ message: 'Error generating report summary' });
-   }
- } catch (error) {
-   console.error('Error in getReportSummary:', error);
-   res.status(400).json({ message: error.message });
- }
-};
-
-// @desc    Delete report (admin only)
-// @route   DELETE /api/reports/:id
-// @access  Private/Admin
-const deleteReport = async (req, res) => {
- try {
-   if (req.user.role !== 'admin') {
-     return res.status(403).json({ message: 'Only administrators can delete reports' });
-   }
-   
-   const report = await WeeklyReport.findById(req.params.id);
-   
-   if (!report) {
-     return res.status(404).json({ message: 'Report not found' });
-   }
-   
-   await WeeklyReport.findByIdAndDelete(req.params.id);
-   
-   res.json({ message: 'Report deleted successfully' });
- } catch (error) {
-   console.error('Error deleting report:', error);
-   res.status(400).json({ message: error.message });
- }
+          return res.status(400).json({ message: 'User not associated with any area' });
+        }
+        const cithCentres = await CithCentre.find({ areaSupervisorId: req.user.areaSupervisorId });
+        const cithCentreIds = cithCentres.map(cc => cc._id);
+        matchQuery.cithCentreId = { $in: cithCentreIds };
+      } else if (req.user.role === 'district_pastor') {
+        if (!req.user.districtId) {
+          return res.status(400).json({ message: 'User not associated with any district' });
+        }
+        const areaSupervisors = await AreaSupervisor.find({ districtId: req.user.districtId });
+        const areaSupervisorIds = areaSupervisors.map(as => as._id);
+        const cithCentres = await CithCentre.find({ areaSupervisorId: { $in: areaSupervisorIds } });
+        const cithCentreIds = cithCentres.map(cc => cc._id);
+        matchQuery.cithCentreId = { $in: cithCentreIds };
+      }
+      // Admin can see all reports - no additional filtering needed
+    } catch (error) {
+      console.error('Error applying role-based filtering for summary:', error);
+      return res.status(500).json({ message: 'Error filtering reports for summary' });
+    }
+    
+    // Only include approved reports for summary
+    matchQuery.status = 'district_approved';
+    
+    try {
+      const summary = await WeeklyReport.aggregate([
+        { $match: matchQuery },
+        {
+          $group: {
+            _id: null,
+            totalMale: { $sum: '$data.male' },
+            totalFemale: { $sum: '$data.female' },
+            totalChildren: { $sum: '$data.children' },
+            totalOfferings: { $sum: '$data.offerings' },
+            totalTestimonies: { $sum: '$data.numberOfTestimonies' },
+            totalFirstTimers: { $sum: '$data.numberOfFirstTimers' },
+            totalFirstTimersFollowedUp: { $sum: '$data.firstTimersFollowedUp' },
+            totalFirstTimersConverted: { $sum: '$data.firstTimersConvertedToCITH' },
+            totalReports: { $sum: 1 },
+          },
+        },
+      ]);
+      
+      // Return default values if no data found
+      const defaultSummary = {
+        totalMale: 0,
+        totalFemale: 0,
+        totalChildren: 0,
+        totalOfferings: 0,
+        totalTestimonies: 0,
+        totalFirstTimers: 0,
+        totalFirstTimersFollowedUp: 0,
+        totalFirstTimersConverted: 0,
+        totalReports: 0,
+      };
+      
+      res.json(summary[0] || defaultSummary);
+    } catch (error) {
+      console.error('Error aggregating report summary:', error);
+      res.status(500).json({ message: 'Error generating report summary' });
+    }
+  } catch (error) {
+    console.error('Error in getReportSummary:', error);
+    res.status(400).json({ message: error.message });
+  }
 };
 
 // @desc    Update report (only for pending reports by original submitter)
 // @route   PUT /api/reports/:id
 // @access  Private
 const updateReport = async (req, res) => {
- try {
-   const report = await WeeklyReport.findById(req.params.id);
-   
-   if (!report) {
-     return res.status(404).json({ message: 'Report not found' });
-   }
-   
-   // Only original submitter can update, and only if still pending
-   if (report.submittedBy.toString() !== req.user._id.toString()) {
-     return res.status(403).json({ message: 'Only the original submitter can update this report' });
-   }
-   
-   if (report.status !== 'pending') {
-     return res.status(400).json({ message: 'Cannot update report that has been reviewed' });
-   }
-   
-   const { data } = req.body;
-   
-   // Validate and sanitize update data
-   const updateData = {
-     male: parseInt(data.male) || 0,
-     female: parseInt(data.female) || 0,
-     children: parseInt(data.children) || 0,
-     offerings: parseFloat(data.offerings) || 0,
-     numberOfTestimonies: parseInt(data.numberOfTestimonies) || 0,
-     numberOfFirstTimers: parseInt(data.numberOfFirstTimers) || 0,
-     firstTimersFollowedUp: parseInt(data.firstTimersFollowedUp) || 0,
-     firstTimersConvertedToCITH: parseInt(data.firstTimersConvertedToCITH) || 0,
-     modeOfMeeting: data.modeOfMeeting || 'physical',
-     remarks: data.remarks || ''
-   };
-   
-   // Validate business rules
-   if (updateData.firstTimersFollowedUp > updateData.numberOfFirstTimers) {
-     return res.status(400).json({ 
-       message: 'First timers followed up cannot exceed total first timers' 
-     });
-   }
-   
-   if (updateData.firstTimersConvertedToCITH > updateData.firstTimersFollowedUp) {
-     return res.status(400).json({ 
-       message: 'First timers converted cannot exceed first timers followed up' 
-     });
-   }
-   
-   // Update the report
-   report.data = updateData;
-   report.updatedAt = new Date();
-   
-   await report.save();
-   
-   // Return populated updated report
-   const populatedReport = await WeeklyReport.findById(report._id)
-     .populate(getReportPopulationQuery());
-   
-   const sanitizedReport = sanitizeReportData([populatedReport])[0];
-   
-   res.json(sanitizedReport);
- } catch (error) {
-   console.error('Error updating report:', error);
-   res.status(400).json({ message: error.message });
- }
+  try {
+    const report = await WeeklyReport.findById(req.params.id);
+    
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Only original submitter can update, and only if still pending
+    if (report.submittedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only the original submitter can update this report' });
+    }
+    
+    if (report.status !== 'pending') {
+      return res.status(400).json({ message: 'Cannot update report that has been reviewed' });
+    }
+    
+    const { data } = req.body;
+    
+    // Validate and sanitize update data
+    const updateData = {
+      male: parseInt(data.male) || 0,
+      female: parseInt(data.female) || 0,
+      children: parseInt(data.children) || 0,
+      offerings: parseFloat(data.offerings) || 0,
+      numberOfTestimonies: parseInt(data.numberOfTestimonies) || 0,
+      numberOfFirstTimers: parseInt(data.numberOfFirstTimers) || 0,
+      firstTimersFollowedUp: parseInt(data.firstTimersFollowedUp) || 0,
+      firstTimersConvertedToCITH: parseInt(data.firstTimersConvertedToCITH) || 0,
+      modeOfMeeting: data.modeOfMeeting || 'physical',
+      remarks: data.remarks || ''
+    };
+    
+    // Validate business rules
+    if (updateData.firstTimersFollowedUp > updateData.numberOfFirstTimers) {
+      return res.status(400).json({ 
+        message: 'First timers followed up cannot exceed total first timers' 
+      });
+    }
+    
+    if (updateData.firstTimersConvertedToCITH > updateData.firstTimersFollowedUp) {
+      return res.status(400).json({ 
+        message: 'First timers converted cannot exceed first timers followed up' 
+      });
+    }
+    
+    // Update the report
+    report.data = updateData;
+    report.updatedAt = new Date();
+    
+    await report.save();
+    
+    // Return populated updated report
+    const populatedReport = await WeeklyReport.findById(report._id)
+      .populate(getReportPopulationQuery());
+    
+    const sanitizedReport = sanitizeReportData([populatedReport])[0];
+    
+    res.json(sanitizedReport);
+  } catch (error) {
+    console.error('Error updating report:', error);
+    res.status(400).json({ message: error.message });
+  }
 };
 
 // @desc    Get reports statistics for dashboard
 // @route   GET /api/reports/stats
 // @access  Private
 const getReportStats = async (req, res) => {
- try {
-   let matchQuery = {};
-   
-   // Apply role-based filtering
-   try {
-     if (req.user.role === 'cith_centre') {
-       if (!req.user.cithCentreId) {
-         return res.status(400).json({ message: 'User not associated with any CITH centre' });
-       }
-       matchQuery.cithCentreId = req.user.cithCentreId;
-     } else if (req.user.role === 'area_supervisor') {
-       if (!req.user.areaSupervisorId) {
-         return res.status(400).json({ message: 'User not associated with any area' });
-       }
-       const cithCentres = await CithCentre.find({ areaSupervisorId: req.user.areaSupervisorId });
-       const cithCentreIds = cithCentres.map(cc => cc._id);
-       matchQuery.cithCentreId = { $in: cithCentreIds };
-     } else if (req.user.role === 'district_pastor') {
-       if (!req.user.districtId) {
-         return res.status(400).json({ message: 'User not associated with any district' });
-       }
-       const areaSupervisors = await AreaSupervisor.find({ districtId: req.user.districtId });
-       const areaSupervisorIds = areaSupervisors.map(as => as._id);
-       const cithCentres = await CithCentre.find({ areaSupervisorId: { $in: areaSupervisorIds } });
-       const cithCentreIds = cithCentres.map(cc => cc._id);
-       matchQuery.cithCentreId = { $in: cithCentreIds };
-     }
-   } catch (error) {
-     console.error('Error applying role-based filtering for stats:', error);
-     return res.status(500).json({ message: 'Error filtering reports for statistics' });
-   }
-   
-   try {
-     const stats = await WeeklyReport.aggregate([
-       { $match: matchQuery },
-       {
-         $group: {
-           _id: '$status',
-           count: { $sum: 1 }
-         }
-       }
-     ]);
-     
-     // Format stats response
-     const formattedStats = {
-       total: 0,
-       pending: 0,
-       area_approved: 0,
-       district_approved: 0,
-       rejected: 0
-     };
-     
-     stats.forEach(stat => {
-       formattedStats[stat._id] = stat.count;
-       formattedStats.total += stat.count;
-     });
-     
-     res.json(formattedStats);
-   } catch (error) {
-     console.error('Error generating report statistics:', error);
-     res.status(500).json({ message: 'Error generating report statistics' });
-   }
- } catch (error) {
-   console.error('Error in getReportStats:', error);
-   res.status(400).json({ message: error.message });
- }
+  try {
+    let matchQuery = {};
+    
+    // Apply role-based filtering
+    try {
+      if (req.user.role === 'cith_centre') {
+        if (!req.user.cithCentreId) {
+          return res.status(400).json({ message: 'User not associated with any CITH centre' });
+        }
+        matchQuery.cithCentreId = req.user.cithCentreId;
+      } else if (req.user.role === 'area_supervisor') {
+        if (!req.user.areaSupervisorId) {
+          return res.status(400).json({ message: 'User not associated with any area' });
+        }
+        const cithCentres = await CithCentre.find({ areaSupervisorId: req.user.areaSupervisorId });
+        const cithCentreIds = cithCentres.map(cc => cc._id);
+        matchQuery.cithCentreId = { $in: cithCentreIds };
+      } else if (req.user.role === 'district_pastor') {
+        if (!req.user.districtId) {
+          return res.status(400).json({ message: 'User not associated with any district' });
+        }
+        const areaSupervisors = await AreaSupervisor.find({ districtId: req.user.districtId });
+        const areaSupervisorIds = areaSupervisors.map(as => as._id);
+        const cithCentres = await CithCentre.find({ areaSupervisorId: { $in: areaSupervisorIds } });
+        const cithCentreIds = cithCentres.map(cc => cc._id);
+        matchQuery.cithCentreId = { $in: cithCentreIds };
+      }
+    } catch (error) {
+      console.error('Error applying role-based filtering for stats:', error);
+      return res.status(500).json({ message: 'Error filtering reports for statistics' });
+    }
+    
+    try {
+      const stats = await WeeklyReport.aggregate([
+        { $match: matchQuery },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+      
+      // Format stats response
+      const formattedStats = {
+        total: 0,
+        pending: 0,
+        area_approved: 0,
+        district_approved: 0,
+        rejected: 0
+      };
+      
+      stats.forEach(stat => {
+        formattedStats[stat._id] = stat.count;
+        formattedStats.total += stat.count;
+      });
+      
+      res.json(formattedStats);
+    } catch (error) {
+      console.error('Error generating report statistics:', error);
+      res.status(500).json({ message: 'Error generating report statistics' });
+    }
+  } catch (error) {
+    console.error('Error in getReportStats:', error);
+    res.status(400).json({ message: error.message });
+  }
 };
 
 // @desc    Get recent reports for dashboard
 // @route   GET /api/reports/recent
 // @access  Private
 const getRecentReports = async (req, res) => {
- try {
-   const { limit = 5 } = req.query;
-   let query = {};
-   
-   // Apply role-based filtering
-   try {
-     if (req.user.role === 'cith_centre') {
-       if (!req.user.cithCentreId) {
-         return res.status(400).json({ message: 'User not associated with any CITH centre' });
-       }
-       query.cithCentreId = req.user.cithCentreId;
-     } else if (req.user.role === 'area_supervisor') {
-       if (!req.user.areaSupervisorId) {
-         return res.status(400).json({ message: 'User not associated with any area' });
-       }
-       const cithCentres = await CithCentre.find({ areaSupervisorId: req.user.areaSupervisorId });
-       const cithCentreIds = cithCentres.map(cc => cc._id);
-       query.cithCentreId = { $in: cithCentreIds };
-     } else if (req.user.role === 'district_pastor') {
-       if (!req.user.districtId) {
-         return res.status(400).json({ message: 'User not associated with any district' });
-       }
-       const areaSupervisors = await AreaSupervisor.find({ districtId: req.user.districtId });
-       const areaSupervisorIds = areaSupervisors.map(as => as._id);
-       const cithCentres = await CithCentre.find({ areaSupervisorId: { $in: areaSupervisorIds } });
-       const cithCentreIds = cithCentres.map(cc => cc._id);
-       query.cithCentreId = { $in: cithCentreIds };
-     }
-   } catch (error) {
-     console.error('Error applying role-based filtering for recent reports:', error);
-     return res.status(500).json({ message: 'Error filtering recent reports' });
-   }
-   
-   try {
-     const reports = await WeeklyReport.find(query)
-       .populate([
-         {
-           path: 'cithCentreId',
-           select: 'name location'
-         },
-         {
-           path: 'submittedBy',
-           select: 'name'
-         }
-       ])
-       .sort({ createdAt: -1 })
-       .limit(parseInt(limit));
-     
-     const sanitizedReports = sanitizeReportData(reports);
-     
-     res.json(sanitizedReports);
-   } catch (error) {
-     console.error('Error fetching recent reports:', error);
-     res.status(500).json({ message: 'Error fetching recent reports' });
-   }
- } catch (error) {
-   console.error('Error in getRecentReports:', error);
-   res.status(400).json({ message: error.message });
- }
+  try {
+    const { limit = 5 } = req.query;
+    let query = {};
+    
+    // Apply role-based filtering
+    try {
+      if (req.user.role === 'cith_centre') {
+        if (!req.user.cithCentreId) {
+          return res.status(400).json({ message: 'User not associated with any CITH centre' });
+        }
+        query.cithCentreId = req.user.cithCentreId;
+      } else if (req.user.role === 'area_supervisor') {
+        if (!req.user.areaSupervisorId) {
+          return res.status(400).json({ message: 'User not associated with any area' });
+        }
+        const cithCentres = await CithCentre.find({ areaSupervisorId: req.user.areaSupervisorId });
+        const cithCentreIds = cithCentres.map(cc => cc._id);
+        query.cithCentreId = { $in: cithCentreIds };
+      } else if (req.user.role === 'district_pastor') {
+        if (!req.user.districtId) {
+          return res.status(400).json({ message: 'User not associated with any district' });
+        }
+        const areaSupervisors = await AreaSupervisor.find({ districtId: req.user.districtId });
+        const areaSupervisorIds = areaSupervisors.map(as => as._id);
+        const cithCentres = await CithCentre.find({ areaSupervisorId: { $in: areaSupervisorIds } });
+        const cithCentreIds = cithCentres.map(cc => cc._id);
+        query.cithCentreId = { $in: cithCentreIds };
+      }
+    } catch (error) {
+      console.error('Error applying role-based filtering for recent reports:', error);
+      return res.status(500).json({ message: 'Error filtering recent reports' });
+    }
+    
+    try {
+      const reports = await WeeklyReport.find(query)
+        .populate([
+          {
+            path: 'cithCentreId',
+            select: 'name location'
+          },
+          {
+            path: 'submittedBy',
+            select: 'name'
+          }
+        ])
+        .sort({ createdAt: -1 })
+        .limit(parseInt(limit));
+      
+      const sanitizedReports = sanitizeReportData(reports);
+      
+      res.json(sanitizedReports);
+    } catch (error) {
+      console.error('Error fetching recent reports:', error);
+      res.status(500).json({ message: 'Error fetching recent reports' });
+    }
+  } catch (error) {
+    console.error('Error in getRecentReports:', error);
+    res.status(400).json({ message: error.message });
+  }
 };
 
 module.exports = {
- submitReport,
- getReports,
- getReportById,
- approveReport,
- rejectReport,
- getReportSummary,
- deleteReport,
- updateReport,
- getReportStats,
- getRecentReports,
+  submitReport,
+  getReports,
+  getReportById,
+  approveReport,
+  rejectReport,
+  getReportSummary,
+  deleteReport,
+  updateReport,
+  getReportStats,
+  getRecentReports,
 };

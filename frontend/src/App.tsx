@@ -1,184 +1,72 @@
-// frontend/src/App.tsx
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import CssBaseline from '@mui/material/CssBaseline';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import ProtectedRoute from './components/common/ProtectedRoute';
 import Layout from './components/common/Layout';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import DashboardMain from './components/dashboard/DashboardMain';
-import ReportForm from './components/reports/ReportForm';
 import ReportList from './components/reports/ReportList';
+import ReportForm from './components/reports/ReportForm';
 import ReportDetail from './components/reports/ReportDetail';
-import SettingsPage from './components/settings/SettingsPage';
-import AdminPositionRequests from './components/admin/AdminPositionRequests';
-import UserManagement from './components/admin/UserManagement';
 import MessageList from './components/messages/MessageList';
-import ComposeMessage from './components/messages/ComposeMessage';
 import MessageDetail from './components/messages/MessageDetail';
-import { AnimatePresence } from 'framer-motion';
+import ComposeMessage from './components/messages/ComposeMessage';
+import SettingsPage from './components/settings/SettingsPage';
+import UserManagement from './components/admin/UserManagement';
+import AdminPositionRequests from './components/admin/AdminPositionRequests';
+import DistrictManagement from './components/admin/DistrictManagement';
+import AreaSupervisorManagement from './components/admin/AreaSupervisorManagement';
+import CithCentreManagement from './components/admin/CithCentreManagement';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { CssBaseline } from '@mui/material';
 
-const PrivateRoute: React.FC<{ 
-  children: React.ReactNode;
-  requiredRole?: string[];
-}> = ({ children, requiredRole }) => {
-  const { user, token } = useAuth();
-  
-  if (!user || !token) {
-    return <Navigate to="/login" />;
-  }
-  
-  if (requiredRole && !requiredRole.includes(user.role)) {
-    return <Navigate to="/dashboard" />;
-  }
-  
-  return <>{children}</>;
-};
-
-const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, token } = useAuth();
-  return !user && !token ? <>{children}</> : <Navigate to="/dashboard" />;
-};
-
-const App: React.FC = () => {
+function App() {
   return (
     <ThemeProvider>
       <CssBaseline />
-      <AuthProvider>
-        <Router>
-          <AnimatePresence mode="wait">
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <AuthProvider>
+          <Router>
             <Routes>
-              <Route
-                path="/login"
-                element={
-                  <PublicRoute>
-                    <Login />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                path="/register"
-                element={
-                  <PublicRoute>
-                    <Register />
-                  </PublicRoute>
-                }
-              />
-              <Route
-                path="/"
-                element={
-                  <PrivateRoute>
-                    <Navigate to="/dashboard" />
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/dashboard"
-                element={
-                  <PrivateRoute>
-                    <Layout>
-                      <DashboardMain />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/reports"
-                element={
-                  <PrivateRoute>
-                    <Layout>
-                      <ReportList />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/reports/new"
-                element={
-                  <PrivateRoute requiredRole={['cith_centre']}>
-                    <Layout>
-                      <ReportForm />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/reports/:id"
-                element={
-                  <PrivateRoute>
-                    <Layout>
-                      <ReportDetail />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <PrivateRoute>
-                    <Layout>
-                      <SettingsPage />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/admin/position-requests"
-                element={
-                  <PrivateRoute requiredRole={['admin']}>
-                    <Layout>
-                      <AdminPositionRequests />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/admin/users"
-                element={
-                  <PrivateRoute requiredRole={['admin']}>
-                    <Layout>
-                      <UserManagement />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/messages"
-                element={
-                  <PrivateRoute>
-                    <Layout>
-                      <MessageList />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/messages/compose"
-                element={
-                  <PrivateRoute>
-                    <Layout>
-                      <ComposeMessage />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
-              <Route
-                path="/messages/:id"
-                element={
-                  <PrivateRoute>
-                    <Layout>
-                      <MessageDetail />
-                    </Layout>
-                  </PrivateRoute>
-                }
-              />
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              
+              {/* Protected Routes */}
+              <Route path="/" element={<ProtectedRoute><Layout><Navigate to="/dashboard" replace /></Layout></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><Layout><DashboardMain /></Layout></ProtectedRoute>} />
+              
+              {/* Reports Routes */}
+              <Route path="/reports" element={<ProtectedRoute><Layout><ReportList /></Layout></ProtectedRoute>} />
+              <Route path="/reports/new" element={<ProtectedRoute roles={['cith_centre']}><Layout><ReportForm /></Layout></ProtectedRoute>} />
+              <Route path="/reports/:id" element={<ProtectedRoute><Layout><ReportDetail /></Layout></ProtectedRoute>} />
+              
+              {/* Messages Routes */}
+              <Route path="/messages" element={<ProtectedRoute><Layout><MessageList /></Layout></ProtectedRoute>} />
+              <Route path="/messages/compose" element={<ProtectedRoute><Layout><ComposeMessage /></Layout></ProtectedRoute>} />
+              <Route path="/messages/:id" element={<ProtectedRoute><Layout><MessageDetail /></Layout></ProtectedRoute>} />
+              
+              {/* Admin Routes */}
+              <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><Layout><UserManagement /></Layout></ProtectedRoute>} />
+              <Route path="/admin/position-requests" element={<ProtectedRoute roles={['admin']}><Layout><AdminPositionRequests /></Layout></ProtectedRoute>} />
+              <Route path="/districts" element={<ProtectedRoute roles={['admin']}><Layout><DistrictManagement /></Layout></ProtectedRoute>} />
+              <Route path="/area-supervisors" element={<ProtectedRoute roles={['admin', 'district_pastor']}><Layout><AreaSupervisorManagement /></Layout></ProtectedRoute>} />
+              <Route path="/cith-centres" element={<ProtectedRoute roles={['admin', 'district_pastor', 'area_supervisor']}><Layout><CithCentreManagement /></Layout></ProtectedRoute>} />
+              
+              {/* Settings Route */}
+              <Route path="/settings" element={<ProtectedRoute><Layout><SettingsPage /></Layout></ProtectedRoute>} />
+              
+              {/* Catch all route */}
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
-          </AnimatePresence>
-        </Router>
-      </AuthProvider>
+          </Router>
+        </AuthProvider>
+      </LocalizationProvider>
     </ThemeProvider>
   );
-};
+}
 
 export default App;

@@ -26,6 +26,11 @@ import {
   Tooltip,
   Paper,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import { 
   Download, 
@@ -37,6 +42,8 @@ import {
   CheckCircle,
   Cancel,
   Search,
+  Delete,
+  Edit,
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -64,6 +71,9 @@ const ReportList: React.FC = () => {
   const [centres, setCentres] = useState<CithCentre[]>([]);
   const [areaSupervisors, setAreaSupervisors] = useState<AreaSupervisor[]>([]);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<WeeklyReport | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -86,6 +96,16 @@ const ReportList: React.FC = () => {
       fetchReports();
     }
   }, [filters.startDate, filters.endDate, filters.cithCentreId, filters.areaSupervisorId]);
+
+  // Clear success message after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const fetchCentresAndSupervisors = async () => {
     try {
@@ -209,6 +229,7 @@ const ReportList: React.FC = () => {
   const handleApprove = async (reportId: string) => {
     try {
       await api.put(`/reports/${reportId}/approve`);
+      setSuccess('Report approved successfully');
       fetchReports(); // Refresh data
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to approve report');
@@ -222,11 +243,34 @@ const ReportList: React.FC = () => {
     
     try {
       await api.put(`/reports/${reportId}/reject`, { reason });
+      setSuccess('Report rejected successfully');
       fetchReports(); // Refresh data
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to reject report');
       console.error('Error rejecting report:', error);
     }
+  };
+
+  const handleDeleteReport = async () => {
+    if (!reportToDelete) return;
+
+    try {
+      await api.delete(`/reports/${reportToDelete._id}`);
+      setSuccess('Report deleted successfully');
+      setDeleteDialogOpen(false);
+      setReportToDelete(null);
+      fetchReports(); // Refresh the list
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to delete report');
+      console.error('Error deleting report:', error);
+      setDeleteDialogOpen(false);
+      setReportToDelete(null);
+    }
+  };
+
+  const openDeleteDialog = (report: WeeklyReport) => {
+    setReportToDelete(report);
+    setDeleteDialogOpen(true);
   };
 
   const resetFilters = () => {
@@ -243,6 +287,19 @@ const ReportList: React.FC = () => {
 
   const canApproveReports = () => {
     return user?.role === 'area_supervisor' || user?.role === 'district_pastor';
+  };
+
+  const canDeleteReport = (report: WeeklyReport) => {
+    if (user?.role === 'admin') {
+      return true;
+    }
+    
+    if (user?.role === 'cith_centre') {
+      return report.submittedBy?._id === user._id && 
+             (report.status === 'pending' || report.status === 'rejected');
+    }
+    
+    return false;
   };
 
   const getSafeCentreName = (report: WeeklyReport) => {
@@ -262,6 +319,21 @@ const ReportList: React.FC = () => {
       offerings: report.data.offerings || 0,
       numberOfFirstTimers: report.data.numberOfFirstTimers || 0
     };
+  };
+
+  const getStatusDisplayName = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'PENDING';
+      case 'area_approved':
+        return 'AREA APPROVED';
+      case 'district_approved':
+        return 'DISTRICT APPROVED';
+      case 'rejected':
+        return 'REJECTED';
+      default:
+        return status?.toUpperCase() || 'UNKNOWN';
+    }
   };
 
   return (
@@ -294,6 +366,12 @@ const ReportList: React.FC = () => {
         {error && (
           <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
             {error}
+          </Alert>
+        )}
+
+        {success && (
+          <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
+            {success}
           </Alert>
         )}
 
@@ -467,13 +545,13 @@ const ReportList: React.FC = () => {
                             <TableCell>{safeData.numberOfFirstTimers}</TableCell>
                             <TableCell>
                               <Chip
-                                label={(report.status || 'unknown').replace('_', ' ').toUpperCase()}
+                                label={getStatusDisplayName(report.status)}
                                 color={getStatusColor(report.status)}
                                 size="small"
                               />
                             </TableCell>
                             <TableCell>
-                              <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                                 <Button
                                   size="small"
                                   variant="outlined"
@@ -482,6 +560,34 @@ const ReportList: React.FC = () => {
                                 >
                                   View
                                 </Button>
+                                
+                                {/* Edit button for pending reports by original submitter */}
+                                {user?.role === 'cith_centre' && 
+                                 report.submittedBy?._id === user._id && 
+                                 report.status === 'pending' && (
+                                  <Button
+                                    size="small"
+                                    color="secondary"
+                                    variant="outlined"
+                                    startIcon={<Edit />}
+                                    onClick={() => navigate(`/reports/${report._id}/edit`)}
+                                  >
+                                    Edit
+                                  </Button>
+                                )}
+                                
+                                {/* Delete button */}
+                                {canDeleteReport(report) && (
+                                  <Button
+                                    size="small"
+                                    color="error"
+                                    variant="outlined"
+                                    startIcon={<Delete />}
+                                    onClick={() => openDeleteDialog(report)}
+                                  >
+                                    Delete
+                                  </Button>
+                                )}
                                 
                                 {/* Approval buttons for area supervisors and district pastors */}
                                 {canApproveReports() && report.status === 
@@ -548,6 +654,28 @@ const ReportList: React.FC = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+          <DialogTitle>Delete Report</DialogTitle>
+          <DialogContent>
+            <DialogContentText>
+              Are you sure you want to delete this report from "{getSafeCentreName(reportToDelete || {} as WeeklyReport)}"? 
+              This action cannot be undone.
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleDeleteReport} 
+              color="error" 
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} /> : <Delete />}
+            >
+              {loading ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </LocalizationProvider>
   );
