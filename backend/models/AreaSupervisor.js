@@ -21,10 +21,12 @@ const areaSupervisorSchema = new mongoose.Schema(
       type: String,
       trim: true,
       lowercase: true,
+      default: null, // Will be null until user registers
     },
     contactPhone: {
       type: String,
       trim: true,
+      default: null, // Will be null until user registers
     },
   },
   {

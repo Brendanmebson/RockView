@@ -21,8 +21,12 @@ import {
   Chip,
   Alert,
   CircularProgress,
+  Avatar,
+  Tabs,
+  Tab,
+  Paper,
 } from '@mui/material';
-import { CheckCircle, Cancel } from '@mui/icons-material';
+import { CheckCircle, Cancel, Person, Assignment } from '@mui/icons-material';
 import api from '../../services/api';
 
 interface PositionRequest {
@@ -39,6 +43,12 @@ interface PositionRequest {
   createdAt: string;
   rejectionReason?: string;
   targetEntityName?: string;
+  reviewedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  reviewedAt?: string;
 }
 
 const AdminPositionRequests: React.FC = () => {
@@ -49,6 +59,7 @@ const AdminPositionRequests: React.FC = () => {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [currentRequest, setCurrentRequest] = useState<PositionRequest | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [tabValue, setTabValue] = useState(0);
 
   useEffect(() => {
     fetchRequests();
@@ -152,12 +163,34 @@ const AdminPositionRequests: React.FC = () => {
     }
   };
 
+  const filteredRequests = requests.filter(request => {
+    if (tabValue === 0) return request.status === 'pending';
+    if (tabValue === 1) return request.status === 'approved';
+    if (tabValue === 2) return request.status === 'rejected';
+    return true;
+  });
+
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>Position Change Requests</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+        <Assignment color="primary" />
+        <Typography variant="h4">Position Change Requests</Typography>
+      </Box>
       
       {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
+      
+      <Paper sx={{ mb: 3 }}>
+        <Tabs 
+          value={tabValue} 
+          onChange={(_, newValue) => setTabValue(newValue)}
+          sx={{ borderBottom: 1, borderColor: 'divider' }}
+        >
+          <Tab label={`Pending (${requests.filter(r => r.status === 'pending').length})`} />
+          <Tab label={`Approved (${requests.filter(r => r.status === 'approved').length})`} />
+          <Tab label={`Rejected (${requests.filter(r => r.status === 'rejected').length})`} />
+        </Tabs>
+      </Paper>
       
       <Card>
         <CardContent>
@@ -165,9 +198,9 @@ const AdminPositionRequests: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
               <CircularProgress />
             </Box>
-          ) : requests.length === 0 ? (
+          ) : filteredRequests.length === 0 ? (
             <Typography variant="body1" textAlign="center" sx={{ py: 3 }}>
-              No position change requests found
+              No {tabValue === 0 ? 'pending' : tabValue === 1 ? 'approved' : 'rejected'} requests found
             </Typography>
           ) : (
             <TableContainer>
@@ -184,14 +217,19 @@ const AdminPositionRequests: React.FC = () => {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {requests.map((request) => (
+                  {filteredRequests.map((request) => (
                     <TableRow key={request._id}>
                       <TableCell>
-                        <Box>
-                          <Typography variant="body2">{request.userId.name}</Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            {request.userId.email}
-                          </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Avatar>
+                            <Person />
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2">{request.userId.name}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {request.userId.email}
+                            </Typography>
+                          </Box>
                         </Box>
                       </TableCell>
                       <TableCell>{getRoleName(request.currentRole)}</TableCell>
@@ -227,6 +265,11 @@ const AdminPositionRequests: React.FC = () => {
                         {request.status === 'rejected' && request.rejectionReason && (
                           <Typography variant="caption" color="error">
                             Reason: {request.rejectionReason}
+                          </Typography>
+                        )}
+                        {request.status === 'approved' && request.reviewedBy && (
+                          <Typography variant="caption" color="success.main">
+                            Approved by: {request.reviewedBy.name}
                           </Typography>
                         )}
                       </TableCell>

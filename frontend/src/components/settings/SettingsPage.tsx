@@ -73,8 +73,11 @@ const SettingsPage: React.FC = () => {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    fetchHierarchyData();
-  }, []);
+    // Only fetch hierarchy data if user is not admin
+    if (user?.role !== 'admin') {
+      fetchHierarchyData();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -352,79 +355,58 @@ const SettingsPage: React.FC = () => {
           </Card>
         </GridItem>
 
-        {/* Position Change Request */}
-        <GridItem xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                <Business sx={{ mr: 1, verticalAlign: 'middle' }} />
-                Request Position Change
-              </Typography>
-              <Divider sx={{ mb: 3 }} />
-              
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-                Request a change to your role in the church. An administrator will review your request.
-              </Typography>
-              
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <FormControl fullWidth>
-                  <InputLabel>New Role</InputLabel>
-                  <Select
-                    value={positionChangeData.newRole}
-                    onChange={(e) => setPositionChangeData({
-                      ...positionChangeData,
-                      newRole: e.target.value as string,
-                      districtId: '',
-                      areaId: '',
-                      centreId: '',
-                    })}
-                    label="New Role"
-                  >
-                    <MenuItem value="">Select a role</MenuItem>
-                    <MenuItem value="cith_centre">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Home fontSize="small" />
-                        CITH Centre Leader
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="area_supervisor">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Business fontSize="small" />
-                        Area Supervisor
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="district_pastor">
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Building fontSize="small" />
-                        District Pastor
-                      </Box>
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-
-                {positionChangeData.newRole === 'district_pastor' && (
+        {/* Position Change Request - Only show for non-admin users */}
+        {user?.role !== 'admin' && (
+          <GridItem xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  <Business sx={{ mr: 1, verticalAlign: 'middle' }} />
+                  Request Position Change
+                </Typography>
+                <Divider sx={{ mb: 3 }} />
+                
+                <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+                  Request a change to your role in the church. An administrator will review your request.
+                </Typography>
+                
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <FormControl fullWidth>
-                    <InputLabel>Select District</InputLabel>
+                    <InputLabel>New Role</InputLabel>
                     <Select
-                      value={positionChangeData.districtId}
+                      value={positionChangeData.newRole}
                       onChange={(e) => setPositionChangeData({
                         ...positionChangeData,
-                        districtId: e.target.value as string,
+                        newRole: e.target.value as string,
+                        districtId: '',
+                        areaId: '',
+                        centreId: '',
                       })}
-                      label="Select District"
+                      label="New Role"
                     >
-                      <MenuItem value="">Select a district</MenuItem>
-                      {districts.map((district) => (
-                        <MenuItem key={district._id} value={district._id}>
-                          {district.name} - Pastor {district.pastorName}
-                        </MenuItem>
-                      ))}
+                      <MenuItem value="">Select a role</MenuItem>
+                      <MenuItem value="cith_centre">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Home fontSize="small" />
+                          CITH Centre Leader
+                        </Box>
+                      </MenuItem>
+                      <MenuItem value="area_supervisor">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Business fontSize="small" />
+                          Area Supervisor
+                        </Box>
+                      </MenuItem>
+                      <MenuItem value="district_pastor">
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Building fontSize="small" />
+                          District Pastor
+                        </Box>
+                      </MenuItem>
                     </Select>
                   </FormControl>
-                )}
 
-                {positionChangeData.newRole === 'area_supervisor' && (
-                  <>
+                  {positionChangeData.newRole === 'district_pastor' && (
                     <FormControl fullWidth>
                       <InputLabel>Select District</InputLabel>
                       <Select
@@ -432,7 +414,6 @@ const SettingsPage: React.FC = () => {
                         onChange={(e) => setPositionChangeData({
                           ...positionChangeData,
                           districtId: e.target.value as string,
-                          areaId: '',
                         })}
                         label="Select District"
                       >
@@ -444,119 +425,143 @@ const SettingsPage: React.FC = () => {
                         ))}
                       </Select>
                     </FormControl>
+                  )}
 
-                    {positionChangeData.districtId && (
+                  {positionChangeData.newRole === 'area_supervisor' && (
+                    <>
                       <FormControl fullWidth>
-                        <InputLabel>Select Area</InputLabel>
+                        <InputLabel>Select District</InputLabel>
                         <Select
-                          value={positionChangeData.areaId}
+                          value={positionChangeData.districtId}
                           onChange={(e) => setPositionChangeData({
                             ...positionChangeData,
-                            areaId: e.target.value as string,
+                            districtId: e.target.value as string,
+                            areaId: '',
                           })}
-                          label="Select Area"
+                          label="Select District"
                         >
-                          <MenuItem value="">Select an area</MenuItem>
-                          {areas
-                            .filter(area => area.districtId && area.districtId._id === positionChangeData.districtId)
-                            .map((area) => (
-                              <MenuItem key={area._id} value={area._id}>
-                                {area.name} - {area.supervisorName}
-                              </MenuItem>
-                            ))
-                          }
+                          <MenuItem value="">Select a district</MenuItem>
+                          {districts.map((district) => (
+                            <MenuItem key={district._id} value={district._id}>
+                              {district.name} - Pastor {district.pastorName}
+                            </MenuItem>
+                          ))}
                         </Select>
                       </FormControl>
-                    )}
-                  </>
-                )}
 
-                {positionChangeData.newRole === 'cith_centre' && (
-                  <>
-                    <FormControl fullWidth>
-                      <InputLabel>Select District</InputLabel>
-                      <Select
-                        value={positionChangeData.districtId}
-                        onChange={(e) => setPositionChangeData({
-                          ...positionChangeData,
-                          districtId: e.target.value as string,
-                          areaId: '',
-                          centreId: '',
-                        })}
-                        label="Select District"
-                      >
-                        <MenuItem value="">Select a district</MenuItem>
-                        {districts.map((district) => (
-                          <MenuItem key={district._id} value={district._id}>
-                            {district.name} - Pastor {district.pastorName}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                      {positionChangeData.districtId && (
+                        <FormControl fullWidth>
+                          <InputLabel>Select Area</InputLabel>
+                          <Select
+                            value={positionChangeData.areaId}
+                            onChange={(e) => setPositionChangeData({
+                              ...positionChangeData,
+                              areaId: e.target.value as string,
+                            })}
+                            label="Select Area"
+                          >
+                            <MenuItem value="">Select an area</MenuItem>
+                            {areas
+                              .filter(area => area.districtId && area.districtId._id === positionChangeData.districtId)
+                              .map((area) => (
+                                <MenuItem key={area._id} value={area._id}>
+                                  {area.name} - {area.supervisorName}
+                                </MenuItem>
+                              ))
+                            }
+                          </Select>
+                        </FormControl>
+                      )}
+                    </>
+                  )}
 
-                    {positionChangeData.districtId && (
+                  {positionChangeData.newRole === 'cith_centre' && (
+                    <>
                       <FormControl fullWidth>
-                        <InputLabel>Select Area</InputLabel>
+                        <InputLabel>Select District</InputLabel>
                         <Select
-                          value={positionChangeData.areaId}
+                          value={positionChangeData.districtId}
                           onChange={(e) => setPositionChangeData({
                             ...positionChangeData,
-                            areaId: e.target.value as string,
+                            districtId: e.target.value as string,
+                            areaId: '',
                             centreId: '',
                           })}
-                          label="Select Area"
+                          label="Select District"
                         >
-                          <MenuItem value="">Select an area</MenuItem>
-                          {areas
-                            .filter(area => area.districtId && area.districtId._id === positionChangeData.districtId)
-                            .map((area) => (
-                              <MenuItem key={area._id} value={area._id}>
-                                {area.name} - {area.supervisorName}
-                              </MenuItem>
-                            ))
-                          }
+                          <MenuItem value="">Select a district</MenuItem>
+                          {districts.map((district) => (
+                            <MenuItem key={district._id} value={district._id}>
+                              {district.name} - Pastor {district.pastorName}
+                            </MenuItem>
+                          ))}
                         </Select>
                       </FormControl>
-                    )}
 
-                    {positionChangeData.areaId && (
-                      <FormControl fullWidth>
-                        <InputLabel>Select CITH Centre</InputLabel>
-                        <Select
-                          value={positionChangeData.centreId}
-                          onChange={(e) => setPositionChangeData({
-                            ...positionChangeData,
-                            centreId: e.target.value as string,
-                          })}
-                          label="Select CITH Centre"
-                        >
-                          <MenuItem value="">Select a CITH centre</MenuItem>
-                          {centres
-                            .filter(centre => centre.areaSupervisorId && centre.areaSupervisorId._id === positionChangeData.areaId)
-                            .map((centre) => (
-                              <MenuItem key={centre._id} value={centre._id}>
-                                {centre.name} - {centre.location}
-                              </MenuItem>
-                            ))
-                          }
-                        </Select>
-                      </FormControl>
-                    )}
-                  </>
-                )}
+                      {positionChangeData.districtId && (
+                        <FormControl fullWidth>
+                          <InputLabel>Select Area</InputLabel>
+                          <Select
+                            value={positionChangeData.areaId}
+                            onChange={(e) => setPositionChangeData({
+                              ...positionChangeData,
+                              areaId: e.target.value as string,
+                              centreId: '',
+                            })}
+                            label="Select Area"
+                          >
+                            <MenuItem value="">Select an area</MenuItem>
+                            {areas
+                              .filter(area => area.districtId && area.districtId._id === positionChangeData.districtId)
+                              .map((area) => (
+                                <MenuItem key={area._id} value={area._id}>
+                                  {area.name} - {area.supervisorName}
+                                </MenuItem>
+                              ))
+                            }
+                          </Select>
+                        </FormControl>
+                      )}
 
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handlePositionChangeRequest}
-                  disabled={loading || !positionChangeData.newRole}
-                >
-                  {loading ? "Submitting..." : "Submit Request"}
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
+                      {positionChangeData.areaId && (
+                        <FormControl fullWidth>
+                          <InputLabel>Select CITH Centre</InputLabel>
+                          <Select
+                            value={positionChangeData.centreId}
+                            onChange={(e) => setPositionChangeData({
+                              ...positionChangeData,
+                              centreId: e.target.value as string,
+                            })}
+                            label="Select CITH Centre"
+                          >
+                            <MenuItem value="">Select a CITH centre</MenuItem>
+                            {centres
+                              .filter(centre => centre.areaSupervisorId && centre.areaSupervisorId._id === positionChangeData.areaId)
+                              .map((centre) => (
+                                <MenuItem key={centre._id} value={centre._id}>
+                                  {centre.name} - {centre.location}
+                                </MenuItem>
+                              ))
+                            }
+                          </Select>
+                        </FormControl>
+                      )}
+                    </>
+                  )}
+
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handlePositionChangeRequest}
+                    disabled={loading || !positionChangeData.newRole}
+                  >
+                    {loading ? "Submitting..." : "Submit Request"}
+                  </Button>
+                </Box>
+              </CardContent>
+            </Card>
+          </GridItem>
+        )}
 
         {/* Danger Zone */}
         <GridItem xs={12}>

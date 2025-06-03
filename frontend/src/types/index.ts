@@ -3,6 +3,7 @@ export interface User {
   _id: string;
   email: string;
   name: string;
+  phone: string; // Added phone field
   role: 'cith_centre' | 'area_supervisor' | 'district_pastor' | 'admin';
   cithCentreId?: string;
   areaSupervisorId?: string;
@@ -68,6 +69,7 @@ export interface PopulatedUser {
   _id: string;
   email: string;
   name: string;
+  phone: string; // Added phone field
   role: 'cith_centre' | 'area_supervisor' | 'district_pastor' | 'admin';
   isActive: boolean;
   createdAt: string;
@@ -82,6 +84,7 @@ export interface UserWithDetails {
   _id: string;
   email: string;
   name: string;
+  phone: string; // Added phone field
   role: 'cith_centre' | 'area_supervisor' | 'district_pastor' | 'admin';
   isActive: boolean;
   createdAt: string;
@@ -264,6 +267,7 @@ export interface UserFormData {
   name: string;
   email: string;
   password: string;
+  phone: string; // Added phone field
   role: string;
   cithCentreId?: string;
   areaSupervisorId?: string;
@@ -372,6 +376,7 @@ export interface IdNamePair {
 export interface BasicUser extends IdNamePair {
   email: string;
   role: string;
+  phone: string; // Added phone field
 }
 
 export interface BasicCentre extends IdNamePair {

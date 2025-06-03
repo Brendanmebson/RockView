@@ -45,6 +45,8 @@ const AreaSupervisorManagement: React.FC = () => {
     name: '',
     districtId: '',
     supervisorName: '',
+    contactEmail: '',
+    contactPhone: '',
   });
 
   useEffect(() => {
@@ -106,6 +108,8 @@ const AreaSupervisorManagement: React.FC = () => {
         ? areaSupervisor.districtId 
         : areaSupervisor.districtId?._id || '',
       supervisorName: areaSupervisor.supervisorName || '',
+      contactEmail: areaSupervisor.contactEmail || '',
+      contactPhone: areaSupervisor.contactPhone || '',
     });
     setDialogOpen(true);
   };
@@ -132,6 +136,8 @@ const AreaSupervisorManagement: React.FC = () => {
       name: '',
       districtId: '',
       supervisorName: '',
+      contactEmail: '',
+      contactPhone: '',
     });
   };
 
@@ -165,139 +171,158 @@ const AreaSupervisorManagement: React.FC = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Area Supervisors</Typography>
         <Button variant="contained" startIcon={<Add />} onClick={openCreateDialog}>
-          Add Area Supervisor
-        </Button>
-      </Box>
+         Add Area Supervisor
+       </Button>
+     </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-      {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
+     {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+     {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
 
-      <Card>
-        <CardContent>
-          {loading && areaSupervisors.length === 0 ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Area Name</TableCell>
-                    <TableCell>District</TableCell>
-                    <TableCell>Supervisor</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {areaSupervisors.map((areaSupervisor) => (
-                    <TableRow key={areaSupervisor._id}>
-                      <TableCell>{areaSupervisor.name || 'Unknown'}</TableCell>
-                      <TableCell>
-                        {getDistrictName(areaSupervisor)} (District {getDistrictNumber(areaSupervisor)})
-                      </TableCell>
-                      <TableCell>{areaSupervisor.supervisorName || 'TBD'}</TableCell>
-                      <TableCell>
-                        <Tooltip title="Edit">
-                          <IconButton onClick={() => handleEdit(areaSupervisor)} color="primary">
-                            <Edit />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Delete">
-                          <IconButton onClick={() => openDeleteDialog(areaSupervisor)} color="error">
-                            <Delete />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+     <Card>
+       <CardContent>
+         {loading && areaSupervisors.length === 0 ? (
+           <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+             <CircularProgress />
+           </Box>
+         ) : (
+           <TableContainer>
+             <Table>
+               <TableHead>
+                 <TableRow>
+                   <TableCell>Area Name</TableCell>
+                   <TableCell>District</TableCell>
+                   <TableCell>Supervisor</TableCell>
+                   <TableCell>Contact Email</TableCell>
+                   <TableCell>Contact Phone</TableCell>
+                   <TableCell>Actions</TableCell>
+                 </TableRow>
+               </TableHead>
+               <TableBody>
+                 {areaSupervisors.map((areaSupervisor) => (
+                   <TableRow key={areaSupervisor._id}>
+                     <TableCell>{areaSupervisor.name || 'Unknown'}</TableCell>
+                     <TableCell>
+                       {getDistrictName(areaSupervisor)} (District {getDistrictNumber(areaSupervisor)})
+                     </TableCell>
+                     <TableCell>{areaSupervisor.supervisorName || 'TBD'}</TableCell>
+                     <TableCell>{areaSupervisor.contactEmail || 'Not provided'}</TableCell>
+                     <TableCell>{areaSupervisor.contactPhone || 'Not provided'}</TableCell>
+                     <TableCell>
+                       <Tooltip title="Edit">
+                         <IconButton onClick={() => handleEdit(areaSupervisor)} color="primary">
+                           <Edit />
+                         </IconButton>
+                       </Tooltip>
+                       <Tooltip title="Delete">
+                         <IconButton onClick={() => openDeleteDialog(areaSupervisor)} color="error">
+                           <Delete />
+                         </IconButton>
+                       </Tooltip>
+                     </TableCell>
+                   </TableRow>
+                 ))}
+               </TableBody>
+             </Table>
+           </TableContainer>
+         )}
 
-          {areaSupervisors.length === 0 && !loading && (
-            <Typography variant="body1" textAlign="center" sx={{ py: 4 }}>
-              No area supervisors found. Create your first area supervisor to get started.
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
+         {areaSupervisors.length === 0 && !loading && (
+           <Typography variant="body1" textAlign="center" sx={{ py: 4 }}>
+             No area supervisors found. Create your first area supervisor to get started.
+           </Typography>
+         )}
+       </CardContent>
+     </Card>
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {editingAreaSupervisor ? 'Edit Area Supervisor' : 'Create New Area Supervisor'}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Area Name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              fullWidth
-              required
-            />
-            <FormControl fullWidth required>
-              <InputLabel>District</InputLabel>
-              <Select
-                value={formData.districtId}
-                onChange={(e) => setFormData({ ...formData, districtId: e.target.value })}
-                label="District"
-              >
-                {districts.map((district) => (
-                  <MenuItem key={district._id} value={district._id}>
-                    {district.name} (District {district.districtNumber})
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <TextField
-              label="Supervisor Name"
-              value={formData.supervisorName}
-              onChange={(e) => setFormData({ ...formData, supervisorName: e.target.value })}
-              fullWidth
-              required
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={loading || !formData.name || !formData.supervisorName || !formData.districtId}
-          >
-            {loading ? <CircularProgress size={24} /> : editingAreaSupervisor ? 'Update' : 'Create'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+     {/* Create/Edit Dialog */}
+     <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+       <DialogTitle>
+         {editingAreaSupervisor ? 'Edit Area Supervisor' : 'Create New Area Supervisor'}
+       </DialogTitle>
+       <DialogContent>
+         <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+           <TextField
+             label="Area Name"
+             value={formData.name}
+             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+             fullWidth
+             required
+           />
+           <FormControl fullWidth required>
+             <InputLabel>District</InputLabel>
+             <Select
+               value={formData.districtId}
+               onChange={(e) => setFormData({ ...formData, districtId: e.target.value })}
+               label="District"
+             >
+               {districts.map((district) => (
+                 <MenuItem key={district._id} value={district._id}>
+                   {district.name} (District {district.districtNumber})
+                 </MenuItem>
+               ))}
+             </Select>
+           </FormControl>
+           <TextField
+             label="Supervisor Name"
+             value={formData.supervisorName}
+             onChange={(e) => setFormData({ ...formData, supervisorName: e.target.value })}
+             fullWidth
+             required
+           />
+           <TextField
+             label="Contact Email"
+             value={formData.contactEmail}
+             onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
+             fullWidth
+             type="email"
+             helperText="Optional - will be filled when supervisor registers"
+           />
+           <TextField
+             label="Contact Phone"
+             value={formData.contactPhone}
+             onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
+             fullWidth
+             helperText="Optional - will be filled when supervisor registers"
+           />
+         </Box>
+       </DialogContent>
+       <DialogActions>
+         <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+         <Button
+           onClick={handleSubmit}
+           variant="contained"
+           disabled={loading || !formData.name || !formData.supervisorName || !formData.districtId}
+         >
+           {loading ? <CircularProgress size={24} /> : editingAreaSupervisor ? 'Update' : 'Create'}
+         </Button>
+       </DialogActions>
+     </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-        <DialogTitle>Delete Area Supervisor</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete "{areaSupervisorToDelete?.name}"? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleDelete} color="error" disabled={loading}>
-            {loading ? <CircularProgress size={24} /> : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+     {/* Delete Confirmation Dialog */}
+     <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+       <DialogTitle>Delete Area Supervisor</DialogTitle>
+       <DialogContent>
+         <Typography>
+           Are you sure you want to delete "{areaSupervisorToDelete?.name}"? This action cannot be undone.
+         </Typography>
+       </DialogContent>
+       <DialogActions>
+         <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+         <Button onClick={handleDelete} color="error" disabled={loading}>
+           {loading ? <CircularProgress size={24} /> : 'Delete'}
+         </Button>
+       </DialogActions>
+     </Dialog>
 
-      <Fab
-        color="primary"
-        onClick={openCreateDialog}
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
-      >
-        <Add />
-      </Fab>
-    </Box>
-  );
+     <Fab
+       color="primary"
+       onClick={openCreateDialog}
+       sx={{ position: 'fixed', bottom: 16, right: 16 }}
+     >
+       <Add />
+     </Fab>
+   </Box>
+ );
 };
 
 export default AreaSupervisorManagement;

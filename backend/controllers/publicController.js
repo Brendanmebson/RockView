@@ -58,19 +58,22 @@ const getPublicAreaSupervisors = async (req, res) => {
         const assignedSupervisor = await User.findOne({ 
           role: 'area_supervisor', 
           areaSupervisorId: area._id 
-        }).select('name email');
+        }).select('name email phone');
         
         return {
           ...area.toObject(),
           isAssigned: !!assignedSupervisor,
           assignedSupervisor: assignedSupervisor ? {
             name: assignedSupervisor.name,
-            email: assignedSupervisor.email
+            email: assignedSupervisor.email,
+            phone: assignedSupervisor.phone
           } : null,
           displayText: assignedSupervisor ? 
             `Supervised by ${assignedSupervisor.name}` : 
             'Unassigned',
-          // Override supervisorName to show assignment status
+          // Set contact info from user if assigned, otherwise null
+          contactEmail: assignedSupervisor ? assignedSupervisor.email : null,
+          contactPhone: assignedSupervisor ? assignedSupervisor.phone : null,
           supervisorName: assignedSupervisor ? 
             assignedSupervisor.name : 
             'Unassigned'
@@ -101,7 +104,7 @@ const getPublicCithCentres = async (req, res) => {
         const assignedLeaders = await User.find({ 
           role: 'cith_centre', 
           cithCentreId: centre._id 
-        }).select('name email');
+        }).select('name email phone');
         
         return {
           ...centre.toObject(),
@@ -110,7 +113,13 @@ const getPublicCithCentres = async (req, res) => {
           displayText: assignedLeaders.length > 0 ? 
             `Led by ${assignedLeaders.map(leader => leader.name).join(', ')}` : 
             'Unassigned',
-          // Override leaderName to show assignment status
+          // Set contact info from user if assigned, otherwise null
+          contactEmail: assignedLeaders.length > 0 ? 
+            assignedLeaders[0].email : 
+            null,
+          contactPhone: assignedLeaders.length > 0 ? 
+            assignedLeaders[0].phone : 
+            null,
           leaderName: assignedLeaders.length > 0 ? 
             assignedLeaders.map(leader => leader.name).join(', ') : 
             'Unassigned'

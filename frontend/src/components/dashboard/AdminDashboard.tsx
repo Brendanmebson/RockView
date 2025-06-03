@@ -20,6 +20,13 @@ import {
   Paper,
   CircularProgress,
   Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton,
+  Tooltip as MuiTooltip,
 } from '@mui/material';
 import { 
   People, 
@@ -31,7 +38,13 @@ import {
   TrendingUp, 
   AccountTree,
   Map,
-  LocationCity
+  LocationCity,
+  CheckCircle,
+  Cancel,
+  Assignment,
+  PersonAdd,
+  Visibility,
+  ManageAccounts,
 } from '@mui/icons-material';
 import { 
   BarChart as ReBarChart, 
@@ -50,6 +63,23 @@ import {
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
 import { District, AreaSupervisor, CithCentre } from '../../types';
+
+interface PositionRequest {
+  _id: string;
+  userId: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  currentRole: string;
+  newRole: string;
+  targetId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  rejectionReason?: string;
+  targetEntityName?: string;
+}
 
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState({
@@ -70,12 +100,17 @@ const AdminDashboard: React.FC = () => {
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [offeringData, setOfferingData] = useState<any[]>([]);
   const [recentReports, setRecentReports] = useState<any[]>([]);
+  const [positionRequests, setPositionRequests] = useState<PositionRequest[]>([]);
   const [thisMonthStats, setThisMonthStats] = useState({
     reports: 0,
     members: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<PositionRequest | null>(null);
+  const [rejectionReason, setRejectionReason] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -92,14 +127,16 @@ const AdminDashboard: React.FC = () => {
         areasResult,
         centresResult,
         reportsResult,
-        summaryResult
+        summaryResult,
+        positionRequestsResult
       ] = await Promise.allSettled([
         api.get('/auth/users'),
         api.get('/districts'),
         api.get('/area-supervisors'),
         api.get('/cith-centres'),
         api.get('/reports?limit=10'),
-        api.get('/reports/summary')
+        api.get('/reports/summary'),
+        api.get('/auth/position-change-requests')
       ]);
 
       // Handle users - exclude admins from count
@@ -183,6 +220,32 @@ const AdminDashboard: React.FC = () => {
           totalOfferings: summary.totalOfferings || 0,
           totalFirstTimers: summary.totalFirstTimers || 0
         }));
+      }
+
+      // Handle position requests
+      if (positionRequestsResult.status === 'fulfilled') {
+        const requests = positionRequestsResult.value.data || [];
+        const requestsWithEntityNames = await Promise.all(
+          requests.map(async (request: PositionRequest) => {
+            let targetEntityName = 'Unknown';
+            try {
+              if (request.newRole === 'district_pastor') {
+                const districtResponse = await api.get(`/districts/${request.targetId}`);
+                targetEntityName = districtResponse.data.name;
+              } else if (request.newRole === 'area_supervisor') {
+                const areaResponse = await api.get(`/area-supervisors/${request.targetId}`);
+                targetEntityName = areaResponse.data.name;
+              } else if (request.newRole === 'cith_centre') {
+                const centreResponse = await api.get(`/cith-centres/${request.targetId}`);
+                targetEntityName = centreResponse.data.name;
+              }
+            } catch {
+              // Keep default 'Unknown' if fetch fails
+            }
+            return { ...request, targetEntityName };
+          })
+        );
+        setPositionRequests(requestsWithEntityNames);
       }
 
       // Process chart data with the fetched data
@@ -304,7 +367,68 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      await api.put(`/auth/position-change-requests/${requestId}/approve`);
+      setSuccess('Position change request approved successfully');
+      fetchDashboardData(); // Refresh data
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to approve request');
+    }
+  };
+
+  const handleRejectRequest = async () => {
+    if (!selectedRequest) return;
+    
+    try {
+      await api.put(`/auth/position-change-requests/${selectedRequest._id}/reject`, {
+        reason: rejectionReason
+      });
+      
+      setSuccess('Position change request rejected');
+      setRejectDialogOpen(false);
+      setRejectionReason('');
+      setSelectedRequest(null);
+      fetchDashboardData(); // Refresh data
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to reject request');
+    }
+  };
+
+  const openRejectDialog = (request: PositionRequest) => {
+    setSelectedRequest(request);
+    setRejectDialogOpen(true);
+  };
+
+  const getStatusChip = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Chip label="Pending" color="warning" size="small" />;
+      case 'approved':
+        return <Chip label="Approved" color="success" size="small" />;
+      case 'rejected':
+        return <Chip label="Rejected" color="error" size="small" />;
+      default:
+        return <Chip label={status} size="small" />;
+    }
+  };
+
+  const getRoleName = (role: string) => {
+    switch (role) {
+      case 'cith_centre':
+        return 'CITH Centre Leader';
+      case 'area_supervisor':
+        return 'Area Supervisor';
+      case 'district_pastor':
+        return 'District Pastor';
+      case 'admin':
+        return 'Administrator';
+      default:
+        return role;
+    }
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   if (loading) {
     return (
@@ -324,6 +448,8 @@ const AdminDashboard: React.FC = () => {
       </Box>
     );
   }
+
+  const pendingRequests = positionRequests.filter(req => req.status === 'pending');
 
   return (
     <Box>
@@ -378,6 +504,15 @@ const AdminDashboard: React.FC = () => {
                 {stats.totalUsers} Users (Non-Admin)
               </Typography>
             </Box>
+
+            {pendingRequests.length > 0 && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Assignment fontSize="small" />
+                <Typography variant="body2">
+                  {pendingRequests.length} Pending Requests
+                </Typography>
+              </Box>
+            )}
           </Box>
         </Box>
       </Paper>
@@ -385,6 +520,97 @@ const AdminDashboard: React.FC = () => {
       <Typography variant="h4" gutterBottom>
         Admin Dashboard
       </Typography>
+
+      {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
+
+      {/* Position Change Requests Section */}
+      {pendingRequests.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <ManageAccounts color="primary" />
+              <Typography variant="h6">Pending Position Change Requests</Typography>
+              <Chip label={pendingRequests.length} color="warning" size="small" />
+            </Box>
+            
+            <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>User</TableCell>
+                    <TableCell>Current Role</TableCell>
+                    <TableCell>Requested Role</TableCell>
+                    <TableCell>Target Position</TableCell>
+                    <TableCell>Date Requested</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {pendingRequests.map((request) => (
+                    <TableRow key={request._id}>
+                      <TableCell>
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            {request.userId.name}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            {request.userId.email}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>{getRoleName(request.currentRole)}</TableCell>
+                      <TableCell>{getRoleName(request.newRole)}</TableCell>
+                      <TableCell>{request.targetEntityName || 'Loading...'}</TableCell>
+                      <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <MuiTooltip title="Approve Request">
+                            <IconButton
+                              size="small"
+                              color="success"
+                              onClick={() => handleApproveRequest(request._id)}
+                            >
+                              <CheckCircle />
+                            </IconButton>
+                          </MuiTooltip>
+                          <MuiTooltip title="Reject Request">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => openRejectDialog(request)}
+                            >
+                              <Cancel />
+                            </IconButton>
+                          </MuiTooltip>
+                          <MuiTooltip title="View Details">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => navigate('/admin/position-requests')}
+                            >
+                              <Visibility />
+                            </IconButton>
+                          </MuiTooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="outlined"
+                onClick={() => navigate('/admin/position-requests')}
+                startIcon={<ManageAccounts />}
+              >
+                Manage All Requests
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary stats cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -512,201 +738,240 @@ const AdminDashboard: React.FC = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Attendance Growth Trend</Typography>
-              {attendanceData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={attendanceData}>
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="attendance" stroke="#8884d8" activeDot={{ r: 8 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    No attendance data available yet
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </GridItem>
+             {attendanceData.length > 0 ? (
+               <ResponsiveContainer width="100%" height={300}>
+                 <LineChart data={attendanceData}>
+                   <XAxis dataKey="month" />
+                   <YAxis />
+                   <Tooltip />
+                   <Legend />
+                   <Line type="monotone" dataKey="attendance" stroke="#8884d8" activeDot={{ r: 8 }} />
+                 </LineChart>
+               </ResponsiveContainer>
+             ) : (
+               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                 <Typography variant="body2" color="textSecondary">
+                   No attendance data available yet
+                 </Typography>
+               </Box>
+             )}
+           </CardContent>
+         </Card>
+       </GridItem>
 
-        {/* Offering Growth Trend */}
-        <GridItem xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Offering Growth Trend</Typography>
-              {offeringData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={offeringData}>
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="offerings" stroke="#82ca9d" activeDot={{ r: 8 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    No offering data available yet
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </GridItem>
+       {/* Offering Growth Trend */}
+       <GridItem xs={12} md={6}>
+         <Card>
+           <CardContent>
+             <Typography variant="h6" gutterBottom>Offering Growth Trend</Typography>
+             {offeringData.length > 0 ? (
+               <ResponsiveContainer width="100%" height={300}>
+                 <LineChart data={offeringData}>
+                   <XAxis dataKey="month" />
+                   <YAxis />
+                   <Tooltip />
+                   <Legend />
+                   <Line type="monotone" dataKey="offerings" stroke="#82ca9d" activeDot={{ r: 8 }} />
+                 </LineChart>
+               </ResponsiveContainer>
+             ) : (
+               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                 <Typography variant="body2" color="textSecondary">
+                   No offering data available yet
+                 </Typography>
+               </Box>
+             )}
+           </CardContent>
+         </Card>
+       </GridItem>
 
-        {/* Quick Action Links */}
-        <GridItem xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Quick Actions
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/districts')}
-                  fullWidth
-                  startIcon={<Business />}
-                >
-                  Manage Districts
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/area-supervisors')}
-                  fullWidth
-                  startIcon={<AccountTree />}
-                >
-                  Manage Area Supervisors
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/cith-centres')}
-                  fullWidth
-                  startIcon={<Home />}
-                >
-                  Manage CITH Centres
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/admin/users')}
-                  fullWidth
-                  startIcon={<People />}
-                >
-                  Manage Users
-                </Button>
-                <Button
-                  variant="outlined"
-                  onClick={() => navigate('/reports')}
-                  fullWidth
-                  startIcon={<BarChart />}
-                >
-                  View All Reports
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        
-        {/* Recent Reports */}
-        <GridItem xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Recent Reports</Typography>
-              {recentReports.length > 0 ? (
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Centre</TableCell>
-                        <TableCell>Date</TableCell>
-                        <TableCell>Attendance</TableCell>
-                        <TableCell>Status</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {recentReports.slice(0, 5).map((report) => (
-                        <TableRow key={report._id}>
-                          <TableCell>
-                            {report.cithCentreId?.name || 'Unknown Centre'}
-                          </TableCell>
-                          <TableCell>
-                            {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
-                          </TableCell>
-                          <TableCell>
-                            {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              label={report.status.replace('_', ' ').toUpperCase()}
-                              color={
-                                report.status === 'district_approved' 
-                                  ? 'success' 
-                                  : report.status === 'area_approved' 
-                                  ? 'info' 
-                                  : report.status === 'pending' 
-                                  ? 'warning' 
-                                  : 'error'
-                              }
-                              size="small"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : (
-                <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ py: 2 }}>
-                  No reports submitted yet
-                </Typography>
-              )}
-              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button 
-                  variant="text" 
-                  onClick={() => navigate('/reports')}
-                  size="small"
-                >
-                  View All Reports
-                </Button>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-      </Grid>
+       {/* Quick Action Links */}
+       <GridItem xs={12} md={6}>
+         <Card>
+           <CardContent>
+             <Typography variant="h6" gutterBottom>
+               Quick Actions
+             </Typography>
+             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+               <Button
+                 variant="outlined"
+                 onClick={() => navigate('/districts')}
+                 fullWidth
+                 startIcon={<Business />}
+               >
+                 Manage Districts
+               </Button>
+               <Button
+                 variant="outlined"
+                 onClick={() => navigate('/area-supervisors')}
+                 fullWidth
+                 startIcon={<AccountTree />}
+               >
+                 Manage Area Supervisors
+               </Button>
+               <Button
+                 variant="outlined"
+                 onClick={() => navigate('/cith-centres')}
+                 fullWidth
+                 startIcon={<Home />}
+               >
+                 Manage CITH Centres
+               </Button>
+               <Button
+                 variant="outlined"
+                 onClick={() => navigate('/admin/users')}
+                 fullWidth
+                 startIcon={<People />}
+               >
+                 Manage Users
+               </Button>
+               <Button
+                 variant="outlined"
+                 onClick={() => navigate('/admin/position-requests')}
+                 fullWidth
+                 startIcon={<ManageAccounts />}
+                 color={pendingRequests.length > 0 ? 'warning' : 'primary'}
+               >
+                 Position Requests {pendingRequests.length > 0 && `(${pendingRequests.length})`}
+               </Button>
+               <Button
+                 variant="outlined"
+                 onClick={() => navigate('/reports')}
+                 fullWidth
+                 startIcon={<BarChart />}
+               >
+                 View All Reports
+               </Button>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+       
+       {/* Recent Reports */}
+       <GridItem xs={12} md={6}>
+         <Card>
+           <CardContent>
+             <Typography variant="h6" gutterBottom>Recent Reports</Typography>
+             {recentReports.length > 0 ? (
+               <TableContainer>
+                 <Table size="small">
+                   <TableHead>
+                     <TableRow>
+                       <TableCell>Centre</TableCell>
+                       <TableCell>Date</TableCell>
+                       <TableCell>Attendance</TableCell>
+                       <TableCell>Status</TableCell>
+                     </TableRow>
+                   </TableHead>
+                   <TableBody>
+                     {recentReports.slice(0, 5).map((report) => (
+                       <TableRow key={report._id}>
+                         <TableCell>
+                           {report.cithCentreId?.name || 'Unknown Centre'}
+                         </TableCell>
+                         <TableCell>
+                           {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
+                         </TableCell>
+                         <TableCell>
+                           {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
+                         </TableCell>
+                         <TableCell>
+                           <Chip
+                             label={report.status.replace('_', ' ').toUpperCase()}
+                             color={
+                               report.status === 'district_approved' 
+                                 ? 'success' 
+                                 : report.status === 'area_approved' 
+                                 ? 'info' 
+                                 : report.status === 'pending' 
+                                 ? 'warning' 
+                                 : 'error'
+                             }
+                             size="small"
+                           />
+                         </TableCell>
+                       </TableRow>
+                     ))}
+                   </TableBody>
+                 </Table>
+               </TableContainer>
+             ) : (
+               <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ py: 2 }}>
+                 No reports submitted yet
+               </Typography>
+             )}
+             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+               <Button 
+                 variant="text" 
+                 onClick={() => navigate('/reports')}
+                 size="small"
+               >
+                 View All Reports
+               </Button>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+     </Grid>
 
-      {/* This Month Activity - Updated to show actual data */}
-      <Box sx={{ position: 'fixed', bottom: 80, right: 16, zIndex: 1000 }}>
-        <Paper 
-          elevation={6} 
-          sx={{ 
-            p: 2, 
-            background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', 
-            borderRadius: 3,
-            minWidth: 200
-          }}
-        >
-          <Typography variant="caption" color="textSecondary" gutterBottom>
-            📊 This Month's Activity
-          </Typography>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Box textAlign="center">
-              <Typography variant="h6" color="primary">{thisMonthStats.reports}</Typography>
-              <Typography variant="caption">Reports</Typography>
-            </Box>
-            <Box textAlign="center">
-              <Typography variant="h6" color="success.main">{thisMonthStats.members}</Typography>
-              <Typography variant="caption">Attendance</Typography>
-            </Box>
-          </Box>
-        </Paper>
-      </Box>
-    </Box>
-  );
+     {/* Rejection Dialog */}
+     <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)}>
+       <DialogTitle>Reject Position Change Request</DialogTitle>
+       <DialogContent>
+         <Typography sx={{ mb: 2 }}>
+           Please provide a reason for rejecting this position change request:
+         </Typography>
+         <TextField
+           autoFocus
+           margin="dense"
+           label="Reason for Rejection"
+           fullWidth
+           multiline
+           rows={3}
+           value={rejectionReason}
+           onChange={(e) => setRejectionReason(e.target.value)}
+         />
+       </DialogContent>
+       <DialogActions>
+         <Button onClick={() => setRejectDialogOpen(false)}>Cancel</Button>
+         <Button 
+           onClick={handleRejectRequest} 
+           color="error"
+           disabled={!rejectionReason.trim()}
+         >
+           Reject Request
+         </Button>
+       </DialogActions>
+     </Dialog>
+
+     {/* This Month Activity - Updated to show actual data */}
+     <Box sx={{ position: 'fixed', bottom: 80, right: 16, zIndex: 1000 }}>
+       <Paper 
+         elevation={6} 
+         sx={{ 
+           p: 2, 
+           background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', 
+           borderRadius: 3,
+           minWidth: 200
+         }}
+       >
+         <Typography variant="caption" color="textSecondary" gutterBottom>
+           📊 This Month's Activity
+         </Typography>
+         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+           <Box textAlign="center">
+             <Typography variant="h6" color="primary">{thisMonthStats.reports}</Typography>
+             <Typography variant="caption">Reports</Typography>
+           </Box>
+           <Box textAlign="center">
+             <Typography variant="h6" color="success.main">{thisMonthStats.members}</Typography>
+             <Typography variant="caption">Attendance</Typography>
+           </Box>
+         </Box>
+       </Paper>
+     </Box>
+   </Box>
+ );
 };
 
 export default AdminDashboard;
