@@ -24,9 +24,8 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: false, // Changed from true to false
+      required: true,
       trim: true,
-      default: '', // Add default empty string
     },
     role: {
       type: String,

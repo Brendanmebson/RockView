@@ -26,8 +26,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Chip,
 } from '@mui/material';
-import { Add, Edit, Delete, Business } from '@mui/icons-material';
+import { Add, Edit, Delete, Business, Person, Phone, Email } from '@mui/icons-material';
 import api from '../../services/api';
 import { AreaSupervisor, District } from '../../types';
 
@@ -44,9 +45,6 @@ const AreaSupervisorManagement: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     districtId: '',
-    supervisorName: '',
-    contactEmail: '',
-    contactPhone: '',
   });
 
   useEffect(() => {
@@ -107,9 +105,6 @@ const AreaSupervisorManagement: React.FC = () => {
       districtId: typeof areaSupervisor.districtId === 'string' 
         ? areaSupervisor.districtId 
         : areaSupervisor.districtId?._id || '',
-      supervisorName: areaSupervisor.supervisorName || '',
-      contactEmail: areaSupervisor.contactEmail || '',
-      contactPhone: areaSupervisor.contactPhone || '',
     });
     setDialogOpen(true);
   };
@@ -135,9 +130,6 @@ const AreaSupervisorManagement: React.FC = () => {
     setFormData({
       name: '',
       districtId: '',
-      supervisorName: '',
-      contactEmail: '',
-      contactPhone: '',
     });
   };
 
@@ -192,8 +184,8 @@ const AreaSupervisorManagement: React.FC = () => {
                    <TableCell>Area Name</TableCell>
                    <TableCell>District</TableCell>
                    <TableCell>Supervisor</TableCell>
-                   <TableCell>Contact Email</TableCell>
-                   <TableCell>Contact Phone</TableCell>
+                   <TableCell>Contact</TableCell>
+                   <TableCell>Status</TableCell>
                    <TableCell>Actions</TableCell>
                  </TableRow>
                </TableHead>
@@ -204,9 +196,35 @@ const AreaSupervisorManagement: React.FC = () => {
                      <TableCell>
                        {getDistrictName(areaSupervisor)} (District {getDistrictNumber(areaSupervisor)})
                      </TableCell>
-                     <TableCell>{areaSupervisor.supervisorName || 'TBD'}</TableCell>
-                     <TableCell>{areaSupervisor.contactEmail || 'Not provided'}</TableCell>
-                     <TableCell>{areaSupervisor.contactPhone || 'Not provided'}</TableCell>
+                     <TableCell>
+                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                         <Person fontSize="small" />
+                         {(areaSupervisor as any).supervisorName || 'Unassigned'}
+                       </Box>
+                     </TableCell>
+                     <TableCell>
+                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                           <Email fontSize="small" />
+                           <Typography variant="caption">
+                             {(areaSupervisor as any).contactEmail || 'Not assigned'}
+                           </Typography>
+                         </Box>
+                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                           <Phone fontSize="small" />
+                           <Typography variant="caption">
+                             {(areaSupervisor as any).contactPhone || 'Not assigned'}
+                           </Typography>
+                         </Box>
+                       </Box>
+                     </TableCell>
+                     <TableCell>
+                       <Chip
+                         label={(areaSupervisor as any).isAssigned ? 'Assigned' : 'Unassigned'}
+                         color={(areaSupervisor as any).isAssigned ? 'success' : 'default'}
+                         size="small"
+                       />
+                     </TableCell>
                      <TableCell>
                        <Tooltip title="Edit">
                          <IconButton onClick={() => handleEdit(areaSupervisor)} color="primary">
@@ -262,28 +280,11 @@ const AreaSupervisorManagement: React.FC = () => {
                ))}
              </Select>
            </FormControl>
-           <TextField
-             label="Supervisor Name"
-             value={formData.supervisorName}
-             onChange={(e) => setFormData({ ...formData, supervisorName: e.target.value })}
-             fullWidth
-             required
-           />
-           <TextField
-             label="Contact Email"
-             value={formData.contactEmail}
-             onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-             fullWidth
-             type="email"
-             helperText="Optional - will be filled when supervisor registers"
-           />
-           <TextField
-             label="Contact Phone"
-             value={formData.contactPhone}
-             onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-             fullWidth
-             helperText="Optional - will be filled when supervisor registers"
-           />
+           <Alert severity="info" sx={{ mt: 2 }}>
+             <Typography variant="body2">
+               <strong>Note:</strong> Supervisor contact information will be automatically filled when a user registers and assigns themselves to this area.
+             </Typography>
+           </Alert>
          </Box>
        </DialogContent>
        <DialogActions>
@@ -291,7 +292,7 @@ const AreaSupervisorManagement: React.FC = () => {
          <Button
            onClick={handleSubmit}
            variant="contained"
-           disabled={loading || !formData.name || !formData.supervisorName || !formData.districtId}
+           disabled={loading || !formData.name || !formData.districtId}
          >
            {loading ? <CircularProgress size={24} /> : editingAreaSupervisor ? 'Update' : 'Create'}
          </Button>

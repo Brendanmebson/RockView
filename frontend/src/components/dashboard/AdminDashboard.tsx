@@ -87,6 +87,9 @@ const AdminDashboard: React.FC = () => {
     totalDistricts: 0,
     totalAreaSupervisors: 0,
     totalCithCentres: 0,
+    assignedDistricts: 0,
+    assignedAreas: 0,
+    assignedCentres: 0,
     totalReports: 0,
     totalAttendance: 0,
     totalOfferings: 0,
@@ -166,25 +169,40 @@ const AdminDashboard: React.FC = () => {
         ]);
       }
 
-      // Handle districts
+      // Handle districts with assignment info
       if (districtsResult.status === 'fulfilled') {
         const districtsData = districtsResult.value.data || [];
         setDistricts(districtsData);
-        setStats(prev => ({ ...prev, totalDistricts: districtsData.length }));
+        const assignedCount = districtsData.filter((d: any) => d.isAssigned).length;
+        setStats(prev => ({ 
+          ...prev, 
+          totalDistricts: districtsData.length,
+          assignedDistricts: assignedCount
+        }));
       }
 
-      // Handle area supervisors
+      // Handle area supervisors with assignment info
       if (areasResult.status === 'fulfilled') {
         const areasData = areasResult.value.data || [];
         setAreaSupervisors(areasData);
-        setStats(prev => ({ ...prev, totalAreaSupervisors: areasData.length }));
+        const assignedCount = areasData.filter((a: any) => a.isAssigned).length;
+        setStats(prev => ({ 
+          ...prev, 
+          totalAreaSupervisors: areasData.length,
+          assignedAreas: assignedCount
+        }));
       }
 
-      // Handle centres
+      // Handle centres with assignment info
       if (centresResult.status === 'fulfilled') {
         const centresData = centresResult.value.data || [];
         setCentres(centresData);
-        setStats(prev => ({ ...prev, totalCithCentres: centresData.length }));
+        const assignedCount = centresData.filter((c: any) => c.isAssigned).length;
+        setStats(prev => ({ 
+          ...prev, 
+          totalCithCentres: centresData.length,
+          assignedCentres: assignedCount
+        }));
       }
 
       // Handle reports
@@ -293,6 +311,7 @@ const AdminDashboard: React.FC = () => {
           name: district.name,
           centres: centresInDistrict.length,
           supervisors: areasInDistrict.length,
+          assigned: district.isAssigned ? 1 : 0,
           attendance: 0, // Will be calculated from actual reports
           offerings: 0   // Will be calculated from actual reports
         };
@@ -473,21 +492,21 @@ const AdminDashboard: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <LocationCity fontSize="small" />
               <Typography variant="body2">
-                {districts.length} Districts
+                {stats.assignedDistricts}/{stats.totalDistricts} Districts Assigned
               </Typography>
             </Box>
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Map fontSize="small" />
               <Typography variant="body2">
-                {areaSupervisors.length} Areas
+                {stats.assignedAreas}/{stats.totalAreaSupervisors} Areas Assigned
               </Typography>
             </Box>
             
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Home fontSize="small" />
               <Typography variant="body2">
-                {centres.length} CITH Centres
+                {stats.assignedCentres}/{stats.totalCithCentres} Centres Assigned
               </Typography>
             </Box>
             
@@ -501,7 +520,7 @@ const AdminDashboard: React.FC = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <People fontSize="small" />
               <Typography variant="body2">
-                {stats.totalUsers} Users (Non-Admin)
+                {stats.totalUsers} Active Users
               </Typography>
             </Box>
 
@@ -637,6 +656,9 @@ const AdminDashboard: React.FC = () => {
               <Box>
                 <Typography variant="body2" color="textSecondary">Districts</Typography>
                 <Typography variant="h5">{stats.totalDistricts}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {stats.assignedDistricts} Assigned
+                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -650,6 +672,9 @@ const AdminDashboard: React.FC = () => {
               <Box>
                 <Typography variant="body2" color="textSecondary">Area Supervisors</Typography>
                 <Typography variant="h5">{stats.totalAreaSupervisors}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {stats.assignedAreas} Assigned
+                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -663,6 +688,9 @@ const AdminDashboard: React.FC = () => {
               <Box>
                 <Typography variant="body2" color="textSecondary">CITH Centres</Typography>
                 <Typography variant="h5">{stats.totalCithCentres}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {stats.assignedCentres} Assigned
+                </Typography>
               </Box>
             </CardContent>
           </Card>
@@ -674,7 +702,7 @@ const AdminDashboard: React.FC = () => {
         <GridItem xs={12} md={8}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>District Structure</Typography>
+              <Typography variant="h6" gutterBottom>District Structure & Assignment</Typography>
               {districtData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={350}>
                   <ReBarChart data={districtData}>
@@ -684,6 +712,7 @@ const AdminDashboard: React.FC = () => {
                     <Legend />
                     <Bar dataKey="centres" fill="#ffc658" name="CITH Centres" />
                     <Bar dataKey="supervisors" fill="#82ca9d" name="Area Supervisors" />
+                    <Bar dataKey="assigned" fill="#8884d8" name="Pastor Assigned" />
                   </ReBarChart>
                 </ResponsiveContainer>
               ) : (
@@ -733,81 +762,29 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </GridItem>
 
-        {/* Attendance Growth Trend */}
+        {/* Quick Action Links */}
         <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Attendance Growth Trend</Typography>
-             {attendanceData.length > 0 ? (
-               <ResponsiveContainer width="100%" height={300}>
-                 <LineChart data={attendanceData}>
-                   <XAxis dataKey="month" />
-                   <YAxis />
-                   <Tooltip />
-                   <Legend />
-                   <Line type="monotone" dataKey="attendance" stroke="#8884d8" activeDot={{ r: 8 }} />
-                 </LineChart>
-               </ResponsiveContainer>
-             ) : (
-               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                 <Typography variant="body2" color="textSecondary">
-                   No attendance data available yet
-                 </Typography>
-               </Box>
-             )}
-           </CardContent>
-         </Card>
-       </GridItem>
-
-       {/* Offering Growth Trend */}
-       <GridItem xs={12} md={6}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>Offering Growth Trend</Typography>
-             {offeringData.length > 0 ? (
-               <ResponsiveContainer width="100%" height={300}>
-                 <LineChart data={offeringData}>
-                   <XAxis dataKey="month" />
-                   <YAxis />
-                   <Tooltip />
-                   <Legend />
-                   <Line type="monotone" dataKey="offerings" stroke="#82ca9d" activeDot={{ r: 8 }} />
-                 </LineChart>
-               </ResponsiveContainer>
-             ) : (
-               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                 <Typography variant="body2" color="textSecondary">
-                   No offering data available yet
-                 </Typography>
-               </Box>
-             )}
-           </CardContent>
-         </Card>
-       </GridItem>
-
-       {/* Quick Action Links */}
-       <GridItem xs={12} md={6}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>
-               Quick Actions
-             </Typography>
-             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-               <Button
-                 variant="outlined"
-                 onClick={() => navigate('/districts')}
-                 fullWidth
-                 startIcon={<Business />}
-               >
-                 Manage Districts
-               </Button>
-               <Button
-                 variant="outlined"
-                 onClick={() => navigate('/area-supervisors')}
-                 fullWidth
-                 startIcon={<AccountTree />}
-               >
-                 Manage Area Supervisors
+              <Typography variant="h6" gutterBottom>
+                Quick Actions
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate('/districts')}
+                  fullWidth
+                  startIcon={<Business />}
+                >
+                  Manage Districts ({stats.assignedDistricts}/{stats.totalDistricts} Assigned)
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate('/area-supervisors')}
+                  fullWidth
+                  startIcon={<AccountTree />}
+                >
+                  Manage Area Supervisors ({stats.assignedAreas}/{stats.totalAreaSupervisors} Assigned)
                </Button>
                <Button
                  variant="outlined"
@@ -815,7 +792,7 @@ const AdminDashboard: React.FC = () => {
                  fullWidth
                  startIcon={<Home />}
                >
-                 Manage CITH Centres
+                 Manage CITH Centres ({stats.assignedCentres}/{stats.totalCithCentres} Assigned)
                </Button>
                <Button
                  variant="outlined"
@@ -823,7 +800,7 @@ const AdminDashboard: React.FC = () => {
                  fullWidth
                  startIcon={<People />}
                >
-                 Manage Users
+                 Manage Users ({stats.totalUsers} Active)
                </Button>
                <Button
                  variant="outlined"

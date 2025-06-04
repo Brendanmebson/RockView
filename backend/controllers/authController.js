@@ -11,7 +11,7 @@ const generateToken = require('../utils/generateToken');
 // @access  Public
 const register = async (req, res) => {
   try {
-    const { email, password, name, role, cithCentreId, areaSupervisorId, districtId } = req.body;
+    const { email, password, name, phone, role, cithCentreId, areaSupervisorId, districtId } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -24,6 +24,7 @@ const register = async (req, res) => {
       email,
       password,
       name,
+      phone,
       role,
     };
 
@@ -68,10 +69,37 @@ const register = async (req, res) => {
     // Create user
     const user = await User.create(userData);
 
+    // Update the respective entity with user information
+    if (role === 'district_pastor' && districtId) {
+      await District.findByIdAndUpdate(districtId, {
+        pastorName: name
+      });
+    } else if (role === 'area_supervisor' && areaSupervisorId) {
+      await AreaSupervisor.findByIdAndUpdate(areaSupervisorId, {
+        supervisorName: name,
+        contactEmail: email,
+        contactPhone: phone
+      });
+    } else if (role === 'cith_centre' && cithCentreId) {
+      // Get all users assigned to this centre (including the newly created one)
+      const centreUsers = await User.find({
+        role: 'cith_centre',
+        cithCentreId: cithCentreId
+      });
+      
+      // Update centre with leader information
+      await CithCentre.findByIdAndUpdate(cithCentreId, {
+        leaderName: centreUsers.map(u => u.name).join(', '),
+        contactEmail: centreUsers[0].email, // Use first leader's email
+        contactPhone: centreUsers[0].phone  // Use first leader's phone
+      });
+    }
+
     res.status(201).json({
       _id: user._id,
       email: user.email,
       name: user.name,
+      phone: user.phone,
       role: user.role,
       cithCentreId: user.cithCentreId,
       areaSupervisorId: user.areaSupervisorId,
@@ -105,6 +133,7 @@ const login = async (req, res) => {
       _id: user._id,
       email: user.email,
       name: user.name,
+      phone: user.phone,
       role: user.role
     };
 
@@ -173,13 +202,40 @@ const updateProfile = async (req, res) => {
     // Only update allowed fields
     if (req.body.name) user.name = req.body.name;
     if (req.body.email) user.email = req.body.email;
+    if (req.body.phone) user.phone = req.body.phone;
 
     const updatedUser = await user.save();
+
+    // Update the respective entity if name, email, or phone changed
+    if (user.role === 'district_pastor' && user.districtId) {
+      await District.findByIdAndUpdate(user.districtId, {
+        pastorName: updatedUser.name
+      });
+    } else if (user.role === 'area_supervisor' && user.areaSupervisorId) {
+      await AreaSupervisor.findByIdAndUpdate(user.areaSupervisorId, {
+        supervisorName: updatedUser.name,
+        contactEmail: updatedUser.email,
+        contactPhone: updatedUser.phone
+      });
+    } else if (user.role === 'cith_centre' && user.cithCentreId) {
+      // Get all users assigned to this centre
+      const centreUsers = await User.find({
+        role: 'cith_centre',
+        cithCentreId: user.cithCentreId
+      });
+      
+      await CithCentre.findByIdAndUpdate(user.cithCentreId, {
+        leaderName: centreUsers.map(u => u.name).join(', '),
+        contactEmail: centreUsers[0].email,
+        contactPhone: centreUsers[0].phone
+      });
+    }
 
     res.json({
       _id: updatedUser._id,
       email: updatedUser.email,
       name: updatedUser.name,
+      phone: updatedUser.phone,
       role: updatedUser.role,
     });
   } catch (error) {
@@ -228,6 +284,40 @@ const deleteAccount = async (req, res) => {
       const adminCount = await User.countDocuments({ role: 'admin' });
       if (adminCount <= 1) {
         return res.status(400).json({ message: 'Cannot delete the only admin account' });
+      }
+    }
+
+    // Clear the entity assignment when user deletes account
+    if (user.role === 'district_pastor' && user.districtId) {
+      await District.findByIdAndUpdate(user.districtId, {
+        pastorName: 'Unassigned'
+      });
+    } else if (user.role === 'area_supervisor' && user.areaSupervisorId) {
+      await AreaSupervisor.findByIdAndUpdate(user.areaSupervisorId, {
+        supervisorName: 'Unassigned',
+        contactEmail: null,
+        contactPhone: null
+      });
+    } else if (user.role === 'cith_centre' && user.cithCentreId) {
+      // Get remaining users assigned to this centre
+      const remainingUsers = await User.find({
+        role: 'cith_centre',
+        cithCentreId: user.cithCentreId,
+        _id: { $ne: user._id }
+      });
+      
+      if (remainingUsers.length > 0) {
+        await CithCentre.findByIdAndUpdate(user.cithCentreId, {
+          leaderName: remainingUsers.map(u => u.name).join(', '),
+          contactEmail: remainingUsers[0].email,
+          contactPhone: remainingUsers[0].phone
+        });
+      } else {
+        await CithCentre.findByIdAndUpdate(user.cithCentreId, {
+          leaderName: 'Unassigned',
+          contactEmail: null,
+          contactPhone: null
+        });
       }
     }
     
@@ -338,6 +428,39 @@ const approvePositionChangeRequest = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
+
+    // Clear previous entity assignment
+    if (user.role === 'district_pastor' && user.districtId) {
+      await District.findByIdAndUpdate(user.districtId, {
+        pastorName: 'Unassigned'
+      });
+    } else if (user.role === 'area_supervisor' && user.areaSupervisorId) {
+      await AreaSupervisor.findByIdAndUpdate(user.areaSupervisorId, {
+        supervisorName: 'Unassigned',
+        contactEmail: null,
+        contactPhone: null
+      });
+    } else if (user.role === 'cith_centre' && user.cithCentreId) {
+      const remainingUsers = await User.find({
+        role: 'cith_centre',
+        cithCentreId: user.cithCentreId,
+        _id: { $ne: user._id }
+      });
+      
+      if (remainingUsers.length > 0) {
+        await CithCentre.findByIdAndUpdate(user.cithCentreId, {
+          leaderName: remainingUsers.map(u => u.name).join(', '),
+          contactEmail: remainingUsers[0].email,
+          contactPhone: remainingUsers[0].phone
+        });
+      } else {
+        await CithCentre.findByIdAndUpdate(user.cithCentreId, {
+          leaderName: 'Unassigned',
+          contactEmail: null,
+          contactPhone: null
+        });
+      }
+    }
     
     // Clear previous associations
     user.cithCentreId = undefined;
@@ -348,10 +471,29 @@ const approvePositionChangeRequest = async (req, res) => {
     user.role = request.newRole;
     if (request.newRole === 'district_pastor') {
       user.districtId = request.targetId;
+      await District.findByIdAndUpdate(request.targetId, {
+        pastorName: user.name
+      });
     } else if (request.newRole === 'area_supervisor') {
       user.areaSupervisorId = request.targetId;
+      await AreaSupervisor.findByIdAndUpdate(request.targetId, {
+        supervisorName: user.name,
+        contactEmail: user.email,
+        contactPhone: user.phone
+      });
     } else if (request.newRole === 'cith_centre') {
       user.cithCentreId = request.targetId;
+      const centreUsers = await User.find({
+        role: 'cith_centre',
+        cithCentreId: request.targetId
+      });
+      centreUsers.push(user); // Add the current user to the list
+      
+      await CithCentre.findByIdAndUpdate(request.targetId, {
+        leaderName: centreUsers.map(u => u.name).join(', '),
+        contactEmail: centreUsers[0].email,
+        contactPhone: centreUsers[0].phone
+      });
     }
     
     await user.save();

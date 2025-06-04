@@ -1,3 +1,4 @@
+// backend/models/CithCentre.js
 const mongoose = require('mongoose');
 
 const cithCentreSchema = new mongoose.Schema(
@@ -19,19 +20,19 @@ const cithCentreSchema = new mongoose.Schema(
     },
     leaderName: {
       type: String,
-      required: true,
       trim: true,
+      default: 'Unassigned'
     },
     contactEmail: {
       type: String,
       trim: true,
       lowercase: true,
-      default: null, // Will be null until user registers
+      default: null,
     },
     contactPhone: {
       type: String,
       trim: true,
-      default: null, // Will be null until user registers
+      default: null,
     },
   },
   {

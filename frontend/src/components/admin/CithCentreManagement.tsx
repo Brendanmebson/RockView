@@ -26,8 +26,9 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Chip,
 } from '@mui/material';
-import { Add, Edit, Delete, Home } from '@mui/icons-material';
+import { Add, Edit, Delete, Home, Person, Phone, Email, CheckCircle, Cancel } from '@mui/icons-material';
 import api from '../../services/api';
 import { CithCentre, AreaSupervisor, District } from '../../types';
 
@@ -46,9 +47,6 @@ const CithCentreManagement: React.FC = () => {
     name: '',
     areaSupervisorId: '',
     location: '',
-    leaderName: '',
-    contactEmail: '',
-    contactPhone: '',
   });
   const [selectedDistrictId, setSelectedDistrictId] = useState('');
 
@@ -124,9 +122,6 @@ const CithCentreManagement: React.FC = () => {
       name: cithCentre.name || '',
       areaSupervisorId,
       location: cithCentre.location || '',
-      leaderName: cithCentre.leaderName || '',
-      contactEmail: cithCentre.contactEmail || '',
-      contactPhone: cithCentre.contactPhone || '',
     });
 
     // Set the district for filtering
@@ -162,9 +157,6 @@ const CithCentreManagement: React.FC = () => {
       name: '',
       areaSupervisorId: '',
       location: '',
-      leaderName: '',
-      contactEmail: '',
-      contactPhone: '',
     });
     setSelectedDistrictId('');
   };
@@ -181,6 +173,12 @@ const CithCentreManagement: React.FC = () => {
   };
 
   const getAreaSupervisorName = (cithCentre: CithCentre) => {
+    // Check if we have the populated areaSupervisorName from the backend
+    if ((cithCentre as any).areaSupervisorName) {
+      return (cithCentre as any).areaSupervisorName;
+    }
+    
+    // Fallback to checking the populated object
     if (typeof cithCentre.areaSupervisorId === 'object' && cithCentre.areaSupervisorId?.name) {
       return cithCentre.areaSupervisorId.name;
     }
@@ -188,6 +186,12 @@ const CithCentreManagement: React.FC = () => {
   };
 
   const getDistrictName = (cithCentre: CithCentre) => {
+    // Check if we have the populated districtName from the backend
+    if ((cithCentre as any).districtName) {
+      return (cithCentre as any).districtName;
+    }
+    
+    // Fallback to checking the populated object
     if (typeof cithCentre.areaSupervisorId === 'object' && 
         cithCentre.areaSupervisorId?.districtId &&
         typeof cithCentre.areaSupervisorId.districtId === 'object') {
@@ -233,22 +237,68 @@ const CithCentreManagement: React.FC = () => {
                     <TableCell>Location</TableCell>
                     <TableCell>Area</TableCell>
                     <TableCell>District</TableCell>
-                    <TableCell>Leader</TableCell>
-                    <TableCell>Contact Email</TableCell>
-                    <TableCell>Contact Phone</TableCell>
+                    <TableCell>Leader(s)</TableCell>
+                    <TableCell>Contact</TableCell>
+                    <TableCell>Status</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {cithCentres.map((cithCentre) => (
                     <TableRow key={cithCentre._id}>
-                      <TableCell>{cithCentre.name || 'Unknown'}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Home fontSize="small" />
+                          {cithCentre.name || 'Unknown'}
+                        </Box>
+                      </TableCell>
                       <TableCell>{cithCentre.location || 'Unknown'}</TableCell>
                       <TableCell>{getAreaSupervisorName(cithCentre)}</TableCell>
                       <TableCell>{getDistrictName(cithCentre)}</TableCell>
-                      <TableCell>{cithCentre.leaderName || 'TBD'}</TableCell>
-                      <TableCell>{cithCentre.contactEmail || 'Not provided'}</TableCell>
-                      <TableCell>{cithCentre.contactPhone || 'Not provided'}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Person fontSize="small" />
+                          {(cithCentre as any).leaderName || 'Unassigned'}
+                          {(cithCentre as any).hasVacancy && (cithCentre as any).assignedLeaders?.length > 0 && (
+                            <Chip 
+                              label="Has Vacancy" 
+                              size="small" 
+                              color="warning" 
+                            />
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Email fontSize="small" />
+                            <Typography variant="caption">
+                              {(cithCentre as any).contactEmail || 'Not assigned'}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Phone fontSize="small" />
+                            <Typography variant="caption">
+                              {(cithCentre as any).contactPhone || 'Not assigned'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Chip
+                            label={(cithCentre as any).isAssigned ? 'Assigned' : 'Unassigned'}
+                            color={(cithCentre as any).isAssigned ? 'success' : 'default'}
+                            size="small"
+                            icon={(cithCentre as any).isAssigned ? <CheckCircle /> : <Cancel />}
+                          />
+                          {(cithCentre as any).leaderCount !== undefined && (
+                            <Typography variant="caption">
+                              {(cithCentre as any).leaderCount}/2 Leaders
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
                       <TableCell>
                         <Tooltip title="Edit">
                           <IconButton onClick={() => handleEdit(cithCentre)} color="primary">
@@ -324,33 +374,17 @@ const CithCentreManagement: React.FC = () => {
               >
                 {filteredAreaSupervisors.map((areaSupervisor) => (
                   <MenuItem key={areaSupervisor._id} value={areaSupervisor._id}>
-                    {areaSupervisor.name} ({getDistrictName({ areaSupervisorId: areaSupervisor } as any)})
+                    {areaSupervisor.name}
                   </MenuItem>
                 ))}
               </Select>
             </FormControl>
-            <TextField
-              label="Leader Name"
-              value={formData.leaderName}
-              onChange={(e) => setFormData({ ...formData, leaderName: e.target.value })}
-              fullWidth
-              required
-            />
-            <TextField
-              label="Contact Email"
-              value={formData.contactEmail}
-              onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-              fullWidth
-              type="email"
-              helperText="Optional - will be filled when leader registers"
-            />
-            <TextField
-              label="Contact Phone"
-              value={formData.contactPhone}
-              onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })}
-              fullWidth
-              helperText="Optional - will be filled when leader registers"
-            />
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                <strong>Note:</strong> Leader contact information will be automatically filled when users register and assign themselves to this centre. 
+                Each centre can have up to 2 leaders.
+              </Typography>
+            </Alert>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -358,7 +392,7 @@ const CithCentreManagement: React.FC = () => {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={loading || !formData.name || !formData.location || !formData.leaderName || !formData.areaSupervisorId}
+            disabled={loading || !formData.name || !formData.location || !formData.areaSupervisorId}
           >
             {loading ? <CircularProgress size={24} /> : editingCithCentre ? 'Update' : 'Create'}
           </Button>

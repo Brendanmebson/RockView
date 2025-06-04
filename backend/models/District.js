@@ -1,3 +1,4 @@
+// backend/models/District.js
 const mongoose = require('mongoose');
 
 const districtSchema = new mongoose.Schema(
@@ -16,8 +17,8 @@ const districtSchema = new mongoose.Schema(
     },
     pastorName: {
       type: String,
-      required: true,
       trim: true,
+      default: 'Unassigned',
     },
     description: {
       type: String,

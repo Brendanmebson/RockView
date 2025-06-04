@@ -1,3 +1,4 @@
+// backend/models/AreaSupervisor.js
 const mongoose = require('mongoose');
 
 const areaSupervisorSchema = new mongoose.Schema(
@@ -14,19 +15,19 @@ const areaSupervisorSchema = new mongoose.Schema(
     },
     supervisorName: {
       type: String,
-      required: true,
       trim: true,
+      default: 'Unassigned',
     },
     contactEmail: {
       type: String,
       trim: true,
       lowercase: true,
-      default: null, // Will be null until user registers
+      default: null,
     },
     contactPhone: {
       type: String,
       trim: true,
-      default: null, // Will be null until user registers
+      default: null,
     },
   },
   {

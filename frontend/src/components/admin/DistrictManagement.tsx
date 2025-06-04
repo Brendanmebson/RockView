@@ -22,8 +22,9 @@ import {
   IconButton,
   Tooltip,
   Fab,
+  Chip,
 } from '@mui/material';
-import { Add, Edit, Delete, Business } from '@mui/icons-material';
+import { Add, Edit, Delete, Business, Person, Phone, Email } from '@mui/icons-material';
 import api from '../../services/api';
 import { District } from '../../types';
 
@@ -39,7 +40,6 @@ const DistrictManagement: React.FC = () => {
   const [formData, setFormData] = useState({
     name: '',
     districtNumber: 1,
-    pastorName: '',
     description: '',
   });
 
@@ -89,7 +89,6 @@ const DistrictManagement: React.FC = () => {
     setFormData({
       name: district.name || '',
       districtNumber: district.districtNumber || 1,
-      pastorName: district.pastorName || '',
       description: district.description || '',
     });
     setDialogOpen(true);
@@ -116,7 +115,6 @@ const DistrictManagement: React.FC = () => {
     setFormData({
       name: '',
       districtNumber: 1,
-      pastorName: '',
       description: '',
     });
   };
@@ -158,6 +156,8 @@ const DistrictManagement: React.FC = () => {
                     <TableCell>District Number</TableCell>
                     <TableCell>Name</TableCell>
                     <TableCell>Pastor</TableCell>
+                    <TableCell>Contact</TableCell>
+                    <TableCell>Status</TableCell>
                     <TableCell>Description</TableCell>
                     <TableCell>Actions</TableCell>
                   </TableRow>
@@ -167,7 +167,35 @@ const DistrictManagement: React.FC = () => {
                     <TableRow key={district._id}>
                       <TableCell>{district.districtNumber}</TableCell>
                       <TableCell>{district.name || 'Unknown'}</TableCell>
-                      <TableCell>{district.pastorName || 'TBD'}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Person fontSize="small" />
+                          {(district as any).pastorName || 'Unassigned'}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Email fontSize="small" />
+                            <Typography variant="caption">
+                              {(district as any).contactEmail || 'Not assigned'}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Phone fontSize="small" />
+                            <Typography variant="caption">
+                              {(district as any).contactPhone || 'Not assigned'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={(district as any).isAssigned ? 'Assigned' : 'Unassigned'}
+                          color={(district as any).isAssigned ? 'success' : 'default'}
+                          size="small"
+                        />
+                      </TableCell>
                       <TableCell>{district.description || 'No description'}</TableCell>
                       <TableCell>
                         <Tooltip title="Edit">
@@ -220,13 +248,6 @@ const DistrictManagement: React.FC = () => {
               inputProps={{ min: 1, max: 99 }}
             />
             <TextField
-              label="Pastor Name"
-              value={formData.pastorName}
-              onChange={(e) => setFormData({ ...formData, pastorName: e.target.value })}
-              fullWidth
-              required
-            />
-            <TextField
               label="Description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -234,6 +255,11 @@ const DistrictManagement: React.FC = () => {
               multiline
               rows={3}
             />
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                <strong>Note:</strong> Pastor contact information will be automatically filled when a user registers and assigns themselves to this district.
+              </Typography>
+            </Alert>
           </Box>
         </DialogContent>
         <DialogActions>
@@ -241,7 +267,7 @@ const DistrictManagement: React.FC = () => {
           <Button
             onClick={handleSubmit}
             variant="contained"
-            disabled={loading || !formData.name || !formData.pastorName}
+            disabled={loading || !formData.name}
           >
             {loading ? <CircularProgress size={24} /> : editingDistrict ? 'Update' : 'Create'}
           </Button>
