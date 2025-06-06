@@ -47,13 +47,13 @@ interface Message {
     name: string;
     email: string;
     role: string;
-  };
+  } | null; // Allow null
   to: {
     _id: string;
     name: string;
     email: string;
     role: string;
-  };
+  } | null; // Allow null
   subject: string;
   content: string;
   isRead: boolean;
@@ -171,6 +171,25 @@ const MessageList: React.FC = () => {
     }
   };
 
+  // Helper functions to safely get user names
+  const getFromName = (message: Message) => {
+    return message.from?.name || 'Unknown Sender';
+  };
+
+  const getToName = (message: Message) => {
+    return message.to?.name || 'Unknown Recipient';
+  };
+
+  const getFromInitial = (message: Message) => {
+    const name = getFromName(message);
+    return name.charAt(0).toUpperCase();
+  };
+
+  const getToInitial = (message: Message) => {
+    const name = getToName(message);
+    return name.charAt(0).toUpperCase();
+  };
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
@@ -243,8 +262,8 @@ const MessageList: React.FC = () => {
                 <ListItemAvatar>
                   <Avatar>
                     {currentTab === 0 
-                      ? message.from.name.charAt(0).toUpperCase()
-                      : message.to.name.charAt(0).toUpperCase()
+                      ? getFromInitial(message)
+                      : getToInitial(message)
                     }
                   </Avatar>
                 </ListItemAvatar>
@@ -256,7 +275,7 @@ const MessageList: React.FC = () => {
                         fontWeight={message.isRead || currentTab === 1 ? 'normal' : 'bold'}
                         sx={{ minWidth: 150 }}
                       >
-                        {currentTab === 0 ? message.from.name : message.to.name}
+                        {currentTab === 0 ? getFromName(message) : getToName(message)}
                       </Typography>
                       {message.priority !== 'normal' && (
                         <Chip 
@@ -318,7 +337,7 @@ const MessageList: React.FC = () => {
         <DialogTitle>Delete Messages</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete {selectedMessages.length} message(s)? 
+            Are you sure you want to Delete {selectedMessages.length} message(s)? 
             This action cannot be undone.
           </Typography>
         </DialogContent>

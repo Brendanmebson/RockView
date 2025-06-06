@@ -1,24 +1,34 @@
 // backend/routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
+
+// NOTE: Commented out missing functions temporarily to make server work
+// Missing functions that need to be implemented in authController:
+// - getUserStats
+// - getMyPositionRequests  
+// - cancelPositionChangeRequest
+// - getDashboardData
+// - checkPositionAvailability
+
 const {
-  register,
-  login,
-  getProfile,
-  updateProfile,
-  changePassword,
-  deleteAccount,
-  submitPositionChangeRequest,
-  getPositionChangeRequests,
-  approvePositionChangeRequest,
-  rejectPositionChangeRequest,
-  getUsers,
-  getUserStats,
-  getMyPositionRequests,
-  cancelPositionChangeRequest,
-  getDashboardData,
-  checkPositionAvailability,
+register,
+login,
+getProfile,
+updateProfile,
+changePassword,
+deleteAccount,
+submitPositionChangeRequest,
+getPositionChangeRequests,
+approvePositionChangeRequest,
+rejectPositionChangeRequest,
+getUsers,
+// getUserStats,
+// getMyPositionRequests,
+// cancelPositionChangeRequest,
+// getDashboardData,
+// checkPositionAvailability,
 } = require('../controllers/authController');
+
 const { protect, authorize } = require('../middleware/auth');
 
 // Public routes
@@ -30,15 +40,18 @@ router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
 router.put('/change-password', protect, changePassword);
 router.delete('/delete-account', protect, deleteAccount);
-router.get('/dashboard-data', protect, getDashboardData);
+// TODO: Uncomment when getDashboardData is implemented
+// router.get('/dashboard-data', protect, getDashboardData);
 
 // Position change requests
 router.post('/position-change-request', protect, submitPositionChangeRequest);
-router.get('/my-position-requests', protect, getMyPositionRequests);
-router.delete('/position-change-requests/:id/cancel', protect, cancelPositionChangeRequest);
+// TODO: Uncomment when getMyPositionRequests is implemented
+// router.get('/my-position-requests', protect, getMyPositionRequests);
+// TODO: Uncomment when cancelPositionChangeRequest is implemented
+// router.delete('/position-change-requests/:id/cancel', protect, cancelPositionChangeRequest);
 
-// Check position availability
-router.get('/check-position/:role/:targetId', protect, checkPositionAvailability);
+// TODO: Uncomment when checkPositionAvailability is implemented
+// router.get('/check-position/:role/:targetId', protect, checkPositionAvailability);
 
 // Admin routes for position change requests
 router.get('/position-change-requests', protect, authorize('admin'), getPositionChangeRequests);
@@ -47,6 +60,7 @@ router.put('/position-change-requests/:id/reject', protect, authorize('admin'), 
 
 // Admin routes for user management
 router.get('/users', protect, authorize('admin'), getUsers);
-router.get('/user-stats', protect, authorize('admin'), getUserStats);
+// TODO: Uncomment when getUserStats is implemented
+// router.get('/user-stats', protect, authorize('admin'), getUserStats);
 
 module.exports = router;
