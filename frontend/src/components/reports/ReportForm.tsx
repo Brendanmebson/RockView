@@ -23,7 +23,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
 import api from '../../services/api';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { WeeklyReportData, CithCentre } from '../../types';
 import { 
   PeopleAlt, 
@@ -37,13 +37,19 @@ import {
   VideocamOutlined,
   GroupsOutlined,
   SaveOutlined,
-  ArrowBackOutlined
+  ArrowBackOutlined,
+  Event,
+  Description
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
 
 const ReportForm: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const isEditing = !!id;
   const [week, setWeek] = useState<Dayjs | null>(dayjs().startOf('week'));
+  const [eventType, setEventType] = useState('regular_service');
+  const [eventDescription, setEventDescription] = useState('');
   const [reportData, setReportData] = useState<WeeklyReportData>({
     male: 0,
     female: 0,
@@ -68,7 +74,11 @@ const ReportForm: React.FC = () => {
     if (user && user.cithCentreId) {
       fetchCentreInfo();
     }
-  }, [user]);
+    
+    if (isEditing) {
+      fetchReportForEdit();
+    }
+  }, [user, id, isEditing]);
 
   const fetchCentreInfo = async () => {
     if (!user?.cithCentreId) return;
@@ -81,6 +91,25 @@ const ReportForm: React.FC = () => {
       console.error('Error fetching centre info:', error);
     } finally {
       setLoadingCentre(false);
+    }
+  };
+
+  const fetchReportForEdit = async () => {
+    if (!id) return;
+    
+    setLoading(true);
+    try {
+      const response = await api.get(`/reports/${id}/edit`);
+      const report = response.data;
+      
+      setWeek(dayjs(report.week));
+      setEventType(report.eventType || 'regular_service');
+      setEventDescription(report.eventDescription || '');
+      setReportData(report.data);
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to fetch report for editing');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -117,17 +146,8 @@ const ReportForm: React.FC = () => {
       return false;
     }
 
-    // Validate first timers followed up cannot be more than total first timers
-    if (reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers) {
-      setError('First timers followed up cannot exceed total first timers');
-      return false;
-    }
-
-    // Validate first timers converted cannot be more than followed up
-    if (reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp) {
-      setError('First timers converted cannot exceed first timers followed up');
-      return false;
-    }
+    // Remove strict validation for first timers follow-up as per requirement
+    // Allow follow-up and conversion to be more than current week's first timers
 
     // Validate week cannot be in the future
     if (week && week.isAfter(dayjs())) {
@@ -153,21 +173,29 @@ const ReportForm: React.FC = () => {
       // Get start of week (Sunday)
       const weekStart = week?.startOf('week').toDate();
       
-      await api.post('/reports', {
+      const payload = {
         week: weekStart,
+        eventType,
+        eventDescription: eventDescription.trim(),
         data: reportData,
-      });
+      };
+
+      if (isEditing) {
+        await api.put(`/reports/${id}`, payload);
+        setSuccess('Report updated successfully!');
+      } else {
+        await api.post('/reports', payload);
+        setSuccess('Report submitted successfully!');
+      }
       
-      setSuccess('Report submitted successfully!');
-      
-      // Reset form for new entry or navigate
+      // Navigate back after success
       setTimeout(() => {
         navigate('/reports');
       }, 2000);
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to submit report';
+      const errorMessage = error.response?.data?.message || error.message || `Failed to ${isEditing ? 'update' : 'submit'} report`;
       setError(errorMessage);
-      console.error('Report submission error:', error);
+      console.error('Report operation error:', error);
     } finally {
       setLoading(false);
     }
@@ -175,6 +203,21 @@ const ReportForm: React.FC = () => {
 
   // Calculate total attendance
   const totalAttendance = reportData.male + reportData.female + reportData.children;
+
+  const eventTypes = [
+    { value: 'regular_service', label: 'Regular Service' },
+    { value: 'singles_day', label: 'Singles Day' },
+    { value: 'youth_day', label: 'Youth Day' },
+    { value: 'womens_day', label: "Women's Day" },
+    { value: 'mens_day', label: "Men's Day" },
+    { value: 'harvest', label: 'Harvest Service' },
+    { value: 'thanksgiving', label: 'Thanksgiving Service' },
+    { value: 'special_crusade', label: 'Special Crusade' },
+    { value: 'baptism_service', label: 'Baptism Service' },
+    { value: 'communion_service', label: 'Communion Service' },
+    { value: 'prayer_meeting', label: 'Prayer Meeting' },
+    { value: 'other', label: 'Other Event' },
+  ];
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -186,7 +229,7 @@ const ReportForm: React.FC = () => {
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
             <Typography variant="h4" gutterBottom>
-              Submit Weekly Report
+              {isEditing ? 'Edit Weekly Report' : 'Submit Weekly Report'}
             </Typography>
             {centreInfo && (
               <Paper 
@@ -216,12 +259,13 @@ const ReportForm: React.FC = () => {
             <CardContent>
               <form onSubmit={handleSubmit}>
                 <Grid container spacing={3}>
-                  {/* Week Selection and Meeting Mode */}
-                  <GridItem xs={12} md={6}>
+                  {/* Week Selection and Event Type */}
+                  <GridItem xs={12} md={4}>
                     <DatePicker
                       label="Week of"
                       value={week}
                       onChange={setWeek}
+                      disabled={isEditing} // Don't allow changing week when editing
                       slotProps={{ 
                         textField: { 
                           fullWidth: true,
@@ -231,7 +275,28 @@ const ReportForm: React.FC = () => {
                     />
                   </GridItem>
 
-                  <GridItem xs={12} md={6}>
+                  <GridItem xs={12} md={4}>
+                    <FormControl fullWidth>
+                      <InputLabel>Event Type</InputLabel>
+                      <Select
+                        value={eventType}
+                        onChange={(e) => setEventType(e.target.value)}
+                        startAdornment={
+                          <InputAdornment position="start">
+                            <Event />
+                          </InputAdornment>
+                        }
+                      >
+                        {eventTypes.map((type) => (
+                          <MenuItem key={type.value} value={type.value}>
+                            {type.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </GridItem>
+
+                  <GridItem xs={12} md={4}>
                     <FormControl fullWidth>
                       <InputLabel>Mode of Meeting</InputLabel>
                       <Select
@@ -255,6 +320,26 @@ const ReportForm: React.FC = () => {
                       </Select>
                     </FormControl>
                   </GridItem>
+
+                  {/* Event Description */}
+                  {(eventType === 'other' || eventType !== 'regular_service') && (
+                    <GridItem xs={12}>
+                      <TextField
+                        label="Event Description"
+                        value={eventDescription}
+                        onChange={(e) => setEventDescription(e.target.value)}
+                        fullWidth
+                        placeholder="Describe the special event or occasion"
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Description />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </GridItem>
+                  )}
                   
                   <GridItem xs={12}>
                     <Divider>
@@ -344,154 +429,151 @@ const ReportForm: React.FC = () => {
                       </Typography>
                     </Divider>
                   </GridItem>
+                  
                   {/* Offerings and Testimonies Section */}
-                 <GridItem xs={12} md={6}>
-                   <TextField
-                     label="Offerings (₦)"
-                     type="number"
-                     value={reportData.offerings}
-                     onChange={handleChange('offerings')}
-                     fullWidth
-                     inputProps={{ min: 0, step: 0.01 }}
-                     InputProps={{
-                       startAdornment: (
-                         <InputAdornment position="start">
-                           ₦
-                         </InputAdornment>
-                       ),
-                     }}
-                   />
-                 </GridItem>
+                  <GridItem xs={12} md={6}>
+                    <TextField
+                      label="Offerings (₦)"
+                      type="number"
+                      value={reportData.offerings}
+                      onChange={handleChange('offerings')}
+                      fullWidth
+                      inputProps={{ min: 0, step: 0.01 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            ₦
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </GridItem>
 
-                 <GridItem xs={12} md={6}>
-                   <TextField
-                     label="Number of Testimonies"
-                     type="number"
-                     value={reportData.numberOfTestimonies}
-                     onChange={handleChange('numberOfTestimonies')}
-                     fullWidth
-                     inputProps={{ min: 0 }}
-                     InputProps={{
-                       startAdornment: (
-                         <InputAdornment position="start">
-                           <Comment />
-                         </InputAdornment>
-                       ),
-                     }}
-                   />
-                 </GridItem>
+                  <GridItem xs={12} md={6}>
+                    <TextField
+                      label="Number of Testimonies"
+                      type="number"
+                      value={reportData.numberOfTestimonies}
+                      onChange={handleChange('numberOfTestimonies')}
+                      fullWidth
+                      inputProps={{ min: 0 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Comment />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </GridItem>
 
-                 <GridItem xs={12}>
-                   <Divider>
-                     <Typography variant="subtitle2" color="textSecondary">
-                       First Timers Information
-                     </Typography>
-                   </Divider>
-                 </GridItem>
+                  <GridItem xs={12}>
+                    <Divider>
+                      <Typography variant="subtitle2" color="textSecondary">
+                        First Timers Information
+                      </Typography>
+                    </Divider>
+                  </GridItem>
 
-                 {/* First Timers Section */}
-                 <GridItem xs={12} md={4}>
-                   <TextField
-                     label="Number of First Timers"
-                     type="number"
-                     value={reportData.numberOfFirstTimers}
-                     onChange={handleChange('numberOfFirstTimers')}
-                     fullWidth
-                     inputProps={{ min: 0 }}
-                     InputProps={{
-                       startAdornment: (
-                         <InputAdornment position="start">
-                           <PersonAdd />
-                         </InputAdornment>
-                       ),
-                     }}
-                   />
-                 </GridItem>
+                  {/* First Timers Section */}
+                  <GridItem xs={12} md={4}>
+                    <TextField
+                      label="Number of First Timers"
+                      type="number"
+                      value={reportData.numberOfFirstTimers}
+                      onChange={handleChange('numberOfFirstTimers')}
+                      fullWidth
+                      inputProps={{ min: 0 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <PersonAdd />
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                  </GridItem>
 
-                 <GridItem xs={12} md={4}>
-                   <TextField
-                     label="First Timers Followed Up"
-                     type="number"
-                     value={reportData.firstTimersFollowedUp}
-                     onChange={handleChange('firstTimersFollowedUp')}
-                     fullWidth
-                     inputProps={{ min: 0, max: reportData.numberOfFirstTimers }}
-                     InputProps={{
-                       startAdornment: (
-                         <InputAdornment position="start">
-                           <Check />
-                         </InputAdornment>
-                       ),
-                     }}
-                     error={reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers}
-                     helperText={reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers ? 
-                       'Cannot exceed first timers' : ''}
-                   />
-                 </GridItem>
+                  <GridItem xs={12} md={4}>
+                    <TextField
+                      label="First Timers Followed Up"
+                      type="number"
+                      value={reportData.firstTimersFollowedUp}
+                      onChange={handleChange('firstTimersFollowedUp')}
+                      fullWidth
+                      inputProps={{ min: 0 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Check />
+                          </InputAdornment>
+                        ),
+                      }}
+                      helperText="Can include follow-ups from previous weeks"
+                    />
+                  </GridItem>
 
-                 <GridItem xs={12} md={4}>
-                   <TextField
-                     label="First Timers Converted to CITH"
-                     type="number"
-                     value={reportData.firstTimersConvertedToCITH}
-                     onChange={handleChange('firstTimersConvertedToCITH')}
-                     fullWidth
-                     inputProps={{ min: 0, max: reportData.firstTimersFollowedUp }}
-                     InputProps={{
-                       startAdornment: (
-                         <InputAdornment position="start">
-                           <Church fontSize="small" />
-                         </InputAdornment>
-                       ),
-                     }}
-                     error={reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp}
-                     helperText={reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp ? 
-                       'Cannot exceed followed up' : ''}
-                   />
-                 </GridItem>
-                 
-                 {/* Remarks Section */}
-                 <GridItem xs={12}>
-                   <TextField
-                     label="Remarks"
-                     multiline
-                     rows={4}
-                     value={reportData.remarks}
-                     onChange={handleChange('remarks')}
-                     fullWidth
-                     placeholder="Enter any additional comments, prayer points, or notable events"
-                   />
-                 </GridItem>
+                  <GridItem xs={12} md={4}>
+                    <TextField
+                      label="First Timers Converted to CITH"
+                      type="number"
+                      value={reportData.firstTimersConvertedToCITH}
+                      onChange={handleChange('firstTimersConvertedToCITH')}
+                      fullWidth
+                      inputProps={{ min: 0 }}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Church fontSize="small" />
+                          </InputAdornment>
+                        ),
+                      }}
+                      helperText="Can include conversions from previous weeks"
+                    />
+                  </GridItem>
+                  
+                  {/* Remarks Section */}
+                  <GridItem xs={12}>
+                    <TextField
+                      label="Remarks"
+                      multiline
+                      rows={4}
+                      value={reportData.remarks}
+                      onChange={handleChange('remarks')}
+                      fullWidth
+                      placeholder="Enter any additional comments, prayer points, or notable events"
+                    />
+                  </GridItem>
 
-                 {/* Submit Buttons */}
-                 <GridItem xs={12}>
-                   <Box sx={{ display: 'flex', gap: 2 }}>
-                     <Button
-                       variant="contained"
-                       type="submit"
-                       disabled={loading}
-                       startIcon={loading ? <CircularProgress size={20} /> : <SaveOutlined />}
-                       sx={{ px: 4 }}
-                     >
-                       {loading ? 'Submitting...' : 'Submit Report'}
-                     </Button>
-                     <Button
-                       variant="outlined"
-                       onClick={() => navigate('/reports')}
-                       startIcon={<ArrowBackOutlined />}
-                     >
-                       Cancel
-                     </Button>
-                   </Box>
-                 </GridItem>
-               </Grid>
-             </form>
-           </CardContent>
-         </Card>
-       </motion.div>
-     </Box>
-   </LocalizationProvider>
- );
+                  {/* Submit Buttons */}
+                  <GridItem xs={12}>
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Button
+                        variant="contained"
+                        type="submit"
+                        disabled={loading}
+                        startIcon={loading ? <CircularProgress size={20} /> : <SaveOutlined />}
+                        sx={{ px: 4 }}
+                      >
+                        {loading ? (isEditing ? 'Updating...' : 'Submitting...') : (isEditing ? 'Update Report' : 'Submit Report')}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={() => navigate('/reports')}
+                        startIcon={<ArrowBackOutlined />}
+                      >
+                        Cancel
+                      </Button>
+                    </Box>
+                  </GridItem>
+                </Grid>
+              </form>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </Box>
+    </LocalizationProvider>
+  );
 };
 
 export default ReportForm;

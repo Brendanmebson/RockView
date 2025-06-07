@@ -17,6 +17,8 @@ import {
   Chip,
   Avatar,
   Divider,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { 
   Add, 
@@ -46,6 +48,12 @@ const CithCentreDashboard: React.FC = () => {
   const [offeringData, setOfferingData] = useState<any[]>([]);
   const [demographicData, setDemographicData] = useState<any[]>([]);
   const [firstTimerData, setFirstTimerData] = useState<any[]>([]);
+  const [monthlyStats, setMonthlyStats] = useState({
+    totalAttendance: 0,
+    totalOfferings: 0,
+    totalFirstTimers: 0,
+    totalReports: 0
+  });
   const navigate = useNavigate();
   const { user, userCentre, userArea, userDistrict } = useAuth();
 
@@ -89,17 +97,40 @@ const CithCentreDashboard: React.FC = () => {
   const fetchReports = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/reports?limit=10');
+      // Get current month's date range
+      const currentDate = new Date();
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      
+      const response = await api.get(`/reports?startDate=${startOfMonth.toISOString()}&endDate=${endOfMonth.toISOString()}&limit=50`);
       const reports = response.data.reports;
       setReports(reports);
       
-      // Process data for charts
+      // Process data for charts and monthly stats
       processChartData(reports);
+      calculateMonthlyStats(reports);
     } catch (error) {
       console.error('Error fetching reports:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateMonthlyStats = (reports: WeeklyReport[]) => {
+    const stats = reports.reduce((acc, report) => {
+      acc.totalAttendance += (report.data.male + report.data.female + report.data.children);
+      acc.totalOfferings += report.data.offerings;
+      acc.totalFirstTimers += report.data.numberOfFirstTimers;
+      acc.totalReports += 1;
+      return acc;
+    }, {
+      totalAttendance: 0,
+      totalOfferings: 0,
+      totalFirstTimers: 0,
+      totalReports: 0
+    });
+    
+    setMonthlyStats(stats);
   };
 
   const processChartData = (reports: WeeklyReport[]) => {
@@ -125,16 +156,20 @@ const CithCentreDashboard: React.FC = () => {
     }));
     setOfferingData(offerings);
     
-    // Demographic data for pie chart
-    if (sortedReports.length > 0) {
-      const latestReport = sortedReports[sortedReports.length - 1];
-      const demographics = [
-        { name: 'Male', value: latestReport.data.male },
-        { name: 'Female', value: latestReport.data.female },
-        { name: 'Children', value: latestReport.data.children }
-      ];
-      setDemographicData(demographics);
-    }
+    // Demographic data for pie chart (current month totals)
+    const totalDemographics = sortedReports.reduce((acc, report) => {
+      acc.male += report.data.male;
+      acc.female += report.data.female;
+      acc.children += report.data.children;
+      return acc;
+    }, { male: 0, female: 0, children: 0 });
+    
+    const demographics = [
+      { name: 'Male', value: totalDemographics.male },
+      { name: 'Female', value: totalDemographics.female },
+      { name: 'Children', value: totalDemographics.children }
+    ];
+    setDemographicData(demographics);
     
     // First timer data for area chart
     const firstTimers = sortedReports.map(report => ({
@@ -162,6 +197,15 @@ const CithCentreDashboard: React.FC = () => {
   };
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
+        <CircularProgress size={60} />
+      </Box>
+    );
+  }
 
   return (
     <Box>
@@ -201,6 +245,17 @@ const CithCentreDashboard: React.FC = () => {
               {districtInfo ? districtInfo.name : 'Loading...'}
             </Typography>
           </Box>
+          
+          <Box sx={{ ml: 'auto' }}>
+            <Chip 
+              label={currentMonth} 
+              sx={{ 
+                bgcolor: 'primary.main', 
+                color: 'white',
+                fontWeight: 'bold'
+              }} 
+            />
+          </Box>
         </Box>
       </Paper>
 
@@ -215,7 +270,7 @@ const CithCentreDashboard: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Key Metrics */}
+      {/* Key Metrics - Monthly Stats */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <GridItem xs={12} md={3}>
           <Card>
@@ -224,217 +279,217 @@ const CithCentreDashboard: React.FC = () => {
                 <People />
               </Avatar>
               <Box>
-               <Typography variant="body2" color="textSecondary">Total Attendance</Typography>
-               <Typography variant="h5">
-                 {reports.length > 0 ? 
-                   reports[0].data.male + reports[0].data.female + reports[0].data.children 
-                   : 0}
-               </Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-       <GridItem xs={12} md={3}>
-         <Card>
-           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-             <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-               <AttachMoney />
-             </Avatar>
-             <Box>
-               <Typography variant="body2" color="textSecondary">Offerings</Typography>
-               <Typography variant="h5">
-                 ₦{reports.length > 0 ? reports[0].data.offerings.toLocaleString() : 0}
-               </Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-       <GridItem xs={12} md={3}>
-         <Card>
-           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-             <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-               <TrendingUp />
-             </Avatar>
-             <Box>
-               <Typography variant="body2" color="textSecondary">First Timers</Typography>
-               <Typography variant="h5">
-                 {reports.length > 0 ? reports[0].data.numberOfFirstTimers : 0}
-               </Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-       <GridItem xs={12} md={3}>
-         <Card>
-           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-             <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-               <Assignment />
-             </Avatar>
-             <Box>
-               <Typography variant="body2" color="textSecondary">Reports</Typography>
-               <Typography variant="h5">{reports.length}</Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-     </Grid>
+                <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
+                <Typography variant="h5">{monthlyStats.totalAttendance}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {currentMonth}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        <GridItem xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+                <AttachMoney />
+              </Avatar>
+              <Box>
+                <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
+                <Typography variant="h5">₦{monthlyStats.totalOfferings.toLocaleString()}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {currentMonth}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        <GridItem xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                <TrendingUp />
+              </Avatar>
+              <Box>
+                <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
+                <Typography variant="h5">{monthlyStats.totalFirstTimers}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {currentMonth}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        <GridItem xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                <Assignment />
+              </Avatar>
+              <Box>
+                <Typography variant="body2" color="textSecondary">Reports Submitted</Typography>
+                <Typography variant="h5">{monthlyStats.totalReports}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  {currentMonth}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+      </Grid>
 
-     {/* Charts Section */}
-     <Grid container spacing={3}>
-       {/* Attendance Trend Line Chart */}
-       <GridItem xs={12} md={8}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>Attendance Trends</Typography>
-             <ResponsiveContainer width="100%" height={300}>
-               <LineChart data={attendanceData}>
-                 <XAxis dataKey="week" />
-                 <YAxis />
-                 <Tooltip />
-                 <Legend />
-                 <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" activeDot={{ r: 8 }} />
-                 <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" />
-                 <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" />
-                 <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={2} />
-               </LineChart>
-             </ResponsiveContainer>
-           </CardContent>
-         </Card>
-       </GridItem>
-       
-       {/* Demographic Pie Chart */}
-       <GridItem xs={12} md={4}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>Demographics</Typography>
-             <ResponsiveContainer width="100%" height={300}>
-               <PieChart>
-                 <Pie
-                   data={demographicData}
-                   cx="50%"
-                   cy="50%"
-                   labelLine={false}
-                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                   outerRadius={80}
-                   fill="#8884d8"
-                   dataKey="value"
-                 >
-                   {demographicData.map((entry, index) => (
-                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                   ))}
-                 </Pie>
-                 <Tooltip />
-               </PieChart>
-             </ResponsiveContainer>
-           </CardContent>
-         </Card>
-       </GridItem>
-       
-       {/* Offerings Bar Chart */}
-       <GridItem xs={12} md={6}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>Offering Trends</Typography>
-             <ResponsiveContainer width="100%" height={300}>
-               <BarChart data={offeringData}>
-                 <XAxis dataKey="week" />
-                 <YAxis />
-                 <Tooltip />
-                 <Legend />
-                 <Bar dataKey="amount" name="Offering Amount" fill="#8884d8" />
-               </BarChart>
-             </ResponsiveContainer>
-           </CardContent>
-         </Card>
-       </GridItem>
-       
-       {/* First Timer Conversion Funnel */}
-       <GridItem xs={12} md={6}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>First Timer Conversion</Typography>
-             <ResponsiveContainer width="100%" height={300}>
-               <AreaChart data={firstTimerData}>
-                 <XAxis dataKey="week" />
-                 <YAxis />
-                 <Tooltip />
-                 <Legend />
-                 <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#8884d8" stroke="#8884d8" />
-                 <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#82ca9d" stroke="#82ca9d" />
-                 <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#ffc658" stroke="#ffc658" />
-               </AreaChart>
-             </ResponsiveContainer>
-           </CardContent>
-         </Card>
-       </GridItem>
-       
-       {/* Recent Reports Table */}
-       <GridItem xs={12}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>
-               Recent Reports
-             </Typography>
-             <TableContainer>
-               <Table>
-                 <TableHead>
-                   <TableRow>
-                     <TableCell>Week</TableCell>
-                     <TableCell>Status</TableCell>
-                     <TableCell>Total Attendance</TableCell>
-                     <TableCell>Offerings</TableCell>
-                     <TableCell>First Timers</TableCell>
-                     <TableCell>Actions</TableCell>
-                   </TableRow>
-                 </TableHead>
-                 <TableBody>
-                   {reports.map((report) => (
-                     <TableRow key={report._id}>
-                       <TableCell>
-                         {new Date(report.week).toDateString()}
-                       </TableCell>
-                       <TableCell>
-                         <Chip
-                           label={report.status.replace('_', ' ').toUpperCase()}
-                           color={getStatusColor(report.status)}
-                           size="small"
-                         />
-                       </TableCell>
-                       <TableCell>
-                         {report.data.male + report.data.female + report.data.children}
-                       </TableCell>
-                       <TableCell>₦{report.data.offerings.toLocaleString()}</TableCell>
-                       <TableCell>{report.data.numberOfFirstTimers}</TableCell>
-                       <TableCell>
-                         <Button
-                           size="small"
-                           onClick={() => navigate(`/reports/${report._id}`)}
-                           variant="outlined"
-                         >
-                           View
-                         </Button>
-                       </TableCell>
-                     </TableRow>
-                   ))}
-                 </TableBody>
-               </Table>
-             </TableContainer>
-             {reports.length === 0 && !loading && (
-               <Typography variant="body2" sx={{ textAlign: 'center', py: 3 }}>
-                 No reports found. Submit your first report to see data.
-               </Typography>
-             )}
-             {loading && (
-               <Typography variant="body2" sx={{ textAlign: 'center', py: 3 }}>
-                 Loading reports...
-               </Typography>
-             )}
-           </CardContent>
-         </Card>
-       </GridItem>
-     </Grid>
-   </Box>
- );
+      {/* Charts Section */}
+      <Grid container spacing={3}>
+        {/* Attendance Trend Line Chart - Made Wider */}
+        <GridItem xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Monthly Attendance Trends</Typography>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={attendanceData}>
+                  <XAxis dataKey="week" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" activeDot={{ r: 8 }} />
+                  <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" />
+                  <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" />
+                  <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        {/* Demographic Pie Chart - Made Larger */}
+        <GridItem xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Monthly Demographics Distribution</Typography>
+              <ResponsiveContainer width="100%" height={400}>
+                <PieChart>
+                  <Pie
+                    data={demographicData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
+                    outerRadius={120}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {demographicData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => [value, 'Count']} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        {/* Offerings Bar Chart */}
+        <GridItem xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Weekly Offering Trends</Typography>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={offeringData}>
+                  <XAxis dataKey="week" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => [`₦${value.toLocaleString()}`, 'Amount']} />
+                  <Legend />
+                  <Bar dataKey="amount" name="Offering Amount" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        {/* First Timer Conversion Funnel */}
+        <GridItem xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>First Timer Journey Tracking</Typography>
+              <ResponsiveContainer width="100%" height={400}>
+                <AreaChart data={firstTimerData}>
+                  <XAxis dataKey="week" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#8884d8" stroke="#8884d8" />
+                  <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#82ca9d" stroke="#82ca9d" />
+                  <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#ffc658" stroke="#ffc658" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        {/* Recent Reports Table */}
+        <GridItem xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Recent Reports ({currentMonth})
+              </Typography>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Week</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Total Attendance</TableCell>
+                      <TableCell>Offerings</TableCell>
+                      <TableCell>First Timers</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {reports.map((report) => (
+                      <TableRow key={report._id}>
+                        <TableCell>
+                          {new Date(report.week).toDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={report.status.replace('_', ' ').toUpperCase()}
+                            color={getStatusColor(report.status)}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          {report.data.male + report.data.female + report.data.children}
+                        </TableCell>
+                        <TableCell>₦{report.data.offerings.toLocaleString()}</TableCell>
+                        <TableCell>{report.data.numberOfFirstTimers}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="small"
+                            onClick={() => navigate(`/reports/${report._id}`)}
+                            variant="outlined"
+                          >
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              {reports.length === 0 && !loading && (
+                <Typography variant="body2" sx={{ textAlign: 'center', py: 3 }}>
+                  No reports found for {currentMonth}. Submit your first report to see data.
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        </GridItem>
+      </Grid>
+    </Box>
+  );
 };
 
 export default CithCentreDashboard;

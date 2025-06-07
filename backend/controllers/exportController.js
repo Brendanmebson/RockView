@@ -39,7 +39,18 @@ const exportToExcel = async (req, res) => {
     query.status = 'district_approved';
     
     const reports = await WeeklyReport.find(query)
-      .populate('cithCentreId')
+      .populate({
+        path: 'cithCentreId',
+        select: 'name location',
+        populate: {
+          path: 'areaSupervisorId',
+          select: 'name',
+          populate: {
+            path: 'districtId',
+            select: 'name districtNumber'
+          }
+        }
+      })
       .populate('submittedBy', 'name')
       .sort({ week: -1 });
     
@@ -49,11 +60,17 @@ const exportToExcel = async (req, res) => {
     
     // Define columns
     worksheet.columns = [
-      { header: 'CITH Centre', key: 'cithCentre', width: 20 },
+      { header: 'District', key: 'district', width: 20 },
+      { header: 'Area Supervisor', key: 'areaSupervisor', width: 20 },
+      { header: 'CITH Centre', key: 'cithCentre', width: 25 },
+      { header: 'Location', key: 'location', width: 20 },
       { header: 'Week', key: 'week', width: 15 },
+      { header: 'Event Type', key: 'eventType', width: 20 },
+      { header: 'Event Description', key: 'eventDescription', width: 25 },
       { header: 'Male', key: 'male', width: 10 },
       { header: 'Female', key: 'female', width: 10 },
       { header: 'Children', key: 'children', width: 10 },
+      { header: 'Total Attendance', key: 'totalAttendance', width: 15 },
       { header: 'Offerings', key: 'offerings', width: 15 },
       { header: 'Testimonies', key: 'testimonies', width: 15 },
       { header: 'First Timers', key: 'firstTimers', width: 15 },
@@ -67,26 +84,53 @@ const exportToExcel = async (req, res) => {
     
     // Add data
     reports.forEach(report => {
+      const centre = report.cithCentreId || {};
+      const area = centre.areaSupervisorId || {};
+      const district = area.districtId || {};
+      
       worksheet.addRow({
-        cithCentre: report.cithCentreId.name,
-        week: report.week.toISOString().split('T')[0],
-        male: report.data.male,
-        female: report.data.female,
-        children: report.data.children,
-        offerings: report.data.offerings,
-        testimonies: report.data.numberOfTestimonies,
-        firstTimers: report.data.numberOfFirstTimers,
-        firstTimersFollowedUp: report.data.firstTimersFollowedUp,
-        firstTimersConverted: report.data.firstTimersConvertedToCITH,
-        modeOfMeeting: report.data.modeOfMeeting,
-        remarks: report.data.remarks,
-        submittedBy: report.submittedBy.name,
-        status: report.status,
+        district: district.name || 'Unknown District',
+        areaSupervisor: area.name || 'Unknown Area',
+        cithCentre: centre.name || 'Unknown Centre',
+        location: centre.location || 'Unknown Location',
+        week: report.week ? report.week.toISOString().split('T')[0] : 'Unknown Date',
+        eventType: report.eventType ? report.eventType.replace('_', ' ').toUpperCase() : 'REGULAR SERVICE',
+        eventDescription: report.eventDescription || '',
+        male: report.data?.male || 0,
+        female: report.data?.female || 0,
+        children: report.data?.children || 0,
+        totalAttendance: (report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0),
+        offerings: report.data?.offerings || 0,
+        testimonies: report.data?.numberOfTestimonies || 0,
+        firstTimers: report.data?.numberOfFirstTimers || 0,
+        firstTimersFollowedUp: report.data?.firstTimersFollowedUp || 0,
+        firstTimersConverted: report.data?.firstTimersConvertedToCITH || 0,
+        modeOfMeeting: report.data?.modeOfMeeting || 'physical',
+        remarks: report.data?.remarks || '',
+        submittedBy: report.submittedBy?.name || 'Unknown User',
+        status: report.status || 'unknown',
       });
     });
     
     // Style the header row
     worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' }
+    };
+    
+    // Add borders to all cells
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell, colNumber) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    });
     
     // Set response headers
     res.setHeader(
@@ -102,7 +146,8 @@ const exportToExcel = async (req, res) => {
     await workbook.xlsx.write(res);
     res.end();
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error('Export error:', error);
+    res.status(400).json({ message: error.message || 'Export failed' });
   }
 };
 

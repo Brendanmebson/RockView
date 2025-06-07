@@ -11,6 +11,15 @@ const weeklyReportSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    eventType: {
+      type: String,
+      enum: ['regular_service', 'singles_day', 'youth_day', 'womens_day', 'mens_day', 'harvest', 'thanksgiving', 'special_crusade', 'baptism_service', 'communion_service', 'prayer_meeting', 'other'],
+      default: 'regular_service',
+    },
+    eventDescription: {
+      type: String,
+      trim: true,
+    },
     data: {
       male: {
         type: Number,

@@ -24,8 +24,14 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
+      required: [true, 'Phone number is required'],
       trim: true,
+      validate: {
+        validator: function(v) {
+          return v && v.length >= 10;
+        },
+        message: 'Phone number must be at least 10 characters long'
+      }
     },
     role: {
       type: String,

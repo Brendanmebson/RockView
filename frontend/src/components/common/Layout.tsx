@@ -20,6 +20,7 @@ import {
   Badge,
   Tooltip,
   Chip,
+  Collapse,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -30,6 +31,8 @@ import {
   ExitToApp,
   Notifications,
   Message,
+  ChevronLeft,
+  ChevronRight,
 } from '@mui/icons-material';
 import { Church, Building, Home, Users, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -40,6 +43,7 @@ import { useEffect, useState } from 'react';
 import api from '../../services/api';
 
 const drawerWidth = 280;
+const collapsedDrawerWidth = 70;
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -47,11 +51,14 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(false);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const { user, userCentre, userArea, userDistrict, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const currentDrawerWidth = collapsed ? collapsedDrawerWidth : drawerWidth;
 
   useEffect(() => {
     fetchUnreadCount();
@@ -70,6 +77,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleDrawerCollapse = () => {
+    setCollapsed(!collapsed);
   };
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -149,7 +160,7 @@ const getWelcomeMessage = () => {
 
  // Add this function to render user context
  const renderUserContext = () => {
-   if (!user) return null;
+   if (!user || collapsed) return null;
 
    return (
      <Box sx={{ p: 2, background: 'rgba(0,0,0,0.03)', borderRadius: 2, m: 2, mt: 0 }}>
@@ -187,49 +198,60 @@ const getWelcomeMessage = () => {
      animate={{ opacity: 1 }}
      transition={{ duration: 0.3 }}
    >
-     <Box sx={{ p: 3, textAlign: 'center', background: 'linear-gradient(45deg, #4A5568, #2D3748)' }}>
+     <Box sx={{ 
+       p: collapsed ? 1 : 3, 
+       textAlign: 'center', 
+       background: 'linear-gradient(45deg, #4A5568, #2D3748)',
+       minHeight: collapsed ? 70 : 'auto'
+     }}>
        <motion.div
-         whileHover={{ scale: 1.1 }}
+         whileHover={{ scale: collapsed ? 1 : 1.1 }}
          transition={{ type: 'spring', stiffness: 300 }}
        >
          <Box
            sx={{
-             width: 60,
-             height: 60,
+             width: collapsed ? 40 : 60,
+             height: collapsed ? 40 : 60,
              borderRadius: '50%',
              background: 'linear-gradient(45deg, #D69E2E, #ED8936)',
              display: 'flex',
              alignItems: 'center',
              justifyContent: 'center',
              mx: 'auto',
-             mb: 2,
+             mb: collapsed ? 0 : 2,
              boxShadow: '0 4px 20px rgba(214, 158, 46, 0.3)',
            }}
          >
-           <Church size={30} color="white" />
+           <Church size={collapsed ? 20 : 30} color="white" />
          </Box>
        </motion.div>
-       <Typography variant="h5" color="white" fontWeight="bold">
-         ClearView
-       </Typography>
-       <Typography variant="caption" color="rgba(255,255,255,0.7)">
-         Church Management System
-       </Typography>
+       {!collapsed && (
+         <>
+           <Typography variant="h5" color="white" fontWeight="bold">
+             ClearView
+           </Typography>
+           <Typography variant="caption" color="rgba(255,255,255,0.7)">
+             Church Management System
+           </Typography>
+         </>
+       )}
      </Box>
      
-     <Box sx={{ p: 2, background: '#f8f9fa' }}>
-       <Typography variant="body2" color="textSecondary" textAlign="center">
-         {getWelcomeMessage()}, {user?.name?.split(' ')[0]}!
-       </Typography>
-       <Typography variant="caption" color="textSecondary" textAlign="center" display="block">
-         {getRoleDisplayName(user?.role || '')}
-       </Typography>
-     </Box>
+     {!collapsed && (
+       <Box sx={{ p: 2, background: '#f8f9fa' }}>
+         <Typography variant="body2" color="textSecondary" textAlign="center">
+           {getWelcomeMessage()}, {user?.name?.split(' ')[0]}!
+         </Typography>
+         <Typography variant="caption" color="textSecondary" textAlign="center" display="block">
+           {getRoleDisplayName(user?.role || '')}
+         </Typography>
+       </Box>
+     )}
 
      {/* Add User Context Information */}
      {renderUserContext()}
 
-     <List sx={{ px: 2 }}>
+     <List sx={{ px: collapsed ? 1 : 2 }}>
        <AnimatePresence>
          {menuItems.map((item, index) => (
            <motion.div
@@ -239,47 +261,71 @@ const getWelcomeMessage = () => {
              transition={{ delay: index * 0.1 }}
            >
              <ListItem disablePadding sx={{ mb: 1 }}>
-               <ListItemButton
-                 onClick={() => navigate(item.path)}
-                 selected={location.pathname === item.path}
-                 sx={{
-                   borderRadius: 3,
-                   py: 1.5,
-                   '&.Mui-selected': {
-                     background: `${item.color}20`,
-                     '&:hover': {
-                       background: `${item.color}30`,
+               <Tooltip title={collapsed ? item.text : ''} placement="right">
+                 <ListItemButton
+                   onClick={() => navigate(item.path)}
+                   selected={location.pathname === item.path}
+                   sx={{
+                     borderRadius: 3,
+                     py: 1.5,
+                     justifyContent: collapsed ? 'center' : 'flex-start',
+                     '&.Mui-selected': {
+                       background: `${item.color}20`,
+                       '&:hover': {
+                         background: `${item.color}30`,
+                       },
                      },
-                   },
-                   '&:hover': {
-                     background: `${item.color}10`,
-                   },
-                 }}
-               >
-                 <ListItemIcon sx={{ color: item.color, minWidth: 40 }}>
-                   {item.badge && item.badge > 0 ? (
-                     <Badge badgeContent={item.badge} color="error">
-                       {item.icon}
-                     </Badge>
-                   ) : (
-                     item.icon
-                   )}
-                 </ListItemIcon>
-                 <ListItemText 
-                   primary={item.text}
-                   primaryTypographyProps={{
-                     variant: 'body2',
-                     fontWeight: location.pathname === item.path ? 600 : 400,
+                     '&:hover': {
+                       background: `${item.color}10`,
+                     },
                    }}
-                 />
-               </ListItemButton>
+                 >
+                   <ListItemIcon sx={{ 
+                     color: item.color, 
+                     minWidth: collapsed ? 'auto' : 40,
+                     justifyContent: 'center'
+                   }}>
+                     {item.badge && item.badge > 0 ? (
+                       <Badge badgeContent={item.badge} color="error">
+                         {item.icon}
+                       </Badge>
+                     ) : (
+                       item.icon
+                     )}
+                   </ListItemIcon>
+                   {!collapsed && (
+                     <ListItemText 
+                       primary={item.text}
+                       primaryTypographyProps={{
+                         variant: 'body2',
+                         fontWeight: location.pathname === item.path ? 600 : 400,
+                       }}
+                     />
+                   )}
+                 </ListItemButton>
+               </Tooltip>
              </ListItem>
            </motion.div>
          ))}
        </AnimatePresence>
      </List>
      
-     <Divider sx={{ mx: 2, my: 2 }} />
+     <Divider sx={{ mx: collapsed ? 1 : 2, my: 2 }} />
+     
+     {/* Collapse Button */}
+     <Box sx={{ display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', p: 1 }}>
+       <IconButton 
+         onClick={handleDrawerCollapse}
+         sx={{ 
+           bgcolor: 'action.hover',
+           '&:hover': {
+             bgcolor: 'action.selected',
+           }
+         }}
+       >
+         {collapsed ? <ChevronRight /> : <ChevronLeft />}
+       </IconButton>
+     </Box>
    </motion.div>
  );
 
@@ -289,12 +335,13 @@ const getWelcomeMessage = () => {
      <AppBar
        position="fixed"
        sx={{
-         width: { sm: `calc(100% - ${drawerWidth}px)` },
-         ml: { sm: `${drawerWidth}px` },
+         width: { sm: `calc(100% - ${currentDrawerWidth}px)` },
+         ml: { sm: `${currentDrawerWidth}px` },
          background: 'linear-gradient(90deg, rgba(255,255,255,0.95) 0%, rgba(247,250,252,0.95) 100%)',
          backdropFilter: 'blur(10px)',
          borderBottom: '1px solid rgba(0,0,0,0.1)',
          boxShadow: '0 2px 20px rgba(0,0,0,0.05)',
+         transition: 'width 0.3s, margin-left 0.3s',
        }}
      >
        <Toolbar>
@@ -391,7 +438,11 @@ const getWelcomeMessage = () => {
      
      <Box
        component="nav"
-       sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
+       sx={{ 
+         width: { sm: currentDrawerWidth }, 
+         flexShrink: { sm: 0 },
+         transition: 'width 0.3s',
+       }}
        aria-label="church navigation"
      >
        <Drawer
@@ -416,9 +467,11 @@ const getWelcomeMessage = () => {
           display: { xs: 'none', sm: 'block' },
           '& .MuiDrawer-paper': { 
             boxSizing: 'border-box', 
-            width: drawerWidth,
+            width: currentDrawerWidth,
             background: '#fff',
             borderRight: '1px solid rgba(0,0,0,0.1)',
+            transition: 'width 0.3s',
+            overflowX: 'hidden',
           },
         }}
         open
@@ -432,9 +485,10 @@ const getWelcomeMessage = () => {
       sx={{ 
         flexGrow: 1, 
         p: 3, 
-        width: { sm: `calc(100% - ${drawerWidth}px)` },
+        width: { sm: `calc(100% - ${currentDrawerWidth}px)` },
         minHeight: '100vh',
         background: '#f8f9fa',
+        transition: 'width 0.3s',
       }}
     >
       <Toolbar />

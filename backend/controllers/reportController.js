@@ -66,7 +66,9 @@ const sanitizeReportData = (reports) => {
         _id: '',
         name: 'Unknown User',
         email: 'unknown@example.com'
-      }
+      },
+      eventType: report.eventType || 'regular_service',
+      eventDescription: report.eventDescription || ''
     };
 
     // Ensure cithCentreId is properly structured
@@ -88,7 +90,7 @@ const sanitizeReportData = (reports) => {
 // @access  Private (CITH centre only)
 const submitReport = async (req, res) => {
   try {
-    const { week, data } = req.body;
+    const { week, data, eventType, eventDescription } = req.body;
     
     // Validate that the user has access to submit for this centre
     if (req.user.role !== 'cith_centre') {
@@ -130,23 +132,12 @@ const submitReport = async (req, res) => {
       remarks: data.remarks || ''
     };
     
-    // Validate business rules
-    if (reportData.firstTimersFollowedUp > reportData.numberOfFirstTimers) {
-      return res.status(400).json({ 
-        message: 'First timers followed up cannot exceed total first timers' 
-      });
-    }
-    
-    if (reportData.firstTimersConvertedToCITH > reportData.firstTimersFollowedUp) {
-      return res.status(400).json({ 
-        message: 'First timers converted cannot exceed first timers followed up' 
-      });
-    }
-    
     // Create the report
     const report = await WeeklyReport.create({
       cithCentreId,
       week: weekStart,
+      eventType: eventType || 'regular_service',
+      eventDescription: eventDescription || '',
       data: reportData,
       submittedBy: req.user._id,
     });
@@ -312,6 +303,37 @@ const getReportById = async (req, res) => {
   }
 };
 
+// @desc    Get report for editing
+// @route   GET /api/reports/:id/edit
+// @access  Private
+const getReportForEdit = async (req, res) => {
+  try {
+    const report = await WeeklyReport.findById(req.params.id)
+      .populate(getReportPopulationQuery());
+    
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Check if user can edit this report
+    if (req.user.role !== 'admin' && 
+        (report.submittedBy.toString() !== req.user._id.toString() || 
+         report.status !== 'pending')) {
+      return res.status(403).json({ 
+        message: 'You can only edit your own pending reports' 
+      });
+    }
+    
+    // Sanitize the report data
+    const sanitizedReport = sanitizeReportData([report])[0];
+    
+    res.json(sanitizedReport);
+  } catch (error) {
+    console.error('Error fetching report for edit:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 // Helper function to check report permissions
 const checkReportPermission = async (user, report) => {
   try {
@@ -349,7 +371,7 @@ const checkReportPermission = async (user, report) => {
   }
 };
 
-// @desc    Approve report (area supervisor or district pastor)
+// @desc    Approve report (area supervisor, district pastor, or admin)
 // @route   PUT /api/reports/:id/approve
 // @access  Private
 const approveReport = async (req, res) => {
@@ -360,8 +382,23 @@ const approveReport = async (req, res) => {
       return res.status(404).json({ message: 'Report not found' });
     }
     
-    // Check approval permissions and status
-    if (req.user.role === 'area_supervisor') {
+    // Admin can approve at any level
+    if (req.user.role === 'admin') {
+      // Admin can choose to approve at area or district level
+      const { approvalLevel } = req.body; // 'area' or 'district'
+      
+      if (approvalLevel === 'district' || report.status === 'area_approved') {
+        report.status = 'district_approved';
+        report.districtApprovedBy = req.user._id;
+        report.districtApprovedAt = new Date();
+      } else {
+        report.status = 'area_approved';
+        report.areaApprovedBy = req.user._id;
+        report.areaApprovedAt = new Date();
+      }
+    }
+    // Check approval permissions and status for other roles
+    else if (req.user.role === 'area_supervisor') {
       if (report.status !== 'pending') {
         return res.status(400).json({ message: 'Report is not in pending status' });
       }
@@ -423,7 +460,7 @@ const approveReport = async (req, res) => {
   }
 };
 
-// @desc    Reject report
+// @desc    Reject report (area supervisor, district pastor, or admin)
 // @route   PUT /api/reports/:id/reject
 // @access  Private
 const rejectReport = async (req, res) => {
@@ -440,8 +477,12 @@ const rejectReport = async (req, res) => {
       return res.status(404).json({ message: 'Report not found' });
     }
     
-    // Check rejection permissions
-    if (req.user.role === 'area_supervisor') {
+    // Admin can reject at any level
+    if (req.user.role === 'admin') {
+      // Admin can reject any report
+    }
+    // Check rejection permissions for other roles
+    else if (req.user.role === 'area_supervisor') {
       if (report.status !== 'pending') {
         return res.status(400).json({ message: 'Report is not in pending status' });
       }
@@ -652,7 +693,7 @@ const updateReport = async (req, res) => {
       return res.status(400).json({ message: 'Cannot update report that has been reviewed' });
     }
     
-    const { data } = req.body;
+    const { data, eventType, eventDescription } = req.body;
     
     // Validate and sanitize update data
     const updateData = {
@@ -668,21 +709,10 @@ const updateReport = async (req, res) => {
       remarks: data.remarks || ''
     };
     
-    // Validate business rules
-    if (updateData.firstTimersFollowedUp > updateData.numberOfFirstTimers) {
-      return res.status(400).json({ 
-        message: 'First timers followed up cannot exceed total first timers' 
-      });
-    }
-    
-    if (updateData.firstTimersConvertedToCITH > updateData.firstTimersFollowedUp) {
-      return res.status(400).json({ 
-        message: 'First timers converted cannot exceed first timers followed up' 
-      });
-    }
-    
     // Update the report
     report.data = updateData;
+    report.eventType = eventType || 'regular_service';
+    report.eventDescription = eventDescription || '';
     report.updatedAt = new Date();
     
     await report.save();
@@ -841,6 +871,7 @@ module.exports = {
   submitReport,
   getReports,
   getReportById,
+  getReportForEdit,
   approveReport,
   rejectReport,
   getReportSummary,

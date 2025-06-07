@@ -30,6 +30,9 @@ import {
   Tooltip,
   Avatar,
   Box as MuiBox,
+  InputAdornment,
+  Pagination,
+  Paper,
 } from '@mui/material';
 import { 
   Delete, 
@@ -42,6 +45,10 @@ import {
   Check,
   Close,
   Phone,
+  Search,
+  FilterList,
+  Refresh,
+  Clear,
 } from '@mui/icons-material';
 import api from '../../services/api';
 import { useNavigate } from 'react-router-dom';
@@ -50,6 +57,7 @@ import { UserWithDetails } from '../../types';
 
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<UserWithDetails[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<UserWithDetails[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -66,12 +74,26 @@ const UserManagement: React.FC = () => {
     areaId: '',
     phone: '',
   });
+
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchUsers();
     fetchHierarchyData();
   }, []);
+
+  useEffect(() => {
+    applyFiltersAndSearch();
+  }, [users, searchQuery, roleFilter, statusFilter, sortBy, sortOrder]);
 
   // Clear success message after 5 seconds
   useEffect(() => {
@@ -119,6 +141,74 @@ const UserManagement: React.FC = () => {
     } catch (error) {
       console.error('Error fetching hierarchy data:', error);
     }
+  };
+
+  const applyFiltersAndSearch = () => {
+    let filtered = [...users];
+
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter(user => 
+        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (user.phone && user.phone.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+
+    // Apply role filter
+    if (roleFilter) {
+      filtered = filtered.filter(user => user.role === roleFilter);
+    }
+
+    // Apply status filter
+    if (statusFilter) {
+      filtered = filtered.filter(user => 
+        statusFilter === 'active' ? user.isActive : !user.isActive
+      );
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'email':
+          aValue = a.email.toLowerCase();
+          bValue = b.email.toLowerCase();
+          break;
+        case 'role':
+          aValue = a.role;
+          bValue = b.role;
+          break;
+        case 'createdAt':
+        default:
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
+          break;
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+
+    setFilteredUsers(filtered);
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setRoleFilter('');
+    setStatusFilter('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setCurrentPage(1);
   };
 
   const handleDeleteUser = async () => {
@@ -317,6 +407,11 @@ const UserManagement: React.FC = () => {
     (centre: any) => !editForm.areaId || centre.areaSupervisorId._id === editForm.areaId
   );
 
+  // Pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -326,6 +421,112 @@ const UserManagement: React.FC = () => {
       {error && <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
+      {/* Search and Filter Controls */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Typography variant="h6" gutterBottom>
+          Search & Filter
+        </Typography>
+        <Grid container spacing={2} alignItems="center">
+          <GridItem xs={12} md={3}>
+            <TextField
+              fullWidth
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+                endAdornment: searchQuery && (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setSearchQuery('')} size="small">
+                      <Clear />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </GridItem>
+          
+          <GridItem xs={12} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Role</InputLabel>
+              <Select
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+              >
+                <MenuItem value="">All Roles</MenuItem>
+                <MenuItem value="admin">Administrator</MenuItem>
+                <MenuItem value="district_pastor">District Pastor</MenuItem>
+                <MenuItem value="area_supervisor">Area Supervisor</MenuItem>
+                <MenuItem value="cith_centre">CITH Centre Leader</MenuItem>
+              </Select>
+            </FormControl>
+          </GridItem>
+          
+          <GridItem xs={12} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="">All Status</MenuItem>
+                <MenuItem value="active">Active</MenuItem>
+                <MenuItem value="inactive">Inactive</MenuItem>
+              </Select>
+            </FormControl>
+          </GridItem>
+          
+          <GridItem xs={12} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Sort By</InputLabel>
+              <Select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <MenuItem value="createdAt">Date Created</MenuItem>
+                <MenuItem value="name">Name</MenuItem>
+                <MenuItem value="email">Email</MenuItem>
+                <MenuItem value="role">Role</MenuItem>
+              </Select>
+            </FormControl>
+          </GridItem>
+          
+          <GridItem xs={12} md={2}>
+            <FormControl fullWidth>
+              <InputLabel>Order</InputLabel>
+              <Select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+              >
+                <MenuItem value="desc">Descending</MenuItem>
+                <MenuItem value="asc">Ascending</MenuItem>
+              </Select>
+            </FormControl>
+          </GridItem>
+          
+          <GridItem xs={12} md={1}>
+            <Tooltip title="Clear all filters">
+              <IconButton onClick={clearFilters} color="primary">
+                <Refresh />
+              </IconButton>
+            </Tooltip>
+          </GridItem>
+        </Grid>
+        
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="textSecondary">
+            Showing {paginatedUsers.length} of {filteredUsers.length} users
+            {searchQuery && ` matching "${searchQuery}"`}
+            {roleFilter && ` with role "${getRoleName(roleFilter)}"`}
+            {statusFilter && ` that are ${statusFilter}`}
+          </Typography>
+        </Box>
+      </Paper>
+
       <Card>
         <CardContent>
           {loading && users.length === 0 ? (
@@ -333,302 +534,318 @@ const UserManagement: React.FC = () => {
               <CircularProgress />
             </Box>
           ) : (
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>User</TableCell>
-                    <TableCell>Role</TableCell>
-                    <TableCell>Assignment</TableCell>
-                    <TableCell>Phone</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell>Joined</TableCell>
-                    <TableCell>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user._id}>
-                      <TableCell>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar>
-                            {user.name.charAt(0).toUpperCase()}
+            <>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>User</TableCell>
+                      <TableCell>Role</TableCell>
+                      <TableCell>Assignment</TableCell>
+                      <TableCell>Phone</TableCell>
+                      <TableCell>Status</TableCell>
+                      <TableCell>Joined</TableCell>
+                      <TableCell>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {paginatedUsers.map((user) => (
+                      <TableRow key={user._id}>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Avatar>
+                              {user.name.charAt(0).toUpperCase()}
                             </Avatar>
-                         <Box>
-                           <Typography variant="body2" fontWeight="medium">
-                             {user.name}
-                           </Typography>
-                           <Typography variant="caption" color="textSecondary">
-                             {user.email}
-                           </Typography>
-                         </Box>
-                       </Box>
-                     </TableCell>
-                     <TableCell>
-                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                         {getRoleIcon(user.role)}
-                         <Chip
-                           label={getRoleName(user.role)}
-                           color={getRoleColor(user.role) as any}
-                           size="small"
-                         />
-                       </Box>
-                     </TableCell>
-                     <TableCell>
-                       <Typography variant="body2">
-                         {getAssignmentText(user)}
-                       </Typography>
-                     </TableCell>
-                     <TableCell>
-                       <Typography variant="body2">
-                         {user.phone || 'Not provided'}
-                       </Typography>
-                     </TableCell>
-                     <TableCell>
-                       <Chip
-                         label={user.isActive ? 'Active' : 'Inactive'}
-                         color={user.isActive ? 'success' : 'default'}
-                         size="small"
-                       />
-                     </TableCell>
-                     <TableCell>
-                       <Typography variant="body2">
-                         {new Date(user.createdAt).toLocaleDateString()}
-                       </Typography>
-                     </TableCell>
-                     <TableCell>
-                       <Box sx={{ display: 'flex', gap: 1 }}>
-                         <Tooltip title="Send Message">
-                           <IconButton
-                             size="small"
-                             color="primary"
-                             onClick={() => handleMessageUser(user)}
-                           >
-                             <Message fontSize="small" />
-                           </IconButton>
-                         </Tooltip>
-                         <Tooltip title="Edit Role">
-                           <IconButton
-                             size="small"
-                             color="secondary"
-                             onClick={() => openEditDialog(user)}
-                           >
-                             <Edit fontSize="small" />
-                           </IconButton>
-                         </Tooltip>
-                         <Tooltip title="Delete User">
-                           <IconButton
-                             size="small"
-                             color="error"
-                             onClick={() => openDeleteDialog(user)}
-                           >
-                             <Delete fontSize="small" />
-                           </IconButton>
-                         </Tooltip>
-                       </Box>
-                     </TableCell>
-                   </TableRow>
-                 ))}
-               </TableBody>
-             </Table>
-           </TableContainer>
-         )}
+                            <Box>
+                              <Typography variant="body2" fontWeight="medium">
+                                {user.name}
+                              </Typography>
+                              <Typography variant="caption" color="textSecondary">
+                                {user.email}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            {getRoleIcon(user.role)}
+                            <Chip
+                              label={getRoleName(user.role)}
+                              color={getRoleColor(user.role) as any}
+                              size="small"
+                            />
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {getAssignmentText(user)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {user.phone || 'Not provided'}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Chip
+                            label={user.isActive ? 'Active' : 'Inactive'}
+                            color={user.isActive ? 'success' : 'default'}
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Tooltip title="Send Message">
+                              <IconButton
+                                size="small"
+                                color="primary"
+                                onClick={() => handleMessageUser(user)}
+                              >
+                                <Message fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Edit Role">
+                              <IconButton
+                                size="small"
+                                color="secondary"
+                                onClick={() => openEditDialog(user)}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Delete User">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => openDeleteDialog(user)}
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
-         {users.length === 0 && !loading && (
-           <Typography variant="body1" textAlign="center" sx={{ py: 4 }}>
-             No users found
-           </Typography>
-         )}
-       </CardContent>
-     </Card>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                  <Pagination
+                    count={totalPages}
+                    page={currentPage}
+                    onChange={(_, page) => setCurrentPage(page)}
+                    color="primary"
+                  />
+                </Box>
+              )}
+            </>
+          )}
 
-     {/* Delete Confirmation Dialog */}
-     <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
-       <DialogTitle>Delete User</DialogTitle>
-       <DialogContent>
-         <DialogContentText>
-           Are you sure you want to delete {selectedUser?.name}? This action cannot be undone.
-         </DialogContentText>
-       </DialogContent>
-       <DialogActions>
-         <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-         <Button 
-           onClick={handleDeleteUser} 
-           color="error"
-           disabled={loading}
-           startIcon={loading ? <CircularProgress size={20} /> : <Delete />}
-         >
-           Delete
-         </Button>
-       </DialogActions>
-     </Dialog>
+          {filteredUsers.length === 0 && !loading && (
+            <Typography variant="body1" textAlign="center" sx={{ py: 4 }}>
+              {searchQuery || roleFilter || statusFilter 
+                ? 'No users found matching your search criteria' 
+                : 'No users found'}
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
 
-     {/* Edit User Role Dialog */}
-     <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
-       <DialogTitle>Edit User Role - {selectedUser?.name}</DialogTitle>
-       <DialogContent>
-         <Grid container spacing={2} sx={{ mt: 1 }}>
-           <GridItem xs={12}>
-             <FormControl fullWidth>
-               <InputLabel>Role</InputLabel>
-               <Select
-                 value={editForm.role}
-                 onChange={(e) => setEditForm({ 
-                   ...editForm, 
-                   role: e.target.value, 
-                   targetId: '', 
-                   districtId: '', 
-                   areaId: '' 
-                 })}
-                 label="Role"
-               >
-                 <MenuItem value="admin">Administrator</MenuItem>
-                 <MenuItem value="district_pastor">District Pastor</MenuItem>
-                 <MenuItem value="area_supervisor">Area Supervisor</MenuItem>
-                 <MenuItem value="cith_centre">CITH Centre Leader</MenuItem>
-               </Select>
-             </FormControl>
-           </GridItem>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Delete User</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete {selectedUser?.name}? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleDeleteUser} 
+            color="error"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : <Delete />}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
-           <GridItem xs={12}>
-             <TextField
-               fullWidth
-               label="Phone Number"
-               value={editForm.phone}
-               onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-               required
-               placeholder="+234 800 123 4567"
-               helperText="Enter phone number with country code"
-               InputProps={{
-                 startAdornment: <Phone sx={{ mr: 1, color: 'action.active' }} />,
-               }}
-             />
-           </GridItem>
+      {/* Edit User Role Dialog */}
+      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Edit User Role - {selectedUser?.name}</DialogTitle>
+        <DialogContent>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <GridItem xs={12}>
+              <FormControl fullWidth>
+                <InputLabel>Role</InputLabel>
+                <Select
+                  value={editForm.role}
+                  onChange={(e) => setEditForm({ 
+                    ...editForm, 
+                    role: e.target.value, 
+                    targetId: '', 
+                    districtId: '', 
+                    areaId: '' 
+                  })}
+                  label="Role"
+                >
+                  <MenuItem value="admin">Administrator</MenuItem>
+                  <MenuItem value="district_pastor">District Pastor</MenuItem>
+                  <MenuItem value="area_supervisor">Area Supervisor</MenuItem>
+                  <MenuItem value="cith_centre">CITH Centre Leader</MenuItem>
+                </Select>
+              </FormControl>
+            </GridItem>
 
-           {editForm.role === 'district_pastor' && (
-             <GridItem xs={12}>
-               <FormControl fullWidth>
-                 <InputLabel>District</InputLabel>
-                 <Select
-                   value={editForm.districtId}
-                   onChange={(e) => setEditForm({ ...editForm, districtId: e.target.value })}
-                   label="District"
-                 >
-                   {districts.map((district: any) => (
-                     <MenuItem key={district._id} value={district._id}>
-                       {district.name} (District {district.districtNumber})
-                     </MenuItem>
-                   ))}
-                 </Select>
-               </FormControl>
-             </GridItem>
-           )}
+            <GridItem xs={12}>
+              <TextField
+                fullWidth
+                label="Phone Number"
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                required
+                placeholder="+234 800 123 4567"
+                helperText="Enter phone number with country code"
+                InputProps={{
+                  startAdornment: <Phone sx={{ mr: 1, color: 'action.active' }} />,
+                }}
+              />
+            </GridItem>
 
-           {editForm.role === 'area_supervisor' && (
-             <>
-               <GridItem xs={12} md={6}>
-                 <FormControl fullWidth>
-                   <InputLabel>District</InputLabel>
-                   <Select
-                     value={editForm.districtId}
-                     onChange={(e) => setEditForm({ ...editForm, districtId: e.target.value, areaId: '' })}
-                     label="District"
-                   >
-                     {districts.map((district: any) => (
-                       <MenuItem key={district._id} value={district._id}>
-                         {district.name} (District {district.districtNumber})
-                       </MenuItem>
-                     ))}
-                   </Select>
-                 </FormControl>
-               </GridItem>
-               <GridItem xs={12} md={6}>
-                 <FormControl fullWidth disabled={!editForm.districtId}>
-                   <InputLabel>Area</InputLabel>
-                   <Select
-                     value={editForm.areaId}
-                     onChange={(e) => setEditForm({ ...editForm, areaId: e.target.value })}
-                     label="Area"
-                   >
-                     {filteredAreas.map((area: any) => (
-                       <MenuItem key={area._id} value={area._id}>
-                         {area.name}
-                       </MenuItem>
-                     ))}
-                   </Select>
-                 </FormControl>
-               </GridItem>
-             </>
-           )}
+            {editForm.role === 'district_pastor' && (
+              <GridItem xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>District</InputLabel>
+                  <Select
+                    value={editForm.districtId}
+                    onChange={(e) => setEditForm({ ...editForm, districtId: e.target.value })}
+                    label="District"
+                  >
+                    {districts.map((district: any) => (
+                      <MenuItem key={district._id} value={district._id}>
+                        {district.name} (District {district.districtNumber})
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </GridItem>
+            )}
 
-           {editForm.role === 'cith_centre' && (
-             <>
-               <GridItem xs={12} md={4}>
-                 <FormControl fullWidth>
-                   <InputLabel>District</InputLabel>
-                   <Select
-                     value={editForm.districtId}
-                     onChange={(e) => setEditForm({ ...editForm, districtId: e.target.value, areaId: '', targetId: '' })}
-                     label="District"
-                   >
-                     {districts.map((district: any) => (
-                       <MenuItem key={district._id} value={district._id}>
-                         {district.name} (District {district.districtNumber})
-                       </MenuItem>
-                     ))}
-                   </Select>
-                 </FormControl>
-               </GridItem>
-               <GridItem xs={12} md={4}>
-                 <FormControl fullWidth disabled={!editForm.districtId}>
-                   <InputLabel>Area</InputLabel>
-                   <Select
-                     value={editForm.areaId}
-                     onChange={(e) => setEditForm({ ...editForm, areaId: e.target.value, targetId: '' })}
-                     label="Area"
-                   >
-                     {filteredAreas.map((area: any) => (
-                       <MenuItem key={area._id} value={area._id}>
-                         {area.name}
-                       </MenuItem>
-                     ))}
-                   </Select>
-                 </FormControl>
-               </GridItem>
-               <GridItem xs={12} md={4}>
-                 <FormControl fullWidth disabled={!editForm.areaId}>
-                   <InputLabel>CITH Centre</InputLabel>
-                   <Select
-                     value={editForm.targetId}
-                     onChange={(e) => setEditForm({ ...editForm, targetId: e.target.value })}
-                     label="CITH Centre"
-                   >
-                     {filteredCentres.map((centre: any) => (
-                       <MenuItem key={centre._id} value={centre._id}>
-                         {centre.name} - {centre.location}
-                       </MenuItem>
-                     ))}
-                   </Select>
-                 </FormControl>
-               </GridItem>
-             </>
-           )}
-         </Grid>
-       </DialogContent>
-       <DialogActions>
-         <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-         <Button 
-           onClick={handleEditUser} 
-           variant="contained"
-           disabled={loading}
-           startIcon={loading ? <CircularProgress size={20} /> : <Check />}
-         >
-           Update Role
-         </Button>
-       </DialogActions>
-     </Dialog>
-   </Box>
- );
+            {editForm.role === 'area_supervisor' && (
+              <>
+                <GridItem xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>District</InputLabel>
+                    <Select
+                      value={editForm.districtId}
+                      onChange={(e) => setEditForm({ ...editForm, districtId: e.target.value, areaId: '' })}
+                      label="District"
+                    >
+                      {districts.map((district: any) => (
+                        <MenuItem key={district._id} value={district._id}>
+                          {district.name} (District {district.districtNumber})
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </GridItem>
+                <GridItem xs={12} md={6}>
+                  <FormControl fullWidth disabled={!editForm.districtId}>
+                    <InputLabel>Area</InputLabel>
+                    <Select
+                      value={editForm.areaId}
+                      onChange={(e) => setEditForm({ ...editForm, areaId: e.target.value })}
+                      label="Area"
+                    >
+                      {filteredAreas.map((area: any) => (
+                        <MenuItem key={area._id} value={area._id}>
+                          {area.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </GridItem>
+              </>
+            )}
+
+            {editForm.role === 'cith_centre' && (
+              <>
+                <GridItem xs={12} md={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>District</InputLabel>
+                    <Select
+                      value={editForm.districtId}
+                      onChange={(e) => setEditForm({ ...editForm, districtId: e.target.value, areaId: '', targetId: '' })}
+                      label="District"
+                    >
+                      {districts.map((district: any) => (
+                        <MenuItem key={district._id} value={district._id}>
+                          {district.name} (District {district.districtNumber})
+                        </MenuItem>
+                      ))}
+                      </Select>
+                  </FormControl>
+                </GridItem>
+                <GridItem xs={12} md={4}>
+                  <FormControl fullWidth disabled={!editForm.districtId}>
+                    <InputLabel>Area</InputLabel>
+                    <Select
+                      value={editForm.areaId}
+                      onChange={(e) => setEditForm({ ...editForm, areaId: e.target.value, targetId: '' })}
+                      label="Area"
+                    >
+                      {filteredAreas.map((area: any) => (
+                        <MenuItem key={area._id} value={area._id}>
+                          {area.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </GridItem>
+                <GridItem xs={12} md={4}>
+                  <FormControl fullWidth disabled={!editForm.areaId}>
+                    <InputLabel>CITH Centre</InputLabel>
+                    <Select
+                      value={editForm.targetId}
+                      onChange={(e) => setEditForm({ ...editForm, targetId: e.target.value })}
+                      label="CITH Centre"
+                    >
+                      {filteredCentres.map((centre: any) => (
+                        <MenuItem key={centre._id} value={centre._id}>
+                          {centre.name} - {centre.location}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </GridItem>
+              </>
+            )}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleEditUser} 
+            variant="contained"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : <Check />}
+          >
+            Update Role
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  );
 };
 
 export default UserManagement;

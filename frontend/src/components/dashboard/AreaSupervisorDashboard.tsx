@@ -31,7 +31,17 @@ import { useNavigate } from 'react-router-dom';
 const AreaSupervisorDashboard: React.FC = () => {
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [pendingReports, setPendingReports] = useState<WeeklyReport[]>([]);
-  const [summary, setSummary] = useState<ReportSummary | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState({
+    totalMale: 0,
+    totalFemale: 0,
+    totalChildren: 0,
+    totalOfferings: 0,
+    totalTestimonies: 0,
+    totalFirstTimers: 0,
+    totalFirstTimersFollowedUp: 0,
+    totalFirstTimersConverted: 0,
+    totalReports: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [centres, setCentres] = useState<CithCentre[]>([]);
@@ -48,15 +58,18 @@ const AreaSupervisorDashboard: React.FC = () => {
     setLoading(true);
     setError('');
     try {
+      // Get current month's date range
+      const currentDate = new Date();
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+      
       const [
         reportsResult,
         pendingResult,
-        summaryResult,
         centresResult
       ] = await Promise.allSettled([
-        api.get('/reports?limit=10'),
+        api.get(`/reports?startDate=${startOfMonth.toISOString()}&endDate=${endOfMonth.toISOString()}&limit=100`),
         api.get('/reports?status=pending&limit=10'),
-        api.get('/reports/summary'),
         api.get('/cith-centres')
       ]);
       
@@ -64,42 +77,13 @@ const AreaSupervisorDashboard: React.FC = () => {
       if (reportsResult.status === 'fulfilled') {
         const reportsData = reportsResult.value.data?.reports || [];
         setReports(reportsData);
+        calculateMonthlyStats(reportsData);
       }
       
       // Handle pending reports
       if (pendingResult.status === 'fulfilled') {
         const pendingData = pendingResult.value.data?.reports || [];
         setPendingReports(pendingData);
-      }
-      
-      // Handle summary
-      if (summaryResult.status === 'fulfilled') {
-        const summaryData = summaryResult.value.data || {};
-        // Ensure all summary fields have default values
-        setSummary({
-          totalMale: summaryData.totalMale || 0,
-          totalFemale: summaryData.totalFemale || 0,
-          totalChildren: summaryData.totalChildren || 0,
-          totalOfferings: summaryData.totalOfferings || 0,
-          totalTestimonies: summaryData.totalTestimonies || 0,
-          totalFirstTimers: summaryData.totalFirstTimers || 0,
-          totalFirstTimersFollowedUp: summaryData.totalFirstTimersFollowedUp || 0,
-          totalFirstTimersConverted: summaryData.totalFirstTimersConverted || 0,
-          totalReports: summaryData.totalReports || 0,
-        });
-      } else {
-        // Set default summary if API fails
-        setSummary({
-          totalMale: 0,
-          totalFemale: 0,
-          totalChildren: 0,
-          totalOfferings: 0,
-          totalTestimonies: 0,
-          totalFirstTimers: 0,
-          totalFirstTimersFollowedUp: 0,
-          totalFirstTimersConverted: 0,
-          totalReports: 0,
-        });
       }
       
       // Handle centres
@@ -119,21 +103,36 @@ const AreaSupervisorDashboard: React.FC = () => {
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
       setError('Failed to load dashboard data');
-      // Set default values on error
-      setSummary({
-        totalMale: 0,
-        totalFemale: 0,
-        totalChildren: 0,
-        totalOfferings: 0,
-        totalTestimonies: 0,
-        totalFirstTimers: 0,
-        totalFirstTimersFollowedUp: 0,
-        totalFirstTimersConverted: 0,
-        totalReports: 0,
-      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const calculateMonthlyStats = (reports: WeeklyReport[]) => {
+    const stats = reports.reduce((acc, report) => {
+      acc.totalMale += report.data?.male || 0;
+      acc.totalFemale += report.data?.female || 0;
+      acc.totalChildren += report.data?.children || 0;
+      acc.totalOfferings += report.data?.offerings || 0;
+      acc.totalTestimonies += report.data?.numberOfTestimonies || 0;
+      acc.totalFirstTimers += report.data?.numberOfFirstTimers || 0;
+      acc.totalFirstTimersFollowedUp += report.data?.firstTimersFollowedUp || 0;
+      acc.totalFirstTimersConverted += report.data?.firstTimersConvertedToCITH || 0;
+      acc.totalReports += 1;
+      return acc;
+    }, {
+      totalMale: 0,
+      totalFemale: 0,
+      totalChildren: 0,
+      totalOfferings: 0,
+      totalTestimonies: 0,
+      totalFirstTimers: 0,
+      totalFirstTimersFollowedUp: 0,
+      totalFirstTimersConverted: 0,
+      totalReports: 0,
+    });
+    
+    setMonthlyStats(stats);
   };
 
   const processChartData = (reports: WeeklyReport[], centres: CithCentre[]) => {
@@ -263,7 +262,8 @@ const AreaSupervisorDashboard: React.FC = () => {
     }
   };
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+  const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   if (loading) {
     return (
@@ -287,96 +287,94 @@ const AreaSupervisorDashboard: React.FC = () => {
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Area Supervisor Dashboard
+        Area Supervisor Dashboard - {currentMonth}
       </Typography>
 
-      {/* Summary Stats Cards */}
-      {summary && (
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <GridItem xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <PeopleAlt />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Total Attendance</Typography>
-                  <Typography variant="h5">
-                    {(summary.totalMale || 0) + (summary.totalFemale || 0) + (summary.totalChildren || 0)}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                    <Chip label={`M: ${summary.totalMale || 0}`} size="small" color="primary" variant="outlined" />
-                    <Chip label={`F: ${summary.totalFemale || 0}`} size="small" color="secondary" variant="outlined" />
-                    <Chip label={`C: ${summary.totalChildren || 0}`} size="small" color="info" variant="outlined" />
-                  </Box>
+      {/* Summary Stats Cards - Using Monthly Stats */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        <GridItem xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                <PeopleAlt />
+              </Avatar>
+              <Box>
+                <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
+                <Typography variant="h5">
+                  {monthlyStats.totalMale + monthlyStats.totalFemale + monthlyStats.totalChildren}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                  <Chip label={`M: ${monthlyStats.totalMale}`} size="small" color="primary" variant="outlined" />
+                  <Chip label={`F: ${monthlyStats.totalFemale}`} size="small" color="secondary" variant="outlined" />
+                  <Chip label={`C: ${monthlyStats.totalChildren}`} size="small" color="info" variant="outlined" />
                 </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                  <AttachMoney />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Total Offerings</Typography>
-                  <Typography variant="h5">₦{(summary.totalOfferings || 0).toLocaleString()}</Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Avg: ₦{Math.round((summary.totalOfferings || 0) / Math.max(summary.totalReports || 1, 1)).toLocaleString()} per service
-                  </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        <GridItem xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
+                <AttachMoney />
+              </Avatar>
+              <Box>
+                <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
+                <Typography variant="h5">₦{monthlyStats.totalOfferings.toLocaleString()}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  Avg: ₦{Math.round(monthlyStats.totalOfferings / Math.max(monthlyStats.totalReports, 1)).toLocaleString()} per service
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        <GridItem xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                <TrendingUp />
+              </Avatar>
+              <Box>
+                <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
+                <Typography variant="h5">{monthlyStats.totalFirstTimers}</Typography>
+                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                  <Chip 
+                    label={`${monthlyStats.totalFirstTimersFollowedUp} followed`} 
+                    size="small" 
+                    color="success" 
+                    variant="outlined" 
+                  />
                 </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                  <TrendingUp />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">First Timers</Typography>
-                  <Typography variant="h5">{summary.totalFirstTimers || 0}</Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                    <Chip 
-                      label={`${summary.totalFirstTimersFollowedUp || 0} followed`} 
-                      size="small" 
-                      color="success" 
-                      variant="outlined" 
-                    />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                  <Assessment />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Testimonies</Typography>
-                  <Typography variant="h5">{summary.totalTestimonies || 0}</Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Across {summary.totalReports || 0} services
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-        </Grid>
-      )}
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        <GridItem xs={12} md={3}>
+          <Card>
+            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+              <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                <Assessment />
+              </Avatar>
+              <Box>
+                <Typography variant="body2" color="textSecondary">Monthly Testimonies</Typography>
+                <Typography variant="h5">{monthlyStats.totalTestimonies}</Typography>
+                <Typography variant="caption" color="textSecondary">
+                  Across {monthlyStats.totalReports} services
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+      </Grid>
 
       <Grid container spacing={3}>
-        {/* Attendance Trends Chart */}
-        <GridItem xs={12} md={8}>
+        {/* Attendance Trends Chart - Made Wider */}
+        <GridItem xs={12}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Area Attendance Trends</Typography>
+              <Typography variant="h6" gutterBottom>Area Attendance Trends - {currentMonth}</Typography>
               {attendanceData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={400}>
                   <LineChart data={attendanceData}>
                     <XAxis dataKey="week" />
                     <YAxis />
@@ -391,7 +389,7 @@ const AreaSupervisorDashboard: React.FC = () => {
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
-                    No attendance data available
+                    No attendance data available for {currentMonth}
                   </Typography>
                 </Box>
               )}
@@ -400,13 +398,13 @@ const AreaSupervisorDashboard: React.FC = () => {
         </GridItem>
         
         {/* Centre Comparison Radar Chart */}
-        <GridItem xs={12} md={4}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Centre Performance</Typography>
+              <Typography variant="h6" gutterBottom>Centre Performance - {currentMonth}</Typography>
               {centreComparisonData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <RadarChart outerRadius={90} data={centreComparisonData}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <RadarChart outerRadius={120} data={centreComparisonData}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="name" />
                     <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
@@ -420,7 +418,7 @@ const AreaSupervisorDashboard: React.FC = () => {
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
-                    No centre data available
+                    No centre data available for {currentMonth}
                   </Typography>
                 </Box>
               )}
@@ -432,13 +430,15 @@ const AreaSupervisorDashboard: React.FC = () => {
         <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>Offering Trends</Typography>
+              <Typography variant="h6" gutterBottom>
+                Offering Trends - {currentMonth}
+              </Typography>
               {offeringTrends.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={400}>
                   <BarChart data={offeringTrends}>
                     <XAxis dataKey="week" />
                     <YAxis />
-                    <Tooltip />
+                    <Tooltip formatter={(value) => [`₦${value.toLocaleString()}`, 'Amount']} />
                     <Legend />
                     <Bar dataKey="amount" name="Offering Amount" fill="#82ca9d" />
                   </BarChart>
@@ -446,7 +446,7 @@ const AreaSupervisorDashboard: React.FC = () => {
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
-                    No offering data available
+                    No offering data available for {currentMonth}
                   </Typography>
                 </Box>
               )}
@@ -467,7 +467,7 @@ const AreaSupervisorDashboard: React.FC = () => {
                         <TableCell>Centre Name</TableCell>
                         <TableCell>Location</TableCell>
                         <TableCell>Leader</TableCell>
-                        <TableCell>Reports</TableCell>
+                        <TableCell>Monthly Reports</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -494,55 +494,52 @@ const AreaSupervisorDashboard: React.FC = () => {
         </GridItem>
 
         {/* Pending Reports Card */}
-        <GridItem xs={12}>
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Pending Reports for Approval
               </Typography>
               {pendingReports.length > 0 ? (
-                <TableContainer>
-                  <Table>
+                <TableContainer sx={{ maxHeight: 400 }}>
+                  <Table size="small">
                     <TableHead>
                       <TableRow>
                         <TableCell>CITH Centre</TableCell>
                         <TableCell>Week</TableCell>
-                        <TableCell>Total Attendance</TableCell>
-                        <TableCell>Offerings</TableCell>
-                        <TableCell>First Timers</TableCell>
+                        <TableCell>Attendance</TableCell>
                         <TableCell>Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {pendingReports.map((report) => (
+                      {pendingReports.slice(0, 5).map((report) => (
                         <TableRow key={report._id}>
                           <TableCell>{report.cithCentreId?.name || 'Unknown Centre'}</TableCell>
                           <TableCell>{new Date(report.week).toDateString()}</TableCell>
                           <TableCell>
                             {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
                           </TableCell>
-                          <TableCell>₦{(report.data?.offerings || 0).toLocaleString()}</TableCell>
-                          <TableCell>{report.data?.numberOfFirstTimers || 0}</TableCell>
                           <TableCell>
-                            <Button
-                              startIcon={<CheckCircle />}
-                              color="success"
-                              onClick={() => handleApprove(report._id)}
-                              sx={{ mr: 1 }}
-                              size="small"
-                              variant="outlined"
-                            >
-                              Approve
-                            </Button>
-                            <Button
-                              startIcon={<Cancel />}
-                              color="error"
-                              onClick={() => handleReject(report._id)}
-                              size="small"
-                              variant="outlined"
-                            >
-                              Reject
-                            </Button>
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              <Button
+                                startIcon={<CheckCircle />}
+                                color="success"
+                                onClick={() => handleApprove(report._id)}
+                                size="small"
+                                variant="outlined"
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                startIcon={<Cancel />}
+                                color="error"
+                                onClick={() => handleReject(report._id)}
+                                size="small"
+                                variant="outlined"
+                              >
+                                Reject
+                              </Button>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))}

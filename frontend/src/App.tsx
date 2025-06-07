@@ -19,6 +19,7 @@ import UserManagement from './components/admin/UserManagement';
 import DistrictManagement from './components/admin/DistrictManagement';
 import AreaSupervisorManagement from './components/admin/AreaSupervisorManagement';
 import CithCentreManagement from './components/admin/CithCentreManagement';
+import AdminPositionRequests from './components/admin/AdminPositionRequests';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { CssBaseline } from '@mui/material';
@@ -43,6 +44,7 @@ function App() {
               <Route path="/reports" element={<ProtectedRoute><Layout><ReportList /></Layout></ProtectedRoute>} />
               <Route path="/reports/new" element={<ProtectedRoute roles={['cith_centre']}><Layout><ReportForm /></Layout></ProtectedRoute>} />
               <Route path="/reports/:id" element={<ProtectedRoute><Layout><ReportDetail /></Layout></ProtectedRoute>} />
+              <Route path="/reports/:id/edit" element={<ProtectedRoute roles={['cith_centre']}><Layout><ReportForm /></Layout></ProtectedRoute>} />
               
               {/* Messages Routes */}
               <Route path="/messages" element={<ProtectedRoute><Layout><MessageList /></Layout></ProtectedRoute>} />
@@ -51,6 +53,7 @@ function App() {
               
               {/* Admin Routes */}
               <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><Layout><UserManagement /></Layout></ProtectedRoute>} />
+              <Route path="/admin/position-requests" element={<ProtectedRoute roles={['admin']}><Layout><AdminPositionRequests /></Layout></ProtectedRoute>} />
               <Route path="/districts" element={<ProtectedRoute roles={['admin']}><Layout><DistrictManagement /></Layout></ProtectedRoute>} />
               <Route path="/area-supervisors" element={<ProtectedRoute roles={['admin', 'district_pastor']}><Layout><AreaSupervisorManagement /></Layout></ProtectedRoute>} />
               <Route path="/cith-centres" element={<ProtectedRoute roles={['admin', 'district_pastor', 'area_supervisor']}><Layout><CithCentreManagement /></Layout></ProtectedRoute>} />

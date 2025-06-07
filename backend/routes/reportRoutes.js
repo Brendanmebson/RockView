@@ -8,6 +8,7 @@ const {
   rejectReport,
   getReportSummary,
   getReportById,
+  getReportForEdit,
   deleteReport,
   updateReport,
   getReportStats,
@@ -32,7 +33,10 @@ router
   .put(updateReport)
   .delete(deleteReport);
 
-router.put('/:id/approve', authorize('area_supervisor', 'district_pastor'), approveReport);
-router.put('/:id/reject', authorize('area_supervisor', 'district_pastor'), rejectReport);
+// Add edit route
+router.get('/:id/edit', getReportForEdit);
+
+router.put('/:id/approve', authorize('area_supervisor', 'district_pastor', 'admin'), approveReport);
+router.put('/:id/reject', authorize('area_supervisor', 'district_pastor', 'admin'), rejectReport);
 
 module.exports = router;
