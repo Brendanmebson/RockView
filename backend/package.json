@@ -8,7 +8,6 @@
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean-data": "node scripts/cleanCithCentres.js"
-
   },
   "keywords": [],
   "author": "",
@@ -23,7 +22,8 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.0",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "pdfkit": "^0.13.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"

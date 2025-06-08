@@ -108,16 +108,18 @@ const submitReport = async (req, res) => {
     const weekStart = new Date(week);
     weekStart.setHours(0, 0, 0, 0);
     
-    // Check if report for this week already exists
+    // Check if report for this week and event type already exists
     const existingReport = await WeeklyReport.findOne({
       cithCentreId,
       week: weekStart,
+      eventType: eventType || 'regular_service',
     });
     
     if (existingReport) {
-      return res.status(400).json({ message: 'Report for this week already exists' });
-    }
-    
+      return res.status(400).json({ 
+        message: `Report for this week and event type (${eventType || 'regular_service'}) already exists` 
+      });
+    }    
     // Validate report data
     const reportData = {
       male: parseInt(data.male) || 0,
@@ -315,12 +317,25 @@ const getReportForEdit = async (req, res) => {
       return res.status(404).json({ message: 'Report not found' });
     }
     
-    // Check if user can edit this report
-    if (req.user.role !== 'admin' && 
-        (report.submittedBy.toString() !== req.user._id.toString() || 
-         report.status !== 'pending')) {
+   // Check if user can edit this report
+    if (req.user.role === 'admin') {
+      // Admin can edit any report
+    } else if (req.user.role === 'cith_centre') {
+      // CITH centre can only edit their own reports
+      if (report.submittedBy._id.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ 
+          message: 'You can only edit your own reports' 
+        });
+      }
+      // Only allow editing of pending or rejected reports for CITH centre
+      if (report.status !== 'pending' && report.status !== 'rejected') {
+        return res.status(403).json({ 
+          message: 'You can only edit pending or rejected reports' 
+        });
+      }
+    } else {
       return res.status(403).json({ 
-        message: 'You can only edit your own pending reports' 
+        message: 'Not authorized to edit this report' 
       });
     }
     
@@ -371,7 +386,7 @@ const checkReportPermission = async (user, report) => {
   }
 };
 
-// @desc    Approve report (area supervisor, district pastor, or admin)
+// @desc    Approve report (area supervisor, zonal supervisor, district pastor, or admin)
 // @route   PUT /api/reports/:id/approve
 // @access  Private
 const approveReport = async (req, res) => {
@@ -384,20 +399,23 @@ const approveReport = async (req, res) => {
     
     // Admin can approve at any level
     if (req.user.role === 'admin') {
-      // Admin can choose to approve at area or district level
-      const { approvalLevel } = req.body; // 'area' or 'district'
+      const { approvalLevel } = req.body; // 'area', 'zonal', or 'district'
       
-      if (approvalLevel === 'district' || report.status === 'area_approved') {
+      if (approvalLevel === 'district' || report.status === 'zonal_approved') {
         report.status = 'district_approved';
         report.districtApprovedBy = req.user._id;
         report.districtApprovedAt = new Date();
+      } else if (approvalLevel === 'zonal' || report.status === 'area_approved') {
+        report.status = 'zonal_approved';
+        report.zonalApprovedBy = req.user._id;
+        report.zonalApprovedAt = new Date();
       } else {
         report.status = 'area_approved';
         report.areaApprovedBy = req.user._id;
         report.areaApprovedAt = new Date();
       }
     }
-    // Check approval permissions and status for other roles
+    // Area supervisor approval
     else if (req.user.role === 'area_supervisor') {
       if (report.status !== 'pending') {
         return res.status(400).json({ message: 'Report is not in pending status' });
@@ -417,9 +435,38 @@ const approveReport = async (req, res) => {
       report.areaApprovedBy = req.user._id;
       report.areaApprovedAt = new Date();
       
-    } else if (req.user.role === 'district_pastor') {
+    }
+    // Zonal supervisor approval
+    else if (req.user.role === 'zonal_supervisor') {
       if (report.status !== 'area_approved') {
         return res.status(400).json({ message: 'Report must be area approved first' });
+      }
+      
+      // Verify the zonal supervisor owns this report
+      const cithCentre = await CithCentre.findById(report.cithCentreId).populate('areaSupervisorId');
+      if (!cithCentre || !cithCentre.areaSupervisorId) {
+        return res.status(404).json({ message: 'CITH centre or area supervisor not found' });
+      }
+      
+      const ZonalSupervisor = require('../models/ZonalSupervisor');
+      const zonalSupervisor = await ZonalSupervisor.findOne({
+        _id: req.user.zonalSupervisorId,
+        areaSupervisorIds: cithCentre.areaSupervisorId._id
+      });
+      
+      if (!zonalSupervisor) {
+        return res.status(403).json({ message: 'Not authorized to approve this report' });
+      }
+      
+      report.status = 'zonal_approved';
+      report.zonalApprovedBy = req.user._id;
+      report.zonalApprovedAt = new Date();
+      
+    }
+    // District pastor approval
+    else if (req.user.role === 'district_pastor') {
+      if (report.status !== 'zonal_approved') {
+        return res.status(400).json({ message: 'Report must be zonal approved first' });
       }
       
       // Verify the district pastor owns this report
@@ -428,6 +475,7 @@ const approveReport = async (req, res) => {
         return res.status(404).json({ message: 'CITH centre or area supervisor not found' });
       }
       
+      const AreaSupervisor = require('../models/AreaSupervisor');
       const areaSupervisor = await AreaSupervisor.findById(cithCentre.areaSupervisorId._id);
       if (!areaSupervisor) {
         return res.status(404).json({ message: 'Area supervisor not found' });
@@ -867,6 +915,76 @@ const getRecentReports = async (req, res) => {
   }
 };
 
+// @desc    Admin edit report (change status and approve)
+// @route   PUT /api/reports/:id/admin-edit
+// @access  Private (admin only)
+const adminEditReport = async (req, res) => {
+  try {
+    const { data, eventType, eventDescription, status, approvalLevel } = req.body;
+    
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can use this function' });
+    }
+    
+    const report = await WeeklyReport.findById(req.params.id);
+    
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Update report data if provided
+    if (data) {
+      const reportData = {
+        male: parseInt(data.male) || 0,
+        female: parseInt(data.female) || 0,
+        children: parseInt(data.children) || 0,
+        offerings: parseFloat(data.offerings) || 0,
+        numberOfTestimonies: parseInt(data.numberOfTestimonies) || 0,
+        numberOfFirstTimers: parseInt(data.numberOfFirstTimers) || 0,
+        firstTimersFollowedUp: parseInt(data.firstTimersFollowedUp) || 0,
+        firstTimersConvertedToCITH: parseInt(data.firstTimersConvertedToCITH) || 0,
+        modeOfMeeting: data.modeOfMeeting || 'physical',
+        remarks: data.remarks || ''
+      };
+      report.data = reportData;
+    }
+    
+    // Update event info if provided
+    if (eventType) report.eventType = eventType;
+    if (eventDescription !== undefined) report.eventDescription = eventDescription;
+    
+    // Update status and approval if provided
+    if (status && approvalLevel) {
+      report.status = status;
+      
+      if (approvalLevel === 'area') {
+        report.areaApprovedBy = req.user._id;
+        report.areaApprovedAt = new Date();
+      } else if (approvalLevel === 'zonal') {
+        report.zonalApprovedBy = req.user._id;
+        report.zonalApprovedAt = new Date();
+      } else if (approvalLevel === 'district') {
+        report.districtApprovedBy = req.user._id;
+        report.districtApprovedAt = new Date();
+      }
+    }
+    
+    report.updatedAt = new Date();
+    await report.save();
+    
+    // Return populated updated report
+    const populatedReport = await WeeklyReport.findById(report._id)
+      .populate(getReportPopulationQuery());
+    
+    const sanitizedReport = sanitizeReportData([populatedReport])[0];
+    
+    res.json(sanitizedReport);
+  } catch (error) {
+    console.error('Error in admin edit report:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   submitReport,
   getReports,
@@ -879,4 +997,5 @@ module.exports = {
   updateReport,
   getReportStats,
   getRecentReports,
+  adminEditReport,
 };

@@ -13,6 +13,7 @@ const {
   updateReport,
   getReportStats,
   getRecentReports,
+  adminEditReport,
 } = require('../controllers/reportController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -35,7 +36,7 @@ router
 
 // Add edit route
 router.get('/:id/edit', getReportForEdit);
-
+router.put('/:id/admin-edit', authorize('admin'), adminEditReport);
 router.put('/:id/approve', authorize('area_supervisor', 'district_pastor', 'admin'), approveReport);
 router.put('/:id/reject', authorize('area_supervisor', 'district_pastor', 'admin'), rejectReport);
 

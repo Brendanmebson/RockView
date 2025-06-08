@@ -698,13 +698,13 @@ const AdminDashboard: React.FC = () => {
       </Grid>
 
       <Grid container spacing={3}>
-        {/* District Performance Comparison */}
-        <GridItem xs={12} md={8}>
+        {/* District Performance Comparison - Make full width */}
+        <GridItem xs={12}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>District Structure & Assignment</Typography>
               {districtData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={350}>
+                <ResponsiveContainer width="100%" height={400}>
                   <ReBarChart data={districtData}>
                     <XAxis dataKey="name" />
                     <YAxis />
@@ -726,21 +726,21 @@ const AdminDashboard: React.FC = () => {
           </Card>
         </GridItem>
         
-        {/* System User Distribution */}
-        <GridItem xs={12} md={4}>
+        {/* System User Distribution - Make larger */}
+        <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>User Distribution</Typography>
               {usersByRole.length > 0 && usersByRole.some(role => role.value > 0) ? (
-                <ResponsiveContainer width="100%" height={350}>
+                <ResponsiveContainer width="100%" height={450}>
                   <PieChart>
                     <Pie
                       data={usersByRole.filter(role => role.value > 0)}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
+                      label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
+                      outerRadius={140}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -748,7 +748,8 @@ const AdminDashboard: React.FC = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip />
+                    <Tooltip formatter={(value, name) => [value, name]} />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -785,111 +786,111 @@ const AdminDashboard: React.FC = () => {
                   startIcon={<AccountTree />}
                 >
                   Manage Area Supervisors ({stats.assignedAreas}/{stats.totalAreaSupervisors} Assigned)
-               </Button>
-               <Button
-                 variant="outlined"
-                 onClick={() => navigate('/cith-centres')}
-                 fullWidth
-                 startIcon={<Home />}
-               >
-                 Manage CITH Centres ({stats.assignedCentres}/{stats.totalCithCentres} Assigned)
-               </Button>
-               <Button
-                 variant="outlined"
-                 onClick={() => navigate('/admin/users')}
-                 fullWidth
-                 startIcon={<People />}
-               >
-                 Manage Users ({stats.totalUsers} Active)
-               </Button>
-               <Button
-                 variant="outlined"
-                 onClick={() => navigate('/admin/position-requests')}
-                 fullWidth
-                 startIcon={<ManageAccounts />}
-                 color={pendingRequests.length > 0 ? 'warning' : 'primary'}
-               >
-                 Position Requests {pendingRequests.length > 0 && `(${pendingRequests.length})`}
-               </Button>
-               <Button
-                 variant="outlined"
-                 onClick={() => navigate('/reports')}
-                 fullWidth
-                 startIcon={<BarChart />}
-               >
-                 View All Reports
-               </Button>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-       
-       {/* Recent Reports */}
-       <GridItem xs={12} md={6}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>Recent Reports</Typography>
-             {recentReports.length > 0 ? (
-               <TableContainer>
-                 <Table size="small">
-                   <TableHead>
-                     <TableRow>
-                       <TableCell>Centre</TableCell>
-                       <TableCell>Date</TableCell>
-                       <TableCell>Attendance</TableCell>
-                       <TableCell>Status</TableCell>
-                     </TableRow>
-                   </TableHead>
-                   <TableBody>
-                     {recentReports.slice(0, 5).map((report) => (
-                       <TableRow key={report._id}>
-                         <TableCell>
-                           {report.cithCentreId?.name || 'Unknown Centre'}
-                         </TableCell>
-                         <TableCell>
-                           {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
-                         </TableCell>
-                         <TableCell>
-                           {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
-                         </TableCell>
-                         <TableCell>
-                           <Chip
-                             label={report.status.replace('_', ' ').toUpperCase()}
-                             color={
-                               report.status === 'district_approved' 
-                                 ? 'success' 
-                                 : report.status === 'area_approved' 
-                                 ? 'info' 
-                                 : report.status === 'pending' 
-                                 ? 'warning' 
-                                 : 'error'
-                             }
-                             size="small"
-                           />
-                         </TableCell>
-                       </TableRow>
-                     ))}
-                   </TableBody>
-                 </Table>
-               </TableContainer>
-             ) : (
-               <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ py: 2 }}>
-                 No reports submitted yet
-               </Typography>
-             )}
-             <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-               <Button 
-                 variant="text" 
-                 onClick={() => navigate('/reports')}
-                 size="small"
-               >
-                 View All Reports
-               </Button>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-     </Grid>
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate('/cith-centres')}
+                  fullWidth
+                  startIcon={<Home />}
+                >
+                  Manage CITH Centres ({stats.assignedCentres}/{stats.totalCithCentres} Assigned)
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate('/admin/users')}
+                  fullWidth
+                  startIcon={<People />}
+                >
+                  Manage Users ({stats.totalUsers} Active)
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate('/admin/position-requests')}
+                  fullWidth
+                  startIcon={<ManageAccounts />}
+                  color={pendingRequests.length > 0 ? 'warning' : 'primary'}
+                >
+                  Position Requests {pendingRequests.length > 0 && `(${pendingRequests.length})`}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate('/reports')}
+                  fullWidth
+                  startIcon={<BarChart />}
+                >
+                  View All Reports
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        {/* Recent Reports */}
+        <GridItem xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Recent Reports</Typography>
+              {recentReports.length > 0 ? (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Centre</TableCell>
+                        <TableCell>Date</TableCell>
+                        <TableCell>Attendance</TableCell>
+                        <TableCell>Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {recentReports.slice(0, 5).map((report) => (
+                        <TableRow key={report._id}>
+                          <TableCell>
+                            {report.cithCentreId?.name || 'Unknown Centre'}
+                          </TableCell>
+                          <TableCell>
+                            {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
+                          </TableCell>
+                          <TableCell>
+                            {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={report.status.replace('_', ' ').toUpperCase()}
+                              color={
+                                report.status === 'district_approved' 
+                                  ? 'success' 
+                                  : report.status === 'area_approved' 
+                                  ? 'info' 
+                                  : report.status === 'pending' 
+                                  ? 'warning' 
+                                  : 'error'
+                              }
+                              size="small"
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              ) : (
+                <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ py: 2 }}>
+                  No reports submitted yet
+                </Typography>
+              )}
+              <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button 
+                  variant="text" 
+                  onClick={() => navigate('/reports')}
+                  size="small"
+                >
+                  View All Reports
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+      </Grid>
 
      {/* Rejection Dialog */}
      <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)}>

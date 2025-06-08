@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['cith_centre', 'area_supervisor', 'district_pastor', 'admin'],
+      enum: ['cith_centre', 'area_supervisor', 'zonal_supervisor', 'district_pastor', 'admin'],
       required: true,
     },
     cithCentreId: {
@@ -45,6 +45,10 @@ const userSchema = new mongoose.Schema(
     areaSupervisorId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'AreaSupervisor',
+    },
+        zonalSupervisorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ZonalSupervisor',
     },
     districtId: {
       type: mongoose.Schema.Types.ObjectId,

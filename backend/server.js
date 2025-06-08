@@ -30,6 +30,7 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/public', require('./routes/publicRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/districts', require('./routes/districtRoutes'));
+app.use('/api/zonal-supervisors', require('./routes/zonalSupervisorRoutes'));
 app.use('/api/area-supervisors', require('./routes/areaSupervisorRoutes'));
 app.use('/api/cith-centres', require('./routes/cithCentreRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));

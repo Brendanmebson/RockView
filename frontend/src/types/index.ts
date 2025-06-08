@@ -4,10 +4,10 @@ export interface User {
   email: string;
   name: string;
   phone: string;
-  role: 'cith_centre' | 'area_supervisor' | 'district_pastor' | 'admin';
-  cithCentreId?: string;
+  role: 'cith_centre' | 'area_supervisor' | 'zonal_supervisor' | 'district_pastor' | 'admin';  cithCentreId?: string;
   areaSupervisorId?: string;
   districtId?: string;
+  ZonalSupervisorId?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -37,6 +37,26 @@ export interface AreaSupervisor {
   _id: string;
   name: string;
   districtId: District | string;
+  supervisorName: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  createdAt: string;
+  updatedAt: string;
+  isAssigned?: boolean;
+  assignedSupervisor?: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  displayText?: string;
+}
+
+export interface ZonalSupervisor {
+  _id: string;
+  name: string;
+  districtId: District | string;
+  areaSupervisorIds: (AreaSupervisor | string)[];
   supervisorName: string;
   contactEmail?: string;
   contactPhone?: string;
@@ -83,7 +103,7 @@ export interface PopulatedUser {
   email: string;
   name: string;
   phone: string;
-  role: 'cith_centre' | 'area_supervisor' | 'district_pastor' | 'admin';
+  role: 'cith_centre' | 'area_supervisor' | 'zonal_supervisor' | 'district_pastor' | 'admin';
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -108,6 +128,10 @@ export interface UserWithDetails {
     location: string;
   };
   areaSupervisorId?: string | {
+    _id: string;
+    name: string;
+  };
+  ZonalSupervisorId?: string | {
     _id: string;
     name: string;
   };
@@ -152,8 +176,7 @@ export interface WeeklyReport {
   eventType: string;
   eventDescription?: string;
   data: WeeklyReportData;
-  status: 'pending' | 'area_approved' | 'district_approved' | 'rejected';
-  submittedBy: {
+  status: 'pending' | 'area_approved' | 'zonal_approved' | 'district_approved' | 'rejected';    submittedBy: {
     _id: string;
     name: string;
     email: string;
@@ -165,6 +188,12 @@ export interface WeeklyReport {
     email: string;
   };
   areaApprovedAt?: string;
+  zonalApprovedBy?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  zonalApprovedAt?: string;
   districtApprovedBy?: {
     _id: string;
     name: string;

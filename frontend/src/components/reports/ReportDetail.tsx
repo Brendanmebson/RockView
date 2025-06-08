@@ -27,6 +27,7 @@ import {
   HourglassEmpty,
   Cancel,
 } from '@mui/icons-material';
+import { Download, GetApp } from '@mui/icons-material';
 import api from '../../services/api';
 import GridItem from '../common/GridItem';
 import { WeeklyReport } from '../../types';
@@ -50,6 +51,25 @@ const ReportDetail: React.FC = () => {
       setError(error.response?.data?.message || 'Failed to fetch report');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async (format: 'xlsx' | 'pdf') => {
+    try {
+      const response = await api.get(`/export/report/${id}?format=${format}`, {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `report-${id}-${new Date().toISOString().split('T')[0]}.${format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Export error:', error);
+      setError('Failed to export report');
     }
   };
 
@@ -124,7 +144,23 @@ const ReportDetail: React.FC = () => {
           </Button>
           <Typography variant="h4">Report Details</Typography>
         </Box>
-        <Box>{getStatusChip(report.status)}</Box>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+          <Button
+            variant="outlined"
+            startIcon={<Download />}
+            onClick={() => handleExport('xlsx')}
+          >
+            Export Excel
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<GetApp />}
+            onClick={() => handleExport('pdf')}
+          >
+            Export PDF
+          </Button>
+          {getStatusChip(report.status)}
+        </Box>
       </Box>
 
       {/* Meta Information */}

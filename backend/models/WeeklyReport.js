@@ -73,7 +73,7 @@ const weeklyReportSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'area_approved', 'district_approved', 'rejected'],
+      enum: ['pending', 'area_approved', 'zonal_approved', 'district_approved', 'rejected'],
       default: 'pending',
     },
     submittedBy: {
@@ -89,7 +89,15 @@ const weeklyReportSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+  
     areaApprovedAt: Date,
+
+    zonalApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    zonalApprovedAt: Date,
+
     districtApprovedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -107,7 +115,7 @@ const weeklyReportSchema = new mongoose.Schema(
   }
 );
 
-// Ensure one report per centre per week
-weeklyReportSchema.index({ cithCentreId: 1, week: 1 }, { unique: true });
+// Allow multiple reports per centre per week if different events
+weeklyReportSchema.index({ cithCentreId: 1, week: 1, eventType: 1 }, { unique: true });
 
 module.exports = mongoose.model('WeeklyReport', weeklyReportSchema);

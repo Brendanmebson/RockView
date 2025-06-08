@@ -602,37 +602,47 @@ const DistrictPastorDashboard: React.FC = () => {
 
 // Custom content component for Treemap
 const CustomizedContent = (props: any) => {
- const { root, depth, x, y, width, height, index, colors, name, value } = props;
+  const { root, depth, x, y, width, height, index, colors, name, value } = props;
+  
+  // Add safety checks
+  if (!root || !root.children || !colors || !Array.isArray(colors)) {
+    return null;
+  }
 
- return (
-   <g>
-     <rect
-       x={x}
-       y={y}
-       width={width}
-       height={height}
-       style={{
-         fill: depth < 2 
-           ? colors[Math.floor((index / root.children.length) * colors.length) % colors.length]
-           : 'rgba(255,255,255,0.3)',
-         stroke: '#fff',
-         strokeWidth: 2 / (depth + 1e-10),
-         strokeOpacity: 1 / (depth + 1e-10),
-       }}
-     />
-     {depth === 1 && width > 50 && height > 20 && (
-       <text
-         x={x + width / 2}
-         y={y + height / 2 + 7}
-         textAnchor="middle"
-         fill="#fff"
-         fontSize={12}
-       >
-         {name}
-       </text>
-     )}
-   </g>
- );
+  // Ensure we have valid dimensions
+  if (!width || !height || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  return (
+    <g>
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        style={{
+          fill: depth < 2 
+            ? colors[Math.floor((index / Math.max(root.children.length, 1)) * colors.length) % colors.length]
+            : 'rgba(255,255,255,0.3)',
+          stroke: '#fff',
+          strokeWidth: 2 / (depth + 1e-10),
+          strokeOpacity: 1 / (depth + 1e-10),
+        }}
+      />
+      {depth === 1 && width > 50 && height > 20 && name && (
+        <text
+          x={x + width / 2}
+          y={y + height / 2 + 7}
+          textAnchor="middle"
+          fill="#fff"
+          fontSize={12}
+        >
+          {name}
+        </text>
+      )}
+    </g>
+  );
 };
 
 export default DistrictPastorDashboard;
