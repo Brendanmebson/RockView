@@ -116,11 +116,19 @@ const menuItems = React.useMemo(() => {
       return [
         ...common,
         { text: 'Districts', icon: <Building size={20} />, path: '/districts', color: '#E53E3E' },
+        { text: 'Zonal Supervisors', icon: <Users size={20} />, path: '/zonal-supervisors', color: '#38A169' },
         { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#ED8936' },
         { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
         { text: 'Users', icon: <People />, path: '/admin/users', color: '#805AD5' },
       ];
     case 'district_pastor':
+      return [
+        ...common,
+        { text: 'Zonal Supervisors', icon: <Users size={20} />, path: '/zonal-supervisors', color: '#38A169' },
+        { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#ED8936' },
+        { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#D69E2E' },
+      ];
+    case 'zonal_supervisor':
       return [
         ...common,
         { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#ED8936' },
@@ -228,7 +236,7 @@ const getWelcomeMessage = () => {
        {!collapsed && (
          <>
            <Typography variant="h5" color="white" fontWeight="bold">
-             ClearView
+             RockView
            </Typography>
            <Typography variant="caption" color="rgba(255,255,255,0.7)">
              Church Management System

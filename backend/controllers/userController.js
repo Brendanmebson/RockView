@@ -2,6 +2,7 @@
 const User = require('../models/User');
 const District = require('../models/District');
 const AreaSupervisor = require('../models/AreaSupervisor');
+const ZonalSupervisor = require('../models/ZonalSupervisor');
 const CithCentre = require('../models/CithCentre');
 
 // @desc    Get all users (admin only)
@@ -13,6 +14,7 @@ const getAllUsers = async (req, res) => {
       .select('-password')
       .populate('cithCentreId', 'name location')
       .populate('areaSupervisorId', 'name')
+      .populate('zonalSupervisorId', 'name')
       .populate('districtId', 'name districtNumber')
       .sort({ createdAt: -1 });
     
@@ -35,10 +37,38 @@ const getUsersByHierarchy = async (req, res) => {
         .select('-password')
         .populate('cithCentreId', 'name location')
         .populate('areaSupervisorId', 'name')
+        .populate('zonalSupervisorId', 'name')
         .populate('districtId', 'name districtNumber');
     } else if (req.user.role === 'district_pastor') {
-      // District pastor can see area supervisors and CITH centre leaders in their district
-      const areaSupervisors = await AreaSupervisor.find({ districtId: req.user.districtId });
+      // District pastor can see zonal supervisors, area supervisors and CITH centre leaders in their district
+      const zonalSupervisors = await ZonalSupervisor.find({ districtId: req.user.districtId });
+      const zonalSupervisorIds = zonalSupervisors.map(zs => zs._id);
+      
+      const areaSupervisors = await AreaSupervisor.find({ 
+        $or: [
+          { districtId: req.user.districtId },
+          { zonalSupervisorId: { $in: zonalSupervisorIds } }
+        ]
+      });
+      const areaSupervisorIds = areaSupervisors.map(as => as._id);
+      
+      const cithCentres = await CithCentre.find({ areaSupervisorId: { $in: areaSupervisorIds } });
+      const cithCentreIds = cithCentres.map(cc => cc._id);
+      
+      users = await User.find({
+        $or: [
+          { zonalSupervisorId: { $in: zonalSupervisorIds } },
+          { areaSupervisorId: { $in: areaSupervisorIds } },
+          { cithCentreId: { $in: cithCentreIds } }
+        ]
+      })
+        .select('-password')
+        .populate('cithCentreId', 'name location')
+        .populate('areaSupervisorId', 'name')
+        .populate('zonalSupervisorId', 'name');
+    } else if (req.user.role === 'zonal_supervisor') {
+      // Zonal supervisor can see area supervisors and CITH centre leaders under them
+      const areaSupervisors = await AreaSupervisor.find({ zonalSupervisorId: req.user.zonalSupervisorId });
       const areaSupervisorIds = areaSupervisors.map(as => as._id);
       
       const cithCentres = await CithCentre.find({ areaSupervisorId: { $in: areaSupervisorIds } });
@@ -78,6 +108,7 @@ const getUserById = async (req, res) => {
       .select('-password')
       .populate('cithCentreId', 'name location')
       .populate('areaSupervisorId', 'name')
+      .populate('zonalSupervisorId', 'name')
       .populate('districtId', 'name districtNumber');
     
     if (!user) {
@@ -95,7 +126,7 @@ const getUserById = async (req, res) => {
 // @access  Private/Admin
 const createUser = async (req, res) => {
   try {
-    const { email, password, name, phone, role, cithCentreId, areaSupervisorId, districtId } = req.body;
+    const { email, password, name, phone, role, cithCentreId, areaSupervisorId, zonalSupervisorId, districtId } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -131,6 +162,23 @@ const createUser = async (req, res) => {
         });
       }
       userData.districtId = districtId;
+    } else if (role === 'zonal_supervisor') {
+      if (!zonalSupervisorId) {
+        return res.status(400).json({ message: 'Zonal supervisor ID is required for zonal supervisor role' });
+      }
+      
+      // Check if this zone already has a supervisor
+      const existingSupervisor = await User.findOne({ 
+        role: 'zonal_supervisor', 
+        zonalSupervisorId 
+      });
+      
+      if (existingSupervisor) {
+        return res.status(400).json({ 
+          message: 'This zone already has a supervisor assigned' 
+        });
+      }
+      userData.zonalSupervisorId = zonalSupervisorId;
     } else if (role === 'area_supervisor') {
       if (!areaSupervisorId) {
         return res.status(400).json({ message: 'Area supervisor ID is required for area supervisor role' });
@@ -175,6 +223,7 @@ const createUser = async (req, res) => {
       .select('-password')
       .populate('cithCentreId', 'name location')
       .populate('areaSupervisorId', 'name')
+      .populate('zonalSupervisorId', 'name')
       .populate('districtId', 'name districtNumber');
 
     res.status(201).json(newUser);
@@ -217,6 +266,7 @@ const updateUser = async (req, res) => {
       .select('-password')
       .populate('cithCentreId', 'name location')
       .populate('areaSupervisorId', 'name')
+      .populate('zonalSupervisorId', 'name')
       .populate('districtId', 'name districtNumber');
     
     res.json(updatedUser);
@@ -269,7 +319,7 @@ const updateUserRole = async (req, res) => {
     }
     
     // Validate role
-    if (!['cith_centre', 'area_supervisor', 'district_pastor', 'admin'].includes(role)) {
+    if (!['cith_centre', 'area_supervisor', 'zonal_supervisor', 'district_pastor', 'admin'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
     
@@ -298,6 +348,18 @@ const updateUserRole = async (req, res) => {
       if (existingPastor) {
         return res.status(400).json({ 
           message: 'This district already has a pastor assigned' 
+        });
+      }
+    } else if (role === 'zonal_supervisor' && targetId) {
+      const existingSupervisor = await User.findOne({ 
+        role: 'zonal_supervisor', 
+        zonalSupervisorId: targetId,
+        _id: { $ne: user._id }
+      });
+      
+      if (existingSupervisor) {
+        return res.status(400).json({ 
+          message: 'This zone already has a supervisor assigned' 
         });
       }
     } else if (role === 'area_supervisor' && targetId) {
@@ -329,15 +391,18 @@ const updateUserRole = async (req, res) => {
     // Clear previous associations
     user.cithCentreId = undefined;
     user.areaSupervisorId = undefined;
+    user.zonalSupervisorId = undefined;
     user.districtId = undefined;
     
     // Set new role and phone
     user.role = role;
-    user.phone = phoneToUse.trim(); // Always set phone
+    user.phone = phoneToUse.trim();
     
     // Set role-specific associations
     if (role === 'district_pastor' && targetId) {
       user.districtId = targetId;
+    } else if (role === 'zonal_supervisor' && targetId) {
+      user.zonalSupervisorId = targetId;
     } else if (role === 'area_supervisor' && targetId) {
       user.areaSupervisorId = targetId;
     } else if (role === 'cith_centre' && targetId) {
@@ -350,6 +415,7 @@ const updateUserRole = async (req, res) => {
       .select('-password')
       .populate('cithCentreId', 'name location')
       .populate('areaSupervisorId', 'name')
+      .populate('zonalSupervisorId', 'name')
       .populate('districtId', 'name districtNumber');
     
     res.json(updatedUser);
@@ -393,6 +459,7 @@ const toggleUserStatus = async (req, res) => {
       .select('-password')
       .populate('cithCentreId', 'name location')
       .populate('areaSupervisorId', 'name')
+      .populate('zonalSupervisorId', 'name')
       .populate('districtId', 'name districtNumber');
     
     res.json({
@@ -504,6 +571,7 @@ const searchUsers = async (req, res) => {
       .select('-password')
       .populate('cithCentreId', 'name location')
       .populate('areaSupervisorId', 'name')
+      .populate('zonalSupervisorId', 'name')
       .populate('districtId', 'name districtNumber')
       .sort({ createdAt: -1 })
       .limit(limit * 1)

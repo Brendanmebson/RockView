@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getCithCentres,
+  getCithCentreById,
   createCithCentre,
   updateCithCentre,
   deleteCithCentre,
@@ -17,6 +18,7 @@ router
 
 router
   .route('/:id')
+  .get(getCithCentreById)
   .put(authorize('admin', 'district_pastor', 'area_supervisor'), updateCithCentre)
   .delete(authorize('admin', 'district_pastor', 'area_supervisor'), deleteCithCentre);
 

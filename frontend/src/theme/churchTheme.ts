@@ -1,66 +1,68 @@
-import { createTheme } from '@mui/material/styles';
+// frontend/src/theme/churchTheme.ts - Update with dark mode support
+import { createTheme, ThemeOptions } from '@mui/material/styles';
 
-export const churchTheme = createTheme({
+const getDesignTokens = (mode: 'light' | 'dark'): ThemeOptions => ({
   palette: {
+    mode,
     primary: {
-      main: '#4A5568', // Slate gray
-      light: '#718096',
-      dark: '#2D3748',
+      main: mode === 'light' ? '#4A5568' : '#68D391', // Light green in dark mode
+      light: mode === 'light' ? '#718096' : '#9AE6B4',
+      dark: mode === 'light' ? '#2D3748' : '#38A169',
     },
     secondary: {
-      main: '#D69E2E', // Gold
-      light: '#F7DC6F',
-      dark: '#B7791F',
+      main: mode === 'light' ? '#D69E2E' : '#F6E05E',
+      light: mode === 'light' ? '#F7DC6F' : '#F6E05E',
+      dark: mode === 'light' ? '#B7791F' : '#D69E2E',
     },
     success: {
-      main: '#48BB78', // Green
-      light: '#68D391',
-      dark: '#38A169',
+      main: mode === 'light' ? '#48BB78' : '#68D391',
+      light: mode === 'light' ? '#68D391' : '#9AE6B4',
+      dark: mode === 'light' ? '#38A169' : '#38A169',
     },
     warning: {
-      main: '#ED8936', // Orange
-      light: '#FBB040',
-      dark: '#C05621',
+      main: mode === 'light' ? '#ED8936' : '#F6AD55',
+      light: mode === 'light' ? '#FBB040' : '#FBD38D',
+      dark: mode === 'light' ? '#C05621' : '#DD6B20',
     },
     error: {
-      main: '#E53E3E', // Red
-      light: '#FC8181',
-      dark: '#C53030',
+      main: mode === 'light' ? '#E53E3E' : '#FC8181',
+      light: mode === 'light' ? '#FC8181' : '#FEB2B2',
+      dark: mode === 'light' ? '#C53030' : '#E53E3E',
     },
     background: {
-      default: '#F7FAFC',
-      paper: '#FFFFFF',
+      default: mode === 'light' ? '#F7FAFC' : '#1A202C',
+      paper: mode === 'light' ? '#FFFFFF' : '#2D3748',
     },
     text: {
-      primary: '#2D3748',
-      secondary: '#4A5568',
+      primary: mode === 'light' ? '#2D3748' : '#F7FAFC',
+      secondary: mode === 'light' ? '#4A5568' : '#E2E8F0',
     },
   },
   typography: {
     fontFamily: '"Inter", "Roboto", "Arial", sans-serif',
     h1: {
       fontWeight: 700,
-      color: '#2D3748',
+      color: mode === 'light' ? '#2D3748' : '#F7FAFC',
     },
     h2: {
       fontWeight: 600,
-      color: '#2D3748',
+      color: mode === 'light' ? '#2D3748' : '#F7FAFC',
     },
     h3: {
       fontWeight: 600,
-      color: '#2D3748',
+      color: mode === 'light' ? '#2D3748' : '#F7FAFC',
     },
     h4: {
       fontWeight: 600,
-      color: '#2D3748',
+      color: mode === 'light' ? '#2D3748' : '#F7FAFC',
     },
     h5: {
       fontWeight: 500,
-      color: '#2D3748',
+      color: mode === 'light' ? '#2D3748' : '#F7FAFC',
     },
     h6: {
       fontWeight: 500,
-      color: '#2D3748',
+      color: mode === 'light' ? '#2D3748' : '#F7FAFC',
     },
   },
   shape: {
@@ -74,11 +76,15 @@ export const churchTheme = createTheme({
           textTransform: 'none',
           fontWeight: 600,
           padding: '12px 24px',
-          boxShadow: '0 4px 14px 0 rgba(0,0,0,0.1)',
+          boxShadow: mode === 'light' 
+            ? '0 4px 14px 0 rgba(0,0,0,0.1)' 
+            : '0 4px 14px 0 rgba(0,0,0,0.3)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
             transform: 'translateY(-2px)',
-            boxShadow: '0 6px 20px 0 rgba(0,0,0,0.15)',
+            boxShadow: mode === 'light' 
+              ? '0 6px 20px 0 rgba(0,0,0,0.15)' 
+              : '0 6px 20px 0 rgba(0,0,0,0.4)',
           },
         },
       },
@@ -87,11 +93,15 @@ export const churchTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 20,
-          boxShadow: '0 4px 20px 0 rgba(0,0,0,0.08)',
+          boxShadow: mode === 'light' 
+            ? '0 4px 20px 0 rgba(0,0,0,0.08)' 
+            : '0 4px 20px 0 rgba(0,0,0,0.25)',
           transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
             transform: 'translateY(-4px)',
-            boxShadow: '0 8px 30px 0 rgba(0,0,0,0.12)',
+            boxShadow: mode === 'light' 
+              ? '0 8px 30px 0 rgba(0,0,0,0.12)' 
+              : '0 8px 30px 0 rgba(0,0,0,0.35)',
           },
         },
       },
@@ -100,8 +110,37 @@ export const churchTheme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 16,
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: mode === 'light' ? '#FFFFFF' : '#2D3748',
+          borderRight: mode === 'light' 
+            ? '1px solid rgba(0,0,0,0.1)' 
+            : '1px solid rgba(255,255,255,0.1)',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: mode === 'light' 
+            ? 'rgba(255,255,255,0.95)' 
+            : 'rgba(45,55,72,0.95)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: mode === 'light' 
+            ? '1px solid rgba(0,0,0,0.1)' 
+            : '1px solid rgba(255,255,255,0.1)',
+          boxShadow: mode === 'light' 
+            ? '0 2px 20px rgba(0,0,0,0.05)' 
+            : '0 2px 20px rgba(0,0,0,0.3)',
         },
       },
     },
   },
 });
+
+export const createChurchTheme = (mode: 'light' | 'dark') => createTheme(getDesignTokens(mode));

@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const path = require('path'); // Add this
 require('dotenv').config();
 
 const connectDB = require('./config/database');
@@ -27,7 +26,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// API Routes
+// Routes
 app.use('/api/public', require('./routes/publicRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/districts', require('./routes/districtRoutes'));
@@ -38,23 +37,6 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/export', require('./routes/exportRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
-
-// Add test endpoint
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'Backend is working!', 
-    timestamp: new Date().toISOString(),
-    userAgent: req.headers['user-agent']
-  });
-});
-
-// Serve static files from React build (ADD THIS)
-app.use(express.static(path.join(__dirname, '../frontend/build')));
-
-// Handle React Router - catch all requests that don't match API routes (ADD THIS)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-});
 
 // Error handler
 app.use(errorHandler);

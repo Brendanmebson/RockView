@@ -9,9 +9,10 @@ const generateToken = require('../utils/generateToken');
 // @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
+// Update the register function to handle zonal_supervisor role
 const register = async (req, res) => {
   try {
-    const { email, password, name, phone, role, cithCentreId, areaSupervisorId, districtId } = req.body;
+    const { email, password, name, phone, role, cithCentreId, areaSupervisorId, zonalSupervisorId, districtId } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -38,6 +39,19 @@ const register = async (req, res) => {
         });
       }
       userData.districtId = districtId;
+    } else if (role === 'zonal_supervisor') {
+      // Check if this zone already has a supervisor
+      const existingSupervisor = await User.findOne({ 
+        role: 'zonal_supervisor', 
+        zonalSupervisorId 
+      });
+      
+      if (existingSupervisor) {
+        return res.status(400).json({ 
+          message: 'This zone already has a supervisor assigned' 
+        });
+      }
+      userData.zonalSupervisorId = zonalSupervisorId;
     } else if (role === 'area_supervisor') {
       // Check if this area already has a supervisor
       const existingSupervisor = await User.findOne({ 
@@ -74,6 +88,12 @@ const register = async (req, res) => {
       await District.findByIdAndUpdate(districtId, {
         pastorName: name
       });
+    } else if (role === 'zonal_supervisor' && zonalSupervisorId) {
+      await ZonalSupervisor.findByIdAndUpdate(zonalSupervisorId, {
+        supervisorName: name,
+        contactEmail: email,
+        contactPhone: phone
+      });
     } else if (role === 'area_supervisor' && areaSupervisorId) {
       await AreaSupervisor.findByIdAndUpdate(areaSupervisorId, {
         supervisorName: name,
@@ -103,6 +123,7 @@ const register = async (req, res) => {
       role: user.role,
       cithCentreId: user.cithCentreId,
       areaSupervisorId: user.areaSupervisorId,
+      zonalSupervisorId: user.zonalSupervisorId,
       districtId: user.districtId,
       token: generateToken(user._id),
     });

@@ -508,6 +508,92 @@ const approveReport = async (req, res) => {
   }
 };
 
+// @desc    Admin comprehensive edit report
+// @route   PUT /api/reports/:id/admin-comprehensive-edit
+// @access  Private (admin only)
+const adminComprehensiveEdit = async (req, res) => {
+  try {
+    const { 
+      data, 
+      eventType, 
+      eventDescription, 
+      targetApprovalLevel, // 'area', 'district', or 'final'
+      resetApprovals 
+    } = req.body;
+    
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can use this function' });
+    }
+    
+    const report = await WeeklyReport.findById(req.params.id);
+    
+    if (!report) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    // Update report data if provided
+    if (data) {
+      const reportData = {
+        male: parseInt(data.male) || 0,
+        female: parseInt(data.female) || 0,
+        children: parseInt(data.children) || 0,
+        offerings: parseFloat(data.offerings) || 0,
+        numberOfTestimonies: parseInt(data.numberOfTestimonies) || 0,
+        numberOfFirstTimers: parseInt(data.numberOfFirstTimers) || 0,
+        firstTimersFollowedUp: parseInt(data.firstTimersFollowedUp) || 0,
+        firstTimersConvertedToCITH: parseInt(data.firstTimersConvertedToCITH) || 0,
+        modeOfMeeting: data.modeOfMeeting || 'physical',
+        remarks: data.remarks || ''
+      };
+      report.data = reportData;
+    }
+    
+    // Update event info if provided
+    if (eventType) report.eventType = eventType;
+    if (eventDescription !== undefined) report.eventDescription = eventDescription;
+    
+    // Reset approvals if requested
+    if (resetApprovals) {
+      report.areaApprovedBy = undefined;
+      report.areaApprovedAt = undefined;
+      report.districtApprovedBy = undefined;
+      report.districtApprovedAt = undefined;
+      report.rejectedBy = undefined;
+      report.rejectedAt = undefined;
+      report.rejectionReason = undefined;
+    }
+    
+    // Set target approval level
+    if (targetApprovalLevel === 'area') {
+      report.status = 'area_approved';
+      report.areaApprovedBy = req.user._id;
+      report.areaApprovedAt = new Date();
+    } else if (targetApprovalLevel === 'district') {
+      report.status = 'district_approved';
+      report.areaApprovedBy = req.user._id;
+      report.areaApprovedAt = new Date();
+      report.districtApprovedBy = req.user._id;
+      report.districtApprovedAt = new Date();
+    } else if (targetApprovalLevel === 'pending') {
+      report.status = 'pending';
+    }
+    
+    report.updatedAt = new Date();
+    await report.save();
+    
+    // Return populated updated report
+    const populatedReport = await WeeklyReport.findById(report._id)
+      .populate(getReportPopulationQuery());
+    
+    const sanitizedReport = sanitizeReportData([populatedReport])[0];
+    
+    res.json(sanitizedReport);
+  } catch (error) {
+    console.error('Error in admin comprehensive edit:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 // @desc    Reject report (area supervisor, district pastor, or admin)
 // @route   PUT /api/reports/:id/reject
 // @access  Private
@@ -998,4 +1084,5 @@ module.exports = {
   getReportStats,
   getRecentReports,
   adminEditReport,
+  adminComprehensiveEdit,
 };

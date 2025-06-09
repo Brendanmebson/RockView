@@ -127,7 +127,7 @@ const Login: React.FC = () => {
                 </motion.div>
 
                 <Typography component="h1" variant="h3" color="primary" sx={{ mb: 1 }}>
-                  ClearView
+                  RockView
                 </Typography>
                 <Typography variant="h6" color="textSecondary" sx={{ mb: 3 }}>
                   Welcome back to your church management system

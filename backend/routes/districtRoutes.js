@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getDistricts,
+  getDistrictById,
   createDistrict,
   updateDistrict,
   deleteDistrict,
@@ -17,6 +18,7 @@ router
 
 router
   .route('/:id')
+  .get(getDistrictById)
   .put(authorize('admin'), updateDistrict)
   .delete(authorize('admin'), deleteDistrict);
 

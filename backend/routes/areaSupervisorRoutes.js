@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getAreaSupervisors,
+  getAreaSupervisorById,
   createAreaSupervisor,
   updateAreaSupervisor,
   deleteAreaSupervisor,
@@ -17,6 +18,7 @@ router
 
 router
   .route('/:id')
+  .get(getAreaSupervisorById)
   .put(authorize('admin', 'district_pastor', 'area_supervisor'), updateAreaSupervisor)
   .delete(authorize('admin', 'district_pastor'), deleteAreaSupervisor);
 

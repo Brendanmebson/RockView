@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext';
 import CithCentreDashboard from './CithCentreDashboard';
 import AreaSupervisorDashboard from './AreaSupervisorDashboard';
+import ZonalSupervisorDashboard from './ZonalSupervisorDashboard';
 import DistrictPastorDashboard from './DistrictPastorDashboard';
 import AdminDashboard from './AdminDashboard';
 
@@ -15,6 +16,8 @@ const DashboardMain: React.FC = () => {
       return <CithCentreDashboard />;
     case 'area_supervisor':
       return <AreaSupervisorDashboard />;
+    case 'zonal_supervisor':
+      return <ZonalSupervisorDashboard />;
     case 'district_pastor':
       return <DistrictPastorDashboard />;
     case 'admin':

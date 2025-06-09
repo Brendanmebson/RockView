@@ -7,7 +7,7 @@ export interface User {
   role: 'cith_centre' | 'area_supervisor' | 'zonal_supervisor' | 'district_pastor' | 'admin';  cithCentreId?: string;
   areaSupervisorId?: string;
   districtId?: string;
-  ZonalSupervisorId?: string;
+  zonalSupervisorId?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -131,7 +131,7 @@ export interface UserWithDetails {
     _id: string;
     name: string;
   };
-  ZonalSupervisorId?: string | {
+  zonalSupervisorId?: string | {
     _id: string;
     name: string;
   };

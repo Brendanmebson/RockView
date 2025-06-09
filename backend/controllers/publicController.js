@@ -5,53 +5,7 @@ const CithCentre = require('../models/CithCentre');
 const User = require('../models/User');
 
 // Helper function to check user assignments efficiently
-const checkUserAssignments = async () => {
-  try {
-    // Get all users with their assignments
-    const users = await User.find({}).select('role districtId areaSupervisorId cithCentreId name email phone');
-    
-    // Create assignment maps for quick lookup
-    const assignmentMaps = {
-      districts: new Map(),
-      areas: new Map(),
-      centres: new Map()
-    };
-    
-    users.forEach(user => {
-      if (user.role === 'district_pastor' && user.districtId) {
-        assignmentMaps.districts.set(user.districtId.toString(), {
-          name: user.name,
-          email: user.email,
-          phone: user.phone
-        });
-      } else if (user.role === 'area_supervisor' && user.areaSupervisorId) {
-        assignmentMaps.areas.set(user.areaSupervisorId.toString(), {
-          name: user.name,
-          email: user.email,
-          phone: user.phone
-        });
-      } else if (user.role === 'cith_centre' && user.cithCentreId) {
-        if (!assignmentMaps.centres.has(user.cithCentreId.toString())) {
-          assignmentMaps.centres.set(user.cithCentreId.toString(), []);
-        }
-        assignmentMaps.centres.get(user.cithCentreId.toString()).push({
-          name: user.name,
-          email: user.email,
-          phone: user.phone
-        });
-      }
-    });
-    
-    return assignmentMaps;
-  } catch (error) {
-    console.error('Error checking user assignments:', error);
-    return {
-      districts: new Map(),
-      areas: new Map(),
-      centres: new Map()
-    };
-  }
-};
+// (Removed duplicate declaration; see updated version below)
 
 // @desc    Get all districts (public)
 // @route   GET /api/public/districts
@@ -306,9 +260,108 @@ const testConnection = async (req, res) => {
   }
 };
 
+// Add this function to the existing publicController.js
+
+// @desc    Get all zonal supervisors (public)
+// @route   GET /api/public/zonal-supervisors
+// @access  Public
+const getPublicZonalSupervisors = async (req, res) => {
+  try {
+    const zonalSupervisors = await ZonalSupervisor.find()
+      .populate('districtId', '_id name districtNumber pastorName')
+      .populate('areaSupervisorIds', '_id name supervisorName')
+      .select('_id name supervisorName districtId areaSupervisorIds');
+    
+    const assignmentMaps = await checkUserAssignments();
+    
+    const zonalsWithAssignment = zonalSupervisors.map(zonal => {
+      const assignedSupervisor = assignmentMaps.zonals?.get(zonal._id.toString());
+      
+      return {
+        ...zonal.toObject(),
+        isAssigned: !!assignedSupervisor,
+        assignedSupervisor: assignedSupervisor || null,
+        displayText: assignedSupervisor ? 
+          `Supervised by ${assignedSupervisor.name}` : 
+          'Unassigned - Available for Assignment',
+        // Only show contact info from registered users
+        contactEmail: assignedSupervisor ? assignedSupervisor.email : null,
+        contactPhone: assignedSupervisor ? assignedSupervisor.phone : null,
+        // Override supervisorName to show assignment status
+        supervisorName: assignedSupervisor ? assignedSupervisor.name : 'Unassigned'
+      };
+    });
+    
+    console.log(`Sending ${zonalsWithAssignment.length} zonal supervisors to client`);
+    res.json(zonalsWithAssignment);
+  } catch (error) {
+    console.error('Error fetching public zonal supervisors:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Update the checkUserAssignments function to include zonals
+const checkUserAssignments = async () => {
+  try {
+    // Get all users with their assignments
+    const users = await User.find({}).select('role districtId areaSupervisorId zonalSupervisorId cithCentreId name email phone');
+    
+    // Create assignment maps for quick lookup
+    const assignmentMaps = {
+      districts: new Map(),
+      areas: new Map(),
+      zonals: new Map(), // Add this line
+      centres: new Map()
+    };
+    
+    users.forEach(user => {
+      if (user.role === 'district_pastor' && user.districtId) {
+        assignmentMaps.districts.set(user.districtId.toString(), {
+          name: user.name,
+          email: user.email,
+          phone: user.phone
+        });
+      } else if (user.role === 'area_supervisor' && user.areaSupervisorId) {
+        assignmentMaps.areas.set(user.areaSupervisorId.toString(), {
+          name: user.name,
+          email: user.email,
+          phone: user.phone
+        });
+      } else if (user.role === 'zonal_supervisor' && user.zonalSupervisorId) { // Add this block
+        assignmentMaps.zonals.set(user.zonalSupervisorId.toString(), {
+          name: user.name,
+          email: user.email,
+          phone: user.phone
+        });
+      } else if (user.role === 'cith_centre' && user.cithCentreId) {
+        if (!assignmentMaps.centres.has(user.cithCentreId.toString())) {
+          assignmentMaps.centres.set(user.cithCentreId.toString(), []);
+        }
+        assignmentMaps.centres.get(user.cithCentreId.toString()).push({
+          name: user.name,
+          email: user.email,
+          phone: user.phone
+        });
+      }
+    });
+    
+    return assignmentMaps;
+  } catch (error) {
+    console.error('Error checking user assignments:', error);
+    return {
+      districts: new Map(),
+      areas: new Map(),
+      zonals: new Map(),
+      centres: new Map()
+    };
+  }
+};
+
+// Add to module.exports
 module.exports = {
   getPublicDistricts,
   getPublicAreaSupervisors,
+  getPublicZonalSupervisors,
   getPublicCithCentres,
   getAssignmentStats,
   getAvailablePositions,

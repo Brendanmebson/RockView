@@ -478,6 +478,12 @@ const Register: React.FC = () => {
                     District Pastor
                   </Box>
                 </MenuItem>
+                <MenuItem value="zonal_supervisor">
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Users size={16} />
+                    Zonal Supervisor
+                  </Box>
+                </MenuItem>
                 <MenuItem value="admin">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Users size={16} />
@@ -617,7 +623,66 @@ const Register: React.FC = () => {
                )}
              </Box>
            )}
-           
+                    {/* Zonal Supervisor selection - filtered by district */}
+          {formData.role === 'zonal_supervisor' && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <FormControl fullWidth required>
+                <InputLabel>Select District</InputLabel>
+                <Select
+                  name="districtId"
+                  value={formData.districtId}
+                  onChange={handleSelectChange('districtId')}
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <Building size={16} />
+                    </InputAdornment>
+                  }
+                  disabled={fetchingDistricts}
+                >
+                  {/* Same district options as others */}
+                </Select>
+              </FormControl>
+              
+              {formData.districtId && (
+                <FormControl fullWidth required>
+                  <InputLabel>Select Your Zone</InputLabel>
+                  <Select
+                    name="zonalSupervisorId"
+                    value={formData.zonalSupervisorId}
+                    onChange={handleSelectChange('zonalSupervisorId')}
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <Users size={16} />
+                      </InputAdornment>
+                    }
+                  >
+                    {zonalSupervisors
+                      .filter(zonal => zonal.districtId && zonal.districtId._id === formData.districtId)
+                      .map((zonal) => (
+                        <MenuItem key={zonal._id} value={zonal._id}>
+                          <Box>
+                            <Typography variant="body1">{zonal.name}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {zonal.displayText || zonal.supervisorName}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))
+                      }
+                </Select>
+              </FormControl>
+            )}
+            
+            {formData.districtId && zonalSupervisors.filter(zonal => 
+              zonal.districtId && zonal.districtId._id === formData.districtId
+            ).length === 0 && (
+              <Alert severity="info">
+                No zonal supervisors found for this district. Please contact your administrator.
+              </Alert>
+            )}
+          </Box>
+          )}
+
            {/* CITH Centre selection with nested filtering */}
            {formData.role === 'cith_centre' && (
              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -894,10 +959,10 @@ const Register: React.FC = () => {
                </motion.div>
 
                <Typography component="h1" variant="h4" color="primary" sx={{ mb: 1 }}>
-                 Join ClearView
+                 Join RockView
                </Typography>
                <Typography variant="h6" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
-                 Become part of our church management family
+                 Become part of our Church's management family
                </Typography>
 
                {/* Stepper */}

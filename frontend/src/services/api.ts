@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use relative URL so it works with ngrok
-const API_URL = process.env.REACT_APP_API_URL || '/api';
+// For development, point to backend server
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 // Create axios instance
 const api = axios.create({
