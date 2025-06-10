@@ -2,7 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { CustomThemeProvider } from './context/ThemeContext'; // Changed this line
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Layout from './components/common/Layout';
 import Login from './components/auth/Login';
@@ -27,7 +27,7 @@ import { CssBaseline } from '@mui/material';
 
 function App() {
   return (
-    <ThemeProvider>
+    <CustomThemeProvider>
       <CssBaseline />
       <LocalizationProvider dateAdapter={AdapterDayjs}>
         <AuthProvider>
@@ -70,7 +70,7 @@ function App() {
           </Router>
         </AuthProvider>
       </LocalizationProvider>
-    </ThemeProvider>
+    </CustomThemeProvider>
   );
 }
 

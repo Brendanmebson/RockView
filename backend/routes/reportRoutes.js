@@ -14,6 +14,7 @@ const {
   getReportStats,
   getRecentReports,
   adminEditReport,
+  adminComprehensiveEdit,
 } = require('../controllers/reportController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -40,6 +41,5 @@ router.put('/:id/admin-edit', authorize('admin'), adminEditReport);
 router.put('/:id/approve', authorize('area_supervisor', 'district_pastor', 'admin'), approveReport);
 router.put('/:id/reject', authorize('area_supervisor', 'district_pastor', 'admin'), rejectReport);
 router.put('/:id/admin-comprehensive-edit', authorize('admin'), adminComprehensiveEdit);
-
 
 module.exports = router;

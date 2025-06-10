@@ -827,6 +827,71 @@ const AdminDashboard: React.FC = () => {
          </Card>
        </GridItem>
 
+{/* Reports Status Overview - New Chart */}
+       <GridItem xs={12} md={6}>
+  <Card>
+    <CardContent>
+      <Typography variant="h6" gutterBottom>Reports Status Overview</Typography>
+      {recentReports.length > 0 ? (
+        <ResponsiveContainer width="100%" height={400}>
+          <PieChart>
+            <Pie
+              data={[
+                { 
+                  name: 'Pending', 
+                  value: recentReports.filter(r => r.status === 'pending').length,
+                  color: '#FF9800'
+                },
+                { 
+                  name: 'Area Approved', 
+                  value: recentReports.filter(r => r.status === 'area_approved').length,
+                  color: '#2196F3'
+                },
+                { 
+                  name: 'District Approved', 
+                  value: recentReports.filter(r => r.status === 'district_approved').length,
+                  color: '#4CAF50'
+                },
+                { 
+                  name: 'Rejected', 
+                  value: recentReports.filter(r => r.status === 'rejected').length,
+                  color: '#F44336'
+                }
+              ].filter(item => item.value > 0)}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
+              outerRadius={120}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {[
+                { name: 'Pending', value: recentReports.filter(r => r.status === 'pending').length },
+                { name: 'Area Approved', value: recentReports.filter(r => r.status === 'area_approved').length },
+                { name: 'District Approved', value: recentReports.filter(r => r.status === 'district_approved').length },
+                { name: 'Rejected', value: recentReports.filter(r => r.status === 'rejected').length }
+              ].filter(item => item.value > 0).map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.name === 'Pending' ? '#FF9800' : 
+                  entry.name === 'Area Approved' ? '#2196F3' :
+                  entry.name === 'District Approved' ? '#4CAF50' : '#F44336'} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => [value, 'Reports']} />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      ) : (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography variant="body2" color="textSecondary">
+            No reports data available
+          </Typography>
+        </Box>
+      )}
+    </CardContent>
+  </Card>
+</GridItem>
+
        {/* Quick Action Links */}
        <GridItem xs={12} md={6}>
          <Card>

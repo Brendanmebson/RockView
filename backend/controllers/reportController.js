@@ -517,7 +517,7 @@ const adminComprehensiveEdit = async (req, res) => {
       data, 
       eventType, 
       eventDescription, 
-      targetApprovalLevel, // 'area', 'district', or 'final'
+      targetApprovalLevel, // 'pending', 'area', 'district', or 'final'
       resetApprovals 
     } = req.body;
     
@@ -556,6 +556,8 @@ const adminComprehensiveEdit = async (req, res) => {
     if (resetApprovals) {
       report.areaApprovedBy = undefined;
       report.areaApprovedAt = undefined;
+      report.zonalApprovedBy = undefined;
+      report.zonalApprovedAt = undefined;
       report.districtApprovedBy = undefined;
       report.districtApprovedAt = undefined;
       report.rejectedBy = undefined;
@@ -564,18 +566,26 @@ const adminComprehensiveEdit = async (req, res) => {
     }
     
     // Set target approval level
-    if (targetApprovalLevel === 'area') {
+    if (targetApprovalLevel === 'pending') {
+      report.status = 'pending';
+    } else if (targetApprovalLevel === 'area') {
       report.status = 'area_approved';
       report.areaApprovedBy = req.user._id;
       report.areaApprovedAt = new Date();
+    } else if (targetApprovalLevel === 'zonal') {
+      report.status = 'zonal_approved';
+      report.areaApprovedBy = req.user._id;
+      report.areaApprovedAt = new Date();
+      report.zonalApprovedBy = req.user._id;
+      report.zonalApprovedAt = new Date();
     } else if (targetApprovalLevel === 'district') {
       report.status = 'district_approved';
       report.areaApprovedBy = req.user._id;
       report.areaApprovedAt = new Date();
+      report.zonalApprovedBy = req.user._id;
+      report.zonalApprovedAt = new Date();
       report.districtApprovedBy = req.user._id;
       report.districtApprovedAt = new Date();
-    } else if (targetApprovalLevel === 'pending') {
-      report.status = 'pending';
     }
     
     report.updatedAt = new Date();

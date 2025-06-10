@@ -25,6 +25,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { motion } from 'framer-motion';
+// frontend/src/components/auth/Register.tsx (continued)
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
@@ -41,11 +42,28 @@ import {
   Add,
   Phone,
 } from '@mui/icons-material';
-import { Church, Users, Building, Home } from 'lucide-react';
+import { Building, Home, Users } from 'lucide-react';
 import { PageContainer, AnimatedCard } from '../common/AnimatedComponents';
 import GridItem from '../common/GridItem';
+import { useThemeContext } from '../../context/ThemeContext';
+
+const getLogo = (isDark: boolean) => {
+  try {
+    if (isDark) {
+      return require('../../assets/dark-mode.png');
+    } else {
+      return require('../../assets/light-mode.png');
+    }
+  } catch (error) {
+    return null;
+  }
+};
 
 const Register: React.FC = () => {
+  const { darkMode } = useThemeContext();
+  const lightLogo = getLogo(false);
+  const darkLogo = getLogo(true);
+
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState({
     email: '',
@@ -352,6 +370,45 @@ const Register: React.FC = () => {
     return centre.name || 'Unknown Centre';
   };
 
+  const LogoComponent = ({ size }: { size: number }) => {
+    const logoSrc = darkMode ? darkLogo : lightLogo;
+    
+    if (logoSrc) {
+      return (
+        <img 
+          src={logoSrc} 
+          alt="House on the Rock" 
+          style={{
+            width: size,
+            height: size,
+            objectFit: 'contain'
+          }}
+        />
+      );
+    }
+    
+    return (
+      <Box
+        sx={{
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          background: darkMode 
+            ? 'linear-gradient(45deg, #66BB6A, #4CAF50)'
+            : 'linear-gradient(45deg, #2E7D32, #4CAF50)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: size * 0.4,
+        }}
+      >
+        H
+      </Box>
+    );
+  };
+
   const renderStepContent = (step: number) => {
     switch (step) {
       case 0:
@@ -623,65 +680,6 @@ const Register: React.FC = () => {
                )}
              </Box>
            )}
-                    {/* Zonal Supervisor selection - filtered by district */}
-          {formData.role === 'zonal_supervisor' && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <FormControl fullWidth required>
-                <InputLabel>Select District</InputLabel>
-                <Select
-                  name="districtId"
-                  value={formData.districtId}
-                  onChange={handleSelectChange('districtId')}
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <Building size={16} />
-                    </InputAdornment>
-                  }
-                  disabled={fetchingDistricts}
-                >
-                  {/* Same district options as others */}
-                </Select>
-              </FormControl>
-              
-              {formData.districtId && (
-                <FormControl fullWidth required>
-                  <InputLabel>Select Your Zone</InputLabel>
-                  <Select
-                    name="zonalSupervisorId"
-                    value={formData.zonalSupervisorId}
-                    onChange={handleSelectChange('zonalSupervisorId')}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <Users size={16} />
-                      </InputAdornment>
-                    }
-                  >
-                    {zonalSupervisors
-                      .filter(zonal => zonal.districtId && zonal.districtId._id === formData.districtId)
-                      .map((zonal) => (
-                        <MenuItem key={zonal._id} value={zonal._id}>
-                          <Box>
-                            <Typography variant="body1">{zonal.name}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              {zonal.displayText || zonal.supervisorName}
-                            </Typography>
-                          </Box>
-                        </MenuItem>
-                      ))
-                      }
-                </Select>
-              </FormControl>
-            )}
-            
-            {formData.districtId && zonalSupervisors.filter(zonal => 
-              zonal.districtId && zonal.districtId._id === formData.districtId
-            ).length === 0 && (
-              <Alert severity="info">
-                No zonal supervisors found for this district. Please contact your administrator.
-              </Alert>
-            )}
-          </Box>
-          )}
 
            {/* CITH Centre selection with nested filtering */}
            {formData.role === 'cith_centre' && (
@@ -828,7 +826,7 @@ const Register: React.FC = () => {
            {/* Admin role doesn't need additional selection */}
            {formData.role === 'admin' && (
              <Box sx={{ textAlign: 'center', py: 4 }}>
-               <Church size={48} color="#D69E2E" />
+               <LogoComponent size={48} />
                <Typography variant="h6" sx={{ mt: 2 }}>
                  Administration Access
                </Typography>
@@ -892,7 +890,7 @@ const Register: React.FC = () => {
                  onClick={handleCreateCentre} 
                  variant="contained" 
                  disabled={loading || !newCentreData.name || !newCentreData.location || !newCentreData.leaderName}
-                 startIcon={loading ? <CircularProgress size={20} /> : <Add />}
+                startIcon={loading ? <CircularProgress size={20} /> : <Add />}
                >
                  Create Centre
                </Button>
@@ -910,7 +908,9 @@ const Register: React.FC = () => {
      <Box
        sx={{
          minHeight: '100vh',
-         background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+         background: darkMode 
+           ? 'linear-gradient(135deg, #121212 0%, #1B5E20 100%)'
+           : 'linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)',
          display: 'flex',
          alignItems: 'center',
          justifyContent: 'center',
@@ -924,7 +924,9 @@ const Register: React.FC = () => {
              sx={{
                padding: 4,
                borderRadius: 4,
-               background: 'rgba(255, 255, 255, 0.95)',
+               background: darkMode 
+                 ? 'rgba(30, 30, 30, 0.95)'
+                 : 'rgba(255, 255, 255, 0.95)',
                backdropFilter: 'blur(10px)',
              }}
            >
@@ -946,20 +948,24 @@ const Register: React.FC = () => {
                      width: 80,
                      height: 80,
                      borderRadius: '50%',
-                     background: 'linear-gradient(45deg, #D69E2E, #ED8936)',
+                     background: darkMode 
+                       ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
+                       : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
                      display: 'flex',
                      alignItems: 'center',
                      justifyContent: 'center',
+                     mx: 'auto',
                      mb: 2,
-                     boxShadow: '0 4px 20px rgba(214, 158, 46, 0.3)',
+                     boxShadow: '0 4px 20px rgba(46, 125, 50, 0.3)',
+                     overflow: 'hidden',
                    }}
                  >
-                   <Church size={40} color="white" />
+                   <LogoComponent size={60} />
                  </Box>
                </motion.div>
 
                <Typography component="h1" variant="h4" color="primary" sx={{ mb: 1 }}>
-                 Join RockView
+                 Join House on the Rock
                </Typography>
                <Typography variant="h6" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
                  Become part of our Church's management family
@@ -1008,9 +1014,13 @@ const Register: React.FC = () => {
                          disabled={loading}
                          startIcon={loading ? <CircularProgress size={20} /> : null}
                          sx={{
-                           background: 'linear-gradient(45deg, #D69E2E, #ED8936)',
+                           background: darkMode 
+                             ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
+                             : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
                            '&:hover': {
-                             background: 'linear-gradient(45deg, #B7791F, #C05621)',
+                             background: darkMode 
+                               ? 'linear-gradient(45deg, #0F3C11, #1B5E20)'
+                               : 'linear-gradient(45deg, #1B5E20, #2E7D32)',
                            },
                          }}
                        >

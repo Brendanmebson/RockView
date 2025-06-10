@@ -510,21 +510,29 @@ const DistrictPastorDashboard: React.FC = () => {
        
        {/* Centre Distribution Treemap */}
        <GridItem xs={12} md={6}>
-         <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>Centre Size Distribution</Typography>
-             <ResponsiveContainer width="100%" height={300}>
-               <Treemap
-                 data={centreTreemapData}
-                 dataKey="size"
-                 stroke="#fff"
-                 fill="#8884d8"
-                 content={<CustomizedContent colors={COLORS} />}
-               />
-             </ResponsiveContainer>
-           </CardContent>
-         </Card>
-       </GridItem>
+  <Card>
+    <CardContent>
+      <Typography variant="h6" gutterBottom>Centre Size Distribution</Typography>
+      {centreTreemapData.length > 0 && centreTreemapData[0].children.length > 0 ? (
+        <ResponsiveContainer width="100%" height={300}>
+          <Treemap
+            data={centreTreemapData[0].children}
+            dataKey="size"
+            stroke="#fff"
+            fill="#8884d8"
+            content={<CustomizedContent />}
+          />
+        </ResponsiveContainer>
+      ) : (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Typography variant="body2" color="textSecondary">
+            No centre distribution data available
+          </Typography>
+        </Box>
+      )}
+    </CardContent>
+  </Card>
+</GridItem>
 
        {/* Reports for Final Approval */}
        <GridItem xs={12}>
@@ -602,17 +610,14 @@ const DistrictPastorDashboard: React.FC = () => {
 
 // Custom content component for Treemap
 const CustomizedContent = (props: any) => {
-  const { root, depth, x, y, width, height, index, colors, name, value } = props;
+  const { root, depth, x, y, width, height, index, name, value } = props;
   
   // Add safety checks
-  if (!root || !root.children || !colors || !Array.isArray(colors)) {
-    return null;
-  }
-
-  // Ensure we have valid dimensions
   if (!width || !height || width <= 0 || height <= 0) {
     return null;
   }
+
+  const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
   return (
     <g>
@@ -623,11 +628,11 @@ const CustomizedContent = (props: any) => {
         height={height}
         style={{
           fill: depth < 2 
-            ? colors[Math.floor((index / Math.max(root.children.length, 1)) * colors.length) % colors.length]
+            ? colors[Math.floor(Math.random() * colors.length)]
             : 'rgba(255,255,255,0.3)',
           stroke: '#fff',
-          strokeWidth: 2 / (depth + 1e-10),
-          strokeOpacity: 1 / (depth + 1e-10),
+          strokeWidth: 2,
+          strokeOpacity: 1,
         }}
       />
       {depth === 1 && width > 50 && height > 20 && name && (
@@ -636,9 +641,21 @@ const CustomizedContent = (props: any) => {
           y={y + height / 2 + 7}
           textAnchor="middle"
           fill="#fff"
-          fontSize={12}
+          fontSize={Math.min(12, width / 10)}
+          fontWeight="bold"
         >
-          {name}
+          {name.length > 15 ? name.substring(0, 15) + '...' : name}
+        </text>
+      )}
+      {depth === 1 && width > 60 && height > 30 && value && (
+        <text
+          x={x + width / 2}
+          y={y + height / 2 + 25}
+          textAnchor="middle"
+          fill="#fff"
+          fontSize={10}
+        >
+          {value}
         </text>
       )}
     </g>

@@ -19,14 +19,44 @@ import {
   Divider,
   CircularProgress,
   Alert,
+  Paper,
 } from '@mui/material';
-import { CheckCircle, Cancel, PeopleAlt, AttachMoney, TrendingUp, Assessment } from '@mui/icons-material';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, 
-         LineChart, Line, PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, 
-         PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+import { 
+  CheckCircle, 
+  Cancel, 
+  PeopleAlt, 
+  AttachMoney, 
+  TrendingUp, 
+  Assessment,
+  Business,
+  Home,
+  Group
+} from '@mui/icons-material';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  LineChart, 
+  Line, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  RadarChart, 
+  Radar, 
+  PolarGrid, 
+  PolarAngleAxis, 
+  PolarRadiusAxis,
+  AreaChart,
+  Area
+} from 'recharts';
 import api from '../../services/api';
 import { WeeklyReport, ReportSummary, CithCentre } from '../../types';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const AreaSupervisorDashboard: React.FC = () => {
   const [reports, setReports] = useState<WeeklyReport[]>([]);
@@ -44,15 +74,38 @@ const AreaSupervisorDashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [centres, setCentres] = useState<CithCentre[]>([]);
   const [attendanceData, setAttendanceData] = useState<any[]>([]);
   const [centreComparisonData, setCentreComparisonData] = useState<any[]>([]);
   const [offeringTrends, setOfferingTrends] = useState<any[]>([]);
+  const [firstTimerData, setFirstTimerData] = useState<any[]>([]);
   const navigate = useNavigate();
+  const { user, userArea, userDistrict } = useAuth();
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Clear success message after 5 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess('');
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
+
+  // Clear error message after 8 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -69,7 +122,7 @@ const AreaSupervisorDashboard: React.FC = () => {
         centresResult
       ] = await Promise.allSettled([
         api.get(`/reports?startDate=${startOfMonth.toISOString()}&endDate=${endOfMonth.toISOString()}&limit=100`),
-        api.get('/reports?status=pending&limit=10'),
+        api.get('/reports?status=pending&limit=50'),
         api.get('/cith-centres')
       ]);
       
@@ -110,15 +163,17 @@ const AreaSupervisorDashboard: React.FC = () => {
 
   const calculateMonthlyStats = (reports: WeeklyReport[]) => {
     const stats = reports.reduce((acc, report) => {
-      acc.totalMale += report.data?.male || 0;
-      acc.totalFemale += report.data?.female || 0;
-      acc.totalChildren += report.data?.children || 0;
-      acc.totalOfferings += report.data?.offerings || 0;
-      acc.totalTestimonies += report.data?.numberOfTestimonies || 0;
-      acc.totalFirstTimers += report.data?.numberOfFirstTimers || 0;
-      acc.totalFirstTimersFollowedUp += report.data?.firstTimersFollowedUp || 0;
-      acc.totalFirstTimersConverted += report.data?.firstTimersConvertedToCITH || 0;
-      acc.totalReports += 1;
+      if (report && report.data) {
+        acc.totalMale += report.data?.male || 0;
+        acc.totalFemale += report.data?.female || 0;
+        acc.totalChildren += report.data?.children || 0;
+        acc.totalOfferings += report.data?.offerings || 0;
+        acc.totalTestimonies += report.data?.numberOfTestimonies || 0;
+        acc.totalFirstTimers += report.data?.numberOfFirstTimers || 0;
+        acc.totalFirstTimersFollowedUp += report.data?.firstTimersFollowedUp || 0;
+        acc.totalFirstTimersConverted += report.data?.firstTimersConvertedToCITH || 0;
+        acc.totalReports += 1;
+      }
       return acc;
     }, {
       totalMale: 0,
@@ -162,10 +217,10 @@ const AreaSupervisorDashboard: React.FC = () => {
         }
       });
       
-      const sortedAttendanceData = Object.values(weeklyData).sort((a, b) => {
+      const sortedAttendanceData = Object.values(weeklyData).sort((a: any, b: any) => {
         try {
-          const dateA = new Date(a.week + ' 2024'); // Add year for proper sorting
-          const dateB = new Date(b.week + ' 2024');
+          const dateA = new Date(a.week + ', 2024'); // Add year for proper sorting
+          const dateB = new Date(b.week + ', 2024');
           return dateA.getTime() - dateB.getTime();
         } catch (err) {
           return 0;
@@ -218,10 +273,10 @@ const AreaSupervisorDashboard: React.FC = () => {
         }
       });
       
-      const sortedOfferingData = Object.values(offeringData).sort((a, b) => {
+      const sortedOfferingData = Object.values(offeringData).sort((a: any, b: any) => {
         try {
-          const dateA = new Date(a.week + ' 2024');
-          const dateB = new Date(b.week + ' 2024');
+          const dateA = new Date(a.week + ', 2024');
+          const dateB = new Date(b.week + ', 2024');
           return dateA.getTime() - dateB.getTime();
         } catch (err) {
           return 0;
@@ -229,6 +284,39 @@ const AreaSupervisorDashboard: React.FC = () => {
       });
       
       setOfferingTrends(sortedOfferingData);
+
+      // First timer journey data
+      const firstTimerWeeklyData: {[key: string]: any} = {};
+      validReports.forEach(report => {
+        try {
+          const week = new Date(report.week).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          if (!firstTimerWeeklyData[week]) {
+            firstTimerWeeklyData[week] = { 
+              week, 
+              firstTimers: 0, 
+              followedUp: 0, 
+              converted: 0 
+            };
+          }
+          firstTimerWeeklyData[week].firstTimers += report.data.numberOfFirstTimers || 0;
+          firstTimerWeeklyData[week].followedUp += report.data.firstTimersFollowedUp || 0;
+          firstTimerWeeklyData[week].converted += report.data.firstTimersConvertedToCITH || 0;
+        } catch (err) {
+          console.warn('Error processing report for first timer data:', err);
+        }
+      });
+      
+      const sortedFirstTimerData = Object.values(firstTimerWeeklyData).sort((a: any, b: any) => {
+        try {
+          const dateA = new Date(a.week + ', 2024');
+          const dateB = new Date(b.week + ', 2024');
+          return dateA.getTime() - dateB.getTime();
+        } catch (err) {
+          return 0;
+        }
+      });
+      
+      setFirstTimerData(sortedFirstTimerData);
       
     } catch (error) {
       console.error('Error processing chart data:', error);
@@ -236,16 +324,18 @@ const AreaSupervisorDashboard: React.FC = () => {
       setAttendanceData([]);
       setCentreComparisonData([]);
       setOfferingTrends([]);
+      setFirstTimerData([]);
     }
   };
 
   const handleApprove = async (reportId: string) => {
     try {
       await api.put(`/reports/${reportId}/approve`);
+      setSuccess('Report approved successfully');
       fetchDashboardData(); // Refresh data
     } catch (error: any) {
       console.error('Error approving report:', error);
-      setError('Failed to approve report');
+      setError(error.response?.data?.message || 'Failed to approve report');
     }
   };
 
@@ -255,14 +345,15 @@ const AreaSupervisorDashboard: React.FC = () => {
     
     try {
       await api.put(`/reports/${reportId}/reject`, { reason });
+      setSuccess('Report rejected successfully');
       fetchDashboardData(); // Refresh data
     } catch (error: any) {
       console.error('Error rejecting report:', error);
-      setError('Failed to reject report');
+      setError(error.response?.data?.message || 'Failed to reject report');
     }
   };
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+  const COLORS = ['#2E7D32', '#4CAF50', '#66BB6A', '#81C784', '#A5D6A7', '#C8E6C9'];
   const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   if (loading) {
@@ -273,22 +364,74 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
     );
   }
 
-  if (error) {
-    return (
-      <Box>
-        <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>
-        <Button onClick={fetchDashboardData} variant="contained">
-          Retry
-        </Button>
-      </Box>
-    );
-  }
-
   return (
     <Box>
+      {/* Context Banner */}
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 2, 
+          mb: 3, 
+          background: 'linear-gradient(90deg, #2E7D32 0%, #1B5E20 100%)',
+          color: 'white',
+          borderRadius: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Business />
+            <Typography variant="subtitle1" fontWeight="bold">
+              {userArea ? userArea.name : 'Loading Area...'}
+            </Typography>
+          </Box>
+          
+          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Home />
+            <Typography variant="subtitle1">
+              {userDistrict ? userDistrict.name : 'Loading District...'}
+            </Typography>
+          </Box>
+          
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Chip 
+              label={`${centres.length} CITH Centres`} 
+              size="small" 
+              sx={{ 
+                bgcolor: 'rgba(255,255,255,0.15)', 
+                color: 'white',
+                '& .MuiChip-label': { fontWeight: 500 }
+              }} 
+            />
+            <Chip 
+              label={currentMonth} 
+              size="small" 
+              sx={{ 
+                bgcolor: 'primary.main', 
+                color: 'white',
+                '& .MuiChip-label': { fontWeight: 500 }
+              }} 
+            />
+          </Box>
+        </Box>
+      </Paper>
+
       <Typography variant="h4" gutterBottom>
-        Area Supervisor Dashboard - {currentMonth}
+        Area Supervisor Dashboard
       </Typography>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+
+      {success && (
+        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
+          {success}
+        </Alert>
+      )}
 
       {/* Summary Stats Cards - Using Monthly Stats */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -380,45 +523,16 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" />
-                    <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" />
-                    <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" />
-                    <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={2} />
+                    <Line type="monotone" dataKey="male" name="Male" stroke="#2E7D32" />
+                    <Line type="monotone" dataKey="female" name="Female" stroke="#4CAF50" />
+                    <Line type="monotone" dataKey="children" name="Children" stroke="#66BB6A" />
+                    <Line type="monotone" dataKey="total" name="Total" stroke="#1B5E20" strokeWidth={2} />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
                     No attendance data available for {currentMonth}
-                  </Typography>
-                </Box>
-              )}
-            </CardContent>
-          </Card>
-        </GridItem>
-        
-        {/* Centre Comparison Radar Chart */}
-        <GridItem xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Centre Performance - {currentMonth}</Typography>
-              {centreComparisonData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={400}>
-                  <RadarChart outerRadius={120} data={centreComparisonData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="name" />
-                    <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
-                    <Radar name="Attendance" dataKey="attendance" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
-                    <Radar name="Offerings" dataKey="offerings" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
-                    <Radar name="First Timers" dataKey="firstTimers" stroke="#ffc658" fill="#ffc658" fillOpacity={0.6} />
-                    <Legend />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
-              ) : (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <Typography variant="body2" color="textSecondary">
-                    No centre data available for {currentMonth}
                   </Typography>
                 </Box>
               )}
@@ -440,7 +554,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
                     <YAxis />
                     <Tooltip formatter={(value) => [`₦${value.toLocaleString()}`, 'Amount']} />
                     <Legend />
-                    <Bar dataKey="amount" name="Offering Amount" fill="#82ca9d" />
+                    <Bar dataKey="amount" name="Offering Amount" fill="#4CAF50" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -454,13 +568,41 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
           </Card>
         </GridItem>
 
+        {/* First Timer Journey Tracking */}
+        <GridItem xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>First Timer Journey - {currentMonth}</Typography>
+              {firstTimerData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={400}>
+                  <AreaChart data={firstTimerData}>
+                    <XAxis dataKey="week" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#2E7D32" stroke="#2E7D32" />
+                    <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#4CAF50" stroke="#4CAF50" />
+                    <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#66BB6A" stroke="#66BB6A" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No first timer data available for {currentMonth}
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </GridItem>
+
         {/* Centres Card */}
         <GridItem xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>Supervised Centres</Typography>
               {centres.length > 0 ? (
-                <TableContainer>
+                <TableContainer sx={{ maxHeight: 400 }}>
                   <Table size="small">
                     <TableHead>
                       <TableRow>
@@ -498,7 +640,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Pending Reports for Approval
+                Reports Pending Approval
               </Typography>
               {pendingReports.length > 0 ? (
                 <TableContainer sx={{ maxHeight: 400 }}>
@@ -515,7 +657,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
                       {pendingReports.slice(0, 5).map((report) => (
                         <TableRow key={report._id}>
                           <TableCell>{report.cithCentreId?.name || 'Unknown Centre'}</TableCell>
-                          <TableCell>{new Date(report.week).toDateString()}</TableCell>
+                          <TableCell>{new Date(report.week).toLocaleDateString()}</TableCell>
                           <TableCell>
                             {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
                           </TableCell>
@@ -550,6 +692,35 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
                 <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center', py: 3 }}>
                   No pending reports
                 </Typography>
+              )}
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        {/* Centre Performance Radar Chart - Moved to last position */}
+        <GridItem xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>Centre Performance Comparison - {currentMonth}</Typography>
+              {centreComparisonData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={400}>
+                  <RadarChart outerRadius={120} data={centreComparisonData}>
+                    <PolarGrid />
+                    <PolarAngleAxis dataKey="name" />
+                    <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
+                    <Radar name="Attendance" dataKey="attendance" stroke="#2E7D32" fill="#2E7D32" fillOpacity={0.6} />
+                    <Radar name="Offerings" dataKey="offerings" stroke="#4CAF50" fill="#4CAF50" fillOpacity={0.6} />
+                    <Radar name="First Timers" dataKey="firstTimers" stroke="#66BB6A" fill="#66BB6A" fillOpacity={0.6} />
+                    <Legend />
+                    <Tooltip />
+                  </RadarChart>
+                </ResponsiveContainer>
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                  <Typography variant="body2" color="textSecondary">
+                    No centre data available for {currentMonth}
+                  </Typography>
+                </Box>
               )}
             </CardContent>
           </Card>

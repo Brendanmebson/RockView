@@ -1,3 +1,4 @@
+// frontend/src/components/auth/Login.tsx
 import React, { useState } from 'react';
 import {
   Box,
@@ -15,8 +16,13 @@ import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { Email, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
-import { Church, User } from 'lucide-react';
 import { PageContainer, FloatingElement } from '../common/AnimatedComponents';
+// frontend/src/components/auth/Login.tsx (continued)
+import { useThemeContext } from '../../context/ThemeContext';
+
+// Import the logos
+import lightLogo from '../../assets/light-logo.png';
+import darkLogo from '../../assets/dark-logo.png';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -24,6 +30,7 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const { login, loading } = useAuth();
+  const { darkMode } = useThemeContext();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,7 +54,9 @@ const Login: React.FC = () => {
       <Box
         sx={{
           minHeight: '100vh',
-          background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+          background: darkMode 
+            ? 'linear-gradient(135deg, #121212 0%, #1B5E20 100%)'
+            : 'linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -65,7 +74,11 @@ const Login: React.FC = () => {
           }}
         >
           <FloatingElement>
-            <Church size={100} color="#D69E2E" />
+            <img 
+              src={darkMode ? darkLogo : lightLogo} 
+              alt="House on the Rock" 
+              style={{ width: 100, height: 100 }}
+            />
           </FloatingElement>
         </Box>
         
@@ -78,7 +91,11 @@ const Login: React.FC = () => {
           }}
         >
           <FloatingElement>
-            <Church size={80} color="#4A5568" />
+            <img 
+              src={darkMode ? darkLogo : lightLogo} 
+              alt="House on the Rock" 
+              style={{ width: 80, height: 80 }}
+            />
           </FloatingElement>
         </Box>
 
@@ -93,7 +110,9 @@ const Login: React.FC = () => {
               sx={{
                 padding: 4,
                 borderRadius: 4,
-                background: 'rgba(255, 255, 255, 0.95)',
+                background: darkMode 
+                  ? 'rgba(30, 30, 30, 0.95)' 
+                  : 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(10px)',
               }}
             >
@@ -114,15 +133,26 @@ const Login: React.FC = () => {
                       width: 80,
                       height: 80,
                       borderRadius: '50%',
-                      background: 'linear-gradient(45deg, #D69E2E, #ED8936)',
+                      background: darkMode 
+                        ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
+                        : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       mb: 2,
-                      boxShadow: '0 4px 20px rgba(214, 158, 46, 0.3)',
+                      boxShadow: '0 4px 20px rgba(46, 125, 50, 0.3)',
+                      overflow: 'hidden',
                     }}
                   >
-                    <Church size={40} color="white" />
+                    <img 
+                      src={darkMode ? darkLogo : lightLogo} 
+                      alt="House on the Rock" 
+                      style={{
+                        width: 60,
+                        height: 60,
+                        objectFit: 'contain'
+                      }}
+                    />
                   </Box>
                 </motion.div>
 
@@ -130,7 +160,7 @@ const Login: React.FC = () => {
                   RockView
                 </Typography>
                 <Typography variant="h6" color="textSecondary" sx={{ mb: 3 }}>
-                  Welcome back to your church management system
+                  Welcome back to House on the Rock CITH attendance system
                 </Typography>
 
                 {error && (
@@ -216,9 +246,13 @@ const Login: React.FC = () => {
                         mb: 2,
                         py: 1.5,
                         fontSize: '1.1rem',
-                        background: 'linear-gradient(45deg, #D69E2E, #ED8936)',
+                        background: darkMode 
+                          ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
+                          : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
                         '&:hover': {
-                          background: 'linear-gradient(45deg, #B7791F, #C05621)',
+                          background: darkMode 
+                            ? 'linear-gradient(45deg, #0F3C11, #1B5E20)'
+                            : 'linear-gradient(45deg, #1B5E20, #2E7D32)',
                         },
                       }}
                       disabled={loading}
