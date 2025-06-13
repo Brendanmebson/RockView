@@ -5,6 +5,7 @@ const CithCentre = require('../models/CithCentre');
 const AreaSupervisor = require('../models/AreaSupervisor');
 const District = require('../models/District');
 const generateToken = require('../utils/generateToken');
+const ZonalSupervisor = require('../models/ZonalSupervisor');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -14,10 +15,24 @@ const register = async (req, res) => {
   try {
     const { email, password, name, phone, role, cithCentreId, areaSupervisorId, zonalSupervisorId, districtId } = req.body;
 
+    console.log('Registration request:', { email, name, role, phone }); // Add logging
+
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'Email already in use' });
+    }
+
+    // Validate required fields
+    if (!email || !password || !name || !phone || !role) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Validate role - make sure it's one of the allowed values
+    const validRoles = ['cith_centre', 'area_supervisor', 'zonal_supervisor', 'district_pastor', 'admin'];
+    if (!validRoles.includes(role)) {
+      console.log('Invalid role provided:', role);
+      return res.status(400).json({ message: 'Invalid role specified' });
     }
 
     // Create user data object

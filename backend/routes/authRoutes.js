@@ -36,15 +36,15 @@ router.post('/register', register);
 router.post('/login', login);
 
 // Protected routes
-router.get('/profile', protect, getProfile);
-router.put('/profile', protect, updateProfile);
-router.put('/change-password', protect, changePassword);
-router.delete('/delete-account', protect, deleteAccount);
+router.get('/users/profile', protect, getProfile);
+router.put('/users/profile', protect, updateProfile);
+router.put('/users/change-password', protect, changePassword);
+router.delete('/users/delete-account', protect, deleteAccount);
 // TODO: Uncomment when getDashboardData is implemented
 // router.get('/dashboard-data', protect, getDashboardData);
 
 // Position change requests
-router.post('/position-change-request', protect, submitPositionChangeRequest);
+router.post('/users/position-change-request', protect, submitPositionChangeRequest);
 // TODO: Uncomment when getMyPositionRequests is implemented
 // router.get('/my-position-requests', protect, getMyPositionRequests);
 // TODO: Uncomment when cancelPositionChangeRequest is implemented
@@ -54,9 +54,9 @@ router.post('/position-change-request', protect, submitPositionChangeRequest);
 // router.get('/check-position/:role/:targetId', protect, checkPositionAvailability);
 
 // Admin routes for position change requests
-router.get('/position-change-requests', protect, authorize('admin'), getPositionChangeRequests);
-router.put('/position-change-requests/:id/approve', protect, authorize('admin'), approvePositionChangeRequest);
-router.put('/position-change-requests/:id/reject', protect, authorize('admin'), rejectPositionChangeRequest);
+router.get('/users/position-change-requests', protect, authorize('admin'), getPositionChangeRequests);
+router.put('/users/position-change-requests/:id/approve', protect, authorize('admin'), approvePositionChangeRequest);
+router.put('/users/position-change-requests/:id/reject', protect, authorize('admin'), rejectPositionChangeRequest);
 
 // Admin routes for user management
 router.get('/users', protect, authorize('admin'), getUsers);

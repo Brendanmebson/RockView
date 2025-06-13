@@ -3,6 +3,7 @@ const District = require('../models/District');
 const AreaSupervisor = require('../models/AreaSupervisor');
 const CithCentre = require('../models/CithCentre');
 const User = require('../models/User');
+const ZonalSupervisor = require('../models/ZonalSupervisor');
 
 // Helper function to check user assignments efficiently
 // (Removed duplicate declaration; see updated version below)

@@ -169,46 +169,56 @@ const Register: React.FC = () => {
     }
   }, [formData.role]);
 
-  const fetchDistricts = async () => {
-    setFetchingDistricts(true);
-    setError('');
-    try {
-      const response = await axios.get(`${API_URL}/public/districts`);
-      console.log("Fetched districts:", response.data);
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-        setDistricts(response.data);
-      } else {
-        console.log("No districts returned from API");
-      }
-    } catch (error) {
-      console.error('Error fetching districts:', error);
-      setError('Failed to load districts. Please try again.');
-    } finally {
-      setFetchingDistricts(false);
+const fetchDistricts = async () => {
+  setFetchingDistricts(true);
+  setError('');
+  try {
+    const response = await axios.get(`${API_URL}/public/districts`);
+    console.log("Fetched districts:", response.data);
+    
+    // Add better safety checks
+    if (response.data && Array.isArray(response.data)) {
+      setDistricts(response.data);
+    } else {
+      console.log("Invalid districts data format:", response.data);
+      setDistricts([]); // Set empty array as fallback
+      setError('No districts available. Please contact administrator.');
     }
-  };
+  } catch (error) {
+    console.error('Error fetching districts:', error);
+    setDistricts([]); // Set empty array as fallback
+    setError('Failed to load districts. Please try again.');
+  } finally {
+    setFetchingDistricts(false);
+  }
+};
 
-  const fetchDropdownData = async () => {
-    try {
-      const [districtsResponse, areasResponse, centresResponse] = await Promise.all([
-        axios.get(`${API_URL}/public/districts`),
-        axios.get(`${API_URL}/public/area-supervisors`),
-        axios.get(`${API_URL}/public/cith-centres`)
-      ]);
-      
-      setDistricts(districtsResponse.data);
-      setAreaSupervisors(areasResponse.data);
-      setCithCentres(centresResponse.data);
-      
-      console.log("Fetched districts:", districtsResponse.data);
-      console.log("Fetched area supervisors:", areasResponse.data);
-      console.log("Fetched CITH centres:", centresResponse.data);
-      
-    } catch (error) {
-      console.error('Error fetching dropdown data:', error);
-      setError('Failed to load selection options. Please try again.');
-    }
-  };
+const fetchDropdownData = async () => {
+  try {
+    const [districtsResponse, areasResponse, centresResponse] = await Promise.all([
+      axios.get(`${API_URL}/public/districts`),
+      axios.get(`${API_URL}/public/area-supervisors`),
+      axios.get(`${API_URL}/public/cith-centres`)
+    ]);
+    
+    // Add safety checks for all responses
+    setDistricts(Array.isArray(districtsResponse.data) ? districtsResponse.data : []);
+    setAreaSupervisors(Array.isArray(areasResponse.data) ? areasResponse.data : []);
+    setCithCentres(Array.isArray(centresResponse.data) ? centresResponse.data : []);
+    
+    console.log("Fetched districts:", districtsResponse.data);
+    console.log("Fetched area supervisors:", areasResponse.data);
+    console.log("Fetched CITH centres:", centresResponse.data);
+    
+  } catch (error) {
+    console.error('Error fetching dropdown data:', error);
+    setError('Failed to load selection options. Please try again.');
+    // Set empty arrays as fallbacks
+    setDistricts([]);
+    setAreaSupervisors([]);
+    setCithCentres([]);
+  }
+};
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
