@@ -46,7 +46,7 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'AreaSupervisor',
     },
-    zonalSupervisorId: { // Fixed: was ZonalSupervisorId
+    zonalSupervisorId: { 
       type: mongoose.Schema.Types.ObjectId,
       ref: 'ZonalSupervisor',
     },

@@ -18,8 +18,6 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://9bfc-197-211-59-101.ngrok-free.app',
-    /^https:\/\/.*\.ngrok-free\.app$/
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
