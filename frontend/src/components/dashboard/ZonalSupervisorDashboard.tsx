@@ -40,7 +40,11 @@ import { WeeklyReport, ReportSummary, CithCentre, AreaSupervisor, ZonalSuperviso
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
+import { useTheme } from '@mui/material/styles';
+
 const ZonalSupervisorDashboard: React.FC = () => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [pendingReports, setPendingReports] = useState<WeeklyReport[]>([]);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
@@ -62,11 +66,11 @@ const ZonalSupervisorDashboard: React.FC = () => {
   }, [user]);
 
   const fetchUserContext = async () => {
-    if (!user || !user.ZonalSupervisorId) return;
+    if (!user || !user.zonalSupervisorId) return;
     
     try {
       // Fetch Zonal Supervisor info
-      const zonalResponse = await api.get(`/zonal-supervisors/${user.ZonalSupervisorId}`);
+      const zonalResponse = await api.get(`/zonal-supervisors/${user.zonalSupervisorId}`);
       setZonalInfo(zonalResponse.data);
       
       // Fetch District info
@@ -387,84 +391,84 @@ const ZonalSupervisorDashboard: React.FC = () => {
         Zonal Supervisor Dashboard - {currentMonth}
       </Typography>
 
-      {/* Summary Statistics */}
-      {summary && (
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <GridItem xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <PeopleAlt />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
-                  <Typography variant="h5">
-                    {summary.totalMale + summary.totalFemale + summary.totalChildren}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                    <Chip label={`M: ${summary.totalMale}`} size="small" color="primary" variant="outlined" />
-                    <Chip label={`F: ${summary.totalFemale}`} size="small" color="secondary" variant="outlined" />
-                    <Chip label={`C: ${summary.totalChildren}`} size="small" color="info" variant="outlined" />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                  <AttachMoney />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
-                  <Typography variant="h5">₦{summary.totalOfferings.toLocaleString()}</Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    From {summary.totalReports} services
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                  <TrendingUp />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
-                  <Typography variant="h5">{summary.totalFirstTimers}</Typography>
-                  <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                    <Chip 
-                      label={`${summary.totalFirstTimersConverted} Converted`} 
-                      size="small" 
-                      color="success" 
-                      variant="outlined" 
-                    />
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-          <GridItem xs={12} md={3}>
-            <Card>
-              <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                  <Assessment />
-                </Avatar>
-                <Box>
-                  <Typography variant="body2" color="textSecondary">Monthly Testimonies</Typography>
-                  <Typography variant="h5">{summary.totalTestimonies}</Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    Across {areaSupervisors.length} areas
-                  </Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </GridItem>
-        </Grid>
-      )}
+{/* Summary Statistics */}
+{summary && (
+  <Grid container spacing={3} sx={{ mb: 3 }}>
+    <GridItem xs={12} md={3}>
+      <Card>
+        <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+          <Avatar sx={{ bgcolor: darkMode ? '#64B5F6' : '#1976D2', mr: 2 }}>
+            <PeopleAlt />
+          </Avatar>
+          <Box>
+            <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
+            <Typography variant="h5">
+              {summary.totalMale + summary.totalFemale + summary.totalChildren}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+              <Chip label={`M: ${summary.totalMale}`} size="small" color="primary" variant="outlined" />
+              <Chip label={`F: ${summary.totalFemale}`} size="small" color="secondary" variant="outlined" />
+              <Chip label={`C: ${summary.totalChildren}`} size="small" color="info" variant="outlined" />
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </GridItem>
+    <GridItem xs={12} md={3}>
+      <Card>
+        <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+          <Avatar sx={{ bgcolor: darkMode ? '#81C784' : '#388E3C', mr: 2 }}>
+            <AttachMoney />
+          </Avatar>
+          <Box>
+            <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
+            <Typography variant="h5">₦{summary.totalOfferings.toLocaleString()}</Typography>
+            <Typography variant="caption" color="textSecondary">
+              From {summary.totalReports} services
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </GridItem>
+    <GridItem xs={12} md={3}>
+      <Card>
+        <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+          <Avatar sx={{ bgcolor: darkMode ? '#FFB74D' : '#F57C00', mr: 2 }}>
+            <TrendingUp />
+          </Avatar>
+          <Box>
+            <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
+            <Typography variant="h5">{summary.totalFirstTimers}</Typography>
+            <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+              <Chip 
+                label={`${summary.totalFirstTimersConverted} Converted`} 
+                size="small" 
+                color="success" 
+                variant="outlined" 
+              />
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+    </GridItem>
+    <GridItem xs={12} md={3}>
+      <Card>
+        <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+          <Avatar sx={{ bgcolor: darkMode ? '#BA68C8' : '#7B1FA2', mr: 2 }}>
+            <Assessment />
+          </Avatar>
+          <Box>
+            <Typography variant="body2" color="textSecondary">Monthly Testimonies</Typography>
+            <Typography variant="h5">{summary.totalTestimonies}</Typography>
+            <Typography variant="caption" color="textSecondary">
+              Across {areaSupervisors.length} areas
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+    </GridItem>
+  </Grid>
+)}
 
       <Grid container spacing={3}>
         {/* Zone Attendance Trends Chart - Made Wider */}

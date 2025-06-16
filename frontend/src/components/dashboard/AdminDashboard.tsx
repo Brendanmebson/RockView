@@ -83,6 +83,8 @@ interface PositionRequest {
 }
 
 const AdminDashboard: React.FC = () => {
+  const theme = require('@mui/material/styles').useTheme ? require('@mui/material/styles').useTheme() : undefined;
+  const darkMode = theme ? theme.palette.mode === 'dark' : false;
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalDistricts: 0,
@@ -676,89 +678,90 @@ const AdminDashboard: React.FC = () => {
      )}
 
      {/* Summary stats cards */}
-     <Grid container spacing={3} sx={{ mb: 3 }}>
-       <GridItem xs={12} md={3}>
-         <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/users')}>
-           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-             <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-               <PeopleAlt />
-             </Avatar>
-             <Box>
-               <Typography variant="body2" color="textSecondary">Total Users</Typography>
-               <Typography variant="h5">{stats.totalUsers}</Typography>
-               <Typography variant="caption" color="textSecondary">Excludes admins</Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-       <GridItem xs={12} md={3}>
-         <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/districts')}>
-           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-             <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-               <Business />
-             </Avatar>
-             <Box>
-               <Typography variant="body2" color="textSecondary">Districts</Typography>
-               <Typography variant="h5">{stats.totalDistricts}</Typography>
-               <Typography variant="caption" color="textSecondary">
-                 {stats.assignedDistricts} Assigned
-               </Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-       <GridItem xs={12} md={3}>
-         <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/zonal-supervisors')}>
-           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-             <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
-               <Group />
-             </Avatar>
-             <Box>
-               <Typography variant="body2" color="textSecondary">Zonal Supervisors</Typography>
-               <Typography variant="h5">{stats.totalZonalSupervisors}</Typography>
-               <Typography variant="caption" color="textSecondary">
-                 {stats.assignedZonals} Assigned
-               </Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-       <GridItem xs={12} md={3}>
-         <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/area-supervisors')}>
-           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-             <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-               <AccountTree />
-             </Avatar>
-             <Box>
-               <Typography variant="body2" color="textSecondary">Area Supervisors</Typography>
-               <Typography variant="h5">{stats.totalAreaSupervisors}</Typography>
-               <Typography variant="caption" color="textSecondary">
-                 {stats.assignedAreas} Assigned
-               </Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-     </Grid>
+ <Grid container spacing={3} sx={{ mb: 3 }}>
+  <GridItem xs={12} md={3}>
+    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/users')}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#64B5F6' : '#1976D2', mr: 2 }}>
+          <PeopleAlt />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Total Users</Typography>
+          <Typography variant="h5">{stats.totalUsers}</Typography>
+          <Typography variant="caption" color="textSecondary">Excludes admins</Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/districts')}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#E57373' : '#D32F2F', mr: 2 }}>
+          <Business />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Districts</Typography>
+          <Typography variant="h5">{stats.totalDistricts}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {stats.assignedDistricts} Assigned
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/zonal-supervisors')}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#BA68C8' : '#7B1FA2', mr: 2 }}>
+          <Group />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Zonal Supervisors</Typography>
+          <Typography variant="h5">{stats.totalZonalSupervisors}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {stats.assignedZonals} Assigned
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/area-supervisors')}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#4FC3F7' : '#0288D1', mr: 2 }}>
+          <AccountTree />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Area Supervisors</Typography>
+          <Typography variant="h5">{stats.totalAreaSupervisors}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {stats.assignedAreas} Assigned
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+</Grid>
 
-     <Grid container spacing={3} sx={{ mb: 3 }}>
-       <GridItem xs={12} md={6}>
-         <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/cith-centres')}>
-           <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-             <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-               <Home />
-             </Avatar>
-             <Box>
-               <Typography variant="body2" color="textSecondary">CITH Centres</Typography>
-               <Typography variant="h5">{stats.totalCithCentres}</Typography>
-               <Typography variant="caption" color="textSecondary">
-                 {stats.assignedCentres} Assigned
-               </Typography>
-             </Box>
-           </CardContent>
-         </Card>
-       </GridItem>
-     </Grid>
+<Grid container spacing={3} sx={{ mb: 3 }}>
+  <GridItem xs={12} md={6}>
+    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/cith-centres')}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#FFD54F' : '#FFA000', mr: 2 }}>
+          <Home />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">CITH Centres</Typography>
+          <Typography variant="h5">{stats.totalCithCentres}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {stats.assignedCentres} Assigned
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+</Grid>
+
 
      <Grid container spacing={3}>
        {/* District Performance Comparison - Make full width */}

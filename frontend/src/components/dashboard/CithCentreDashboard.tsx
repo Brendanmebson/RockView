@@ -32,13 +32,15 @@ import {
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, 
          LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { useTheme } from '@mui/material/styles';
 import api from '../../services/api';
 import { WeeklyReport, CithCentre, AreaSupervisor, District } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
-
 const CithCentreDashboard: React.FC = () => {
+  const theme = useTheme();
+  const darkMode = theme.palette.mode === 'dark';
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [centreInfo, setCentreInfo] = useState<CithCentre | null>(null);
@@ -270,73 +272,74 @@ const CithCentreDashboard: React.FC = () => {
         </Button>
       </Box>
 
-      {/* Key Metrics - Monthly Stats */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                <People />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
-                <Typography variant="h5">{monthlyStats.totalAttendance}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {currentMonth}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                <AttachMoney />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
-                <Typography variant="h5">₦{monthlyStats.totalOfferings.toLocaleString()}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {currentMonth}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                <TrendingUp />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
-                <Typography variant="h5">{monthlyStats.totalFirstTimers}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {currentMonth}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                <Assignment />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Reports Submitted</Typography>
-                <Typography variant="h5">{monthlyStats.totalReports}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {currentMonth}
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-      </Grid>
+
+{/* Key Metrics - Monthly Stats */}
+<Grid container spacing={3} sx={{ mb: 3 }}>
+  <GridItem xs={12} md={3}>
+    <Card>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#64B5F6' : '#1976D2', mr: 2 }}>
+          <People />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
+          <Typography variant="h5">{monthlyStats.totalAttendance}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {currentMonth}
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#81C784' : '#388E3C', mr: 2 }}>
+          <AttachMoney />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
+          <Typography variant="h5">₦{monthlyStats.totalOfferings.toLocaleString()}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {currentMonth}
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#FFB74D' : '#F57C00', mr: 2 }}>
+          <TrendingUp />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
+          <Typography variant="h5">{monthlyStats.totalFirstTimers}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {currentMonth}
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#E57373' : '#D32F2F', mr: 2 }}>
+          <Assignment />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Reports Submitted</Typography>
+          <Typography variant="h5">{monthlyStats.totalReports}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            {currentMonth}
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+</Grid>
 
       {/* Charts Section */}
       <Grid container spacing={3}>

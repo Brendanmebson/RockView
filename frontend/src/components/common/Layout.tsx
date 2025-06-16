@@ -146,48 +146,139 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     navigate('/login');
   };
 
+  // Updated menu items with varied colors
   const menuItems = React.useMemo(() => {
     if (!user) return [];
 
     const common = [
-      { text: 'Dashboard', icon: <Dashboard />, path: '/dashboard', color: '#2E7D32' },
-      { text: 'Reports', icon: <BarChart />, path: '/reports', color: '#4CAF50' },
-      { text: 'Messages', icon: <Message />, path: '/messages', color: '#66BB6A', badge: unreadCount },
-      { text: 'Settings', icon: <Settings />, path: '/settings', color: '#388E3C' },
+      { 
+        text: 'Dashboard', 
+        icon: <Dashboard />, 
+        path: '/dashboard', 
+        color: darkMode ? '#64B5F6' : '#1976D2', // Blue
+        badge: 0 
+      },
+      { 
+        text: 'Reports', 
+        icon: <BarChart />, 
+        path: '/reports', 
+        color: darkMode ? '#81C784' : '#388E3C', // Green
+        badge: 0 
+      },
+      { 
+        text: 'Messages', 
+        icon: <Message />, 
+        path: '/messages', 
+        color: darkMode ? '#FFB74D' : '#F57C00', // Orange
+        badge: unreadCount 
+      },
+      { 
+        text: 'Settings', 
+        icon: <Settings />, 
+        path: '/settings', 
+        color: darkMode ? '#A1A1A1' : '#616161', // Grey
+        badge: 0 
+      },
     ];
 
     switch (user.role) {
       case 'admin':
         return [
           ...common,
-          { text: 'Districts', icon: <Building size={20} />, path: '/districts', color: '#1B5E20' },
-          { text: 'Zonal Supervisors', icon: <Users size={20} />, path: '/zonal-supervisors', color: '#2E7D32' },
-          { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#4CAF50' },
-          { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#66BB6A' },
-          { text: 'Users', icon: <People />, path: '/admin/users', color: '#388E3C' },
+          { 
+            text: 'Districts', 
+            icon: <Building size={20} />, 
+            path: '/districts', 
+            color: darkMode ? '#E57373' : '#D32F2F', // Red
+            badge: 0 
+          },
+          { 
+            text: 'Zonal Supervisors', 
+            icon: <Users size={20} />, 
+            path: '/zonal-supervisors', 
+            color: darkMode ? '#BA68C8' : '#7B1FA2', // Purple
+            badge: 0 
+          },
+          { 
+            text: 'Area Supervisors', 
+            icon: <MapPin size={20} />, 
+            path: '/area-supervisors', 
+            color: darkMode ? '#4FC3F7' : '#0288D1', // Light Blue
+            badge: 0 
+          },
+          { 
+            text: 'CITH Centres', 
+            icon: <Home size={20} />, 
+            path: '/cith-centres', 
+            color: darkMode ? '#FFD54F' : '#FFA000', // Amber
+            badge: 0 
+          },
+          { 
+            text: 'Users', 
+            icon: <People />, 
+            path: '/admin/users', 
+            color: darkMode ? '#FF8A65' : '#E64A19', // Deep Orange
+            badge: 0 
+          },
         ];
       case 'district_pastor':
         return [
           ...common,
-          { text: 'Zonal Supervisors', icon: <Users size={20} />, path: '/zonal-supervisors', color: '#2E7D32' },
-          { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#4CAF50' },
-          { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#66BB6A' },
+          { 
+            text: 'Zonal Supervisors', 
+            icon: <Users size={20} />, 
+            path: '/zonal-supervisors', 
+            color: darkMode ? '#BA68C8' : '#7B1FA2', // Purple
+            badge: 0 
+          },
+          { 
+            text: 'Area Supervisors', 
+            icon: <MapPin size={20} />, 
+            path: '/area-supervisors', 
+            color: darkMode ? '#4FC3F7' : '#0288D1', // Light Blue
+            badge: 0 
+          },
+          { 
+            text: 'CITH Centres', 
+            icon: <Home size={20} />, 
+            path: '/cith-centres', 
+            color: darkMode ? '#FFD54F' : '#FFA000', // Amber
+            badge: 0 
+          },
         ];
       case 'zonal_supervisor':
         return [
           ...common,
-          { text: 'Area Supervisors', icon: <MapPin size={20} />, path: '/area-supervisors', color: '#4CAF50' },
-          { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#66BB6A' },
+          { 
+            text: 'Area Supervisors', 
+            icon: <MapPin size={20} />, 
+            path: '/area-supervisors', 
+            color: darkMode ? '#4FC3F7' : '#0288D1', // Light Blue
+            badge: 0 
+          },
+          { 
+            text: 'CITH Centres', 
+            icon: <Home size={20} />, 
+            path: '/cith-centres', 
+            color: darkMode ? '#FFD54F' : '#FFA000', // Amber
+            badge: 0 
+          },
         ];
       case 'area_supervisor':
         return [
           ...common,
-          { text: 'CITH Centres', icon: <Home size={20} />, path: '/cith-centres', color: '#66BB6A' },
+          { 
+            text: 'CITH Centres', 
+            icon: <Home size={20} />, 
+            path: '/cith-centres', 
+            color: darkMode ? '#FFD54F' : '#FFA000', // Amber
+            badge: 0 
+          },
         ];
       default:
         return common;
     }
-  }, [user, unreadCount]);
+  }, [user, unreadCount, darkMode]);
 
   const getWelcomeMessage = () => {
     const hour = new Date().getHours();
@@ -202,6 +293,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         return 'CITH Centre Leader';
       case 'area_supervisor':
         return 'Area Supervisor';
+      case 'zonal_supervisor':
+        return 'Zonal Supervisor';
       case 'district_pastor':
         return 'District Pastor';
       case 'admin':
@@ -214,6 +307,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const renderUserContext = () => {
     if (!user || collapsed) return null;
 
+    const contextItemColor = darkMode ? '#A5D6A7' : '#2E7D32';
+
     return (
       <Box sx={{ p: 2, background: 'rgba(0,0,0,0.03)', borderRadius: 2, m: 2, mt: 0 }}>
         <Typography variant="subtitle2" color="textSecondary" gutterBottom>
@@ -222,21 +317,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         
         {userCentre && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Home size={16} color={darkMode ? '#66BB6A' : '#2E7D32'} />
+            <Home size={16} color={contextItemColor} />
             <Typography variant="body2">{userCentre.name}</Typography>
           </Box>
         )}
         
         {userArea && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <MapPin size={16} color={darkMode ? '#66BB6A' : '#2E7D32'} />
+            <MapPin size={16} color={contextItemColor} />
             <Typography variant="body2">{userArea.name}</Typography>
           </Box>
         )}
         
         {userDistrict && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Building size={16} color={darkMode ? '#66BB6A' : '#2E7D32'} />
+            <Building size={16} color={contextItemColor} />
             <Typography variant="body2">{userDistrict.name}</Typography>
           </Box>
         )}

@@ -83,6 +83,11 @@ const AreaSupervisorDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, userArea, userDistrict } = useAuth();
 
+  // Use MUI's theme to determine dark mode
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { palette } = require('@mui/material/styles').useTheme ? require('@mui/material/styles').useTheme() : { palette: { mode: 'light' } };
+  const darkMode = palette.mode === 'dark';
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -433,82 +438,83 @@ const AreaSupervisorDashboard: React.FC = () => {
         </Alert>
       )}
 
-      {/* Summary Stats Cards - Using Monthly Stats */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                <PeopleAlt />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
-                <Typography variant="h5">
-                  {monthlyStats.totalMale + monthlyStats.totalFemale + monthlyStats.totalChildren}
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                  <Chip label={`M: ${monthlyStats.totalMale}`} size="small" color="primary" variant="outlined" />
-                  <Chip label={`F: ${monthlyStats.totalFemale}`} size="small" color="secondary" variant="outlined" />
-                  <Chip label={`C: ${monthlyStats.totalChildren}`} size="small" color="info" variant="outlined" />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'secondary.main', mr: 2 }}>
-                <AttachMoney />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
-                <Typography variant="h5">₦{monthlyStats.totalOfferings.toLocaleString()}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  Avg: ₦{Math.round(monthlyStats.totalOfferings / Math.max(monthlyStats.totalReports, 1)).toLocaleString()} per service
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                <TrendingUp />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
-                <Typography variant="h5">{monthlyStats.totalFirstTimers}</Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-                  <Chip 
-                    label={`${monthlyStats.totalFirstTimersFollowedUp} followed`} 
-                    size="small" 
-                    color="success" 
-                    variant="outlined" 
-                  />
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-        <GridItem xs={12} md={3}>
-          <Card>
-            <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                <Assessment />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="textSecondary">Monthly Testimonies</Typography>
-                <Typography variant="h5">{monthlyStats.totalTestimonies}</Typography>
-                <Typography variant="caption" color="textSecondary">
-                  Across {monthlyStats.totalReports} services
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </GridItem>
-      </Grid>
+
+{/* Summary Stats Cards - Using Monthly Stats */}
+<Grid container spacing={3} sx={{ mb: 3 }}>
+  <GridItem xs={12} md={3}>
+    <Card>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#64B5F6' : '#1976D2', mr: 2 }}>
+          <PeopleAlt />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
+          <Typography variant="h5">
+            {monthlyStats.totalMale + monthlyStats.totalFemale + monthlyStats.totalChildren}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+            <Chip label={`M: ${monthlyStats.totalMale}`} size="small" color="primary" variant="outlined" />
+            <Chip label={`F: ${monthlyStats.totalFemale}`} size="small" color="secondary" variant="outlined" />
+            <Chip label={`C: ${monthlyStats.totalChildren}`} size="small" color="info" variant="outlined" />
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#81C784' : '#388E3C', mr: 2 }}>
+          <AttachMoney />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
+          <Typography variant="h5">₦{monthlyStats.totalOfferings.toLocaleString()}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            Avg: ₦{Math.round(monthlyStats.totalOfferings / Math.max(monthlyStats.totalReports, 1)).toLocaleString()} per service
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#FFB74D' : '#F57C00', mr: 2 }}>
+          <TrendingUp />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
+          <Typography variant="h5">{monthlyStats.totalFirstTimers}</Typography>
+          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+            <Chip 
+              label={`${monthlyStats.totalFirstTimersFollowedUp} followed`} 
+              size="small" 
+              color="success" 
+              variant="outlined" 
+            />
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+  <GridItem xs={12} md={3}>
+    <Card>
+      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
+        <Avatar sx={{ bgcolor: darkMode ? '#BA68C8' : '#7B1FA2', mr: 2 }}>
+          <Assessment />
+        </Avatar>
+        <Box>
+          <Typography variant="body2" color="textSecondary">Monthly Testimonies</Typography>
+          <Typography variant="h5">{monthlyStats.totalTestimonies}</Typography>
+          <Typography variant="caption" color="textSecondary">
+            Across {monthlyStats.totalReports} services
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  </GridItem>
+</Grid>
 
       <Grid container spacing={3}>
         {/* Attendance Trends Chart - Made Wider */}
