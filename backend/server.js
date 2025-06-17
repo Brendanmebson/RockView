@@ -3,6 +3,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
+
 require('dotenv').config();
 
 const connectDB = require('./config/database');
@@ -18,6 +20,8 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'http://localhost:3000',
+    'https://your-frontend-domain.vercel.app', // You'll update this later
+    /^https:\/\/.*\.vercel\.app$/ // Allow all Vercel preview deployments
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

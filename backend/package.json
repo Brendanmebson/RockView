@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "build": "echo 'No build process for backend'",
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean-data": "node scripts/cleanCithCentres.js"
   },
