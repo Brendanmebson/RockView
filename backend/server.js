@@ -20,7 +20,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'http://localhost:3000',
-    'https://your-frontend-domain.vercel.app', // You'll update this later
+    'https://rockview.vercel.app', // You'll update this later
     /^https:\/\/.*\.vercel\.app$/ // Allow all Vercel preview deployments
   ],
   credentials: true,
