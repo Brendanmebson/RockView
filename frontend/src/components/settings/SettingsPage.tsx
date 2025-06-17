@@ -342,7 +342,7 @@ const SettingsPage: React.FC = () => {
                       checked={darkMode}
                       onChange={toggleDarkMode}
                       color="primary"
-                      size="large"
+                      size="medium"
                     />
                   }
                   label={
