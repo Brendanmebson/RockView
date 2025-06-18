@@ -372,6 +372,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
+      style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
     >
       <Box sx={{ 
         p: collapsed && !isMobile ? 1 : { xs: 2, sm: 3 }, 
@@ -438,83 +439,87 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {renderUserContext()}
 
-      <List sx={{ px: collapsed && !isMobile ? 1 : { xs: 1, sm: 2 } }}>
-        <AnimatePresence>
-          {menuItems.map((item, index) => (
-            <motion.div
-              key={item.text}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-              <ListItem disablePadding sx={{ mb: 1 }}>
-                <Tooltip title={(collapsed && !isMobile) ? item.text : ''} placement="right">
-                  <ListItemButton
-                    onClick={() => navigate(item.path)}
-                    selected={location.pathname === item.path}
-                    sx={{
-                      borderRadius: 3,
-                      py: { xs: 1, sm: 1.5 },
-                      justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
-                      '&.Mui-selected': {
-                        background: `${item.color}20`,
-                        '&:hover': {
-                          background: `${item.color}30`,
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <List sx={{ px: collapsed && !isMobile ? 1 : { xs: 1, sm: 2 } }}>
+          <AnimatePresence>
+            {menuItems.map((item, index) => (
+              <motion.div
+                key={item.text}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+              >
+                <ListItem disablePadding sx={{ mb: 1 }}>
+                  <Tooltip title={(collapsed && !isMobile) ? item.text : ''} placement="right">
+                    <ListItemButton
+                      onClick={() => navigate(item.path)}
+                      selected={location.pathname === item.path}
+                      sx={{
+                        borderRadius: 3,
+                        py: { xs: 1, sm: 1.5 },
+                        justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
+                        '&.Mui-selected': {
+                          background: `${item.color}20`,
+                          '&:hover': {
+                            background: `${item.color}30`,
+                          },
                         },
-                      },
-                      '&:hover': {
-                        background: `${item.color}10`,
-                      },
-                    }}
-                  >
-                    <ListItemIcon sx={{ 
-                      color: item.color, 
-                      minWidth: (collapsed && !isMobile) ? 'auto' : { xs: 35, sm: 40 },
-                      justifyContent: 'center'
-                    }}>
-                      {item.badge && item.badge > 0 ? (
-                        <Badge badgeContent={item.badge} color="error">
-                          {item.icon}
-                        </Badge>
-                      ) : (
-                        item.icon
+                        '&:hover': {
+                          background: `${item.color}10`,
+                        },
+                      }}
+                    >
+                      <ListItemIcon sx={{ 
+                        color: item.color, 
+                        minWidth: (collapsed && !isMobile) ? 'auto' : { xs: 35, sm: 40 },
+                        justifyContent: 'center'
+                      }}>
+                        {item.badge && item.badge > 0 ? (
+                          <Badge badgeContent={item.badge} color="error">
+                            {item.icon}
+                          </Badge>
+                        ) : (
+                          item.icon
+                        )}
+                      </ListItemIcon>
+                      {(!collapsed || isMobile) && (
+                        <ListItemText 
+                          primary={item.text}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            fontWeight: location.pathname === item.path ? 600 : 400,
+                            fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                          }}
+                        />
                       )}
-                    </ListItemIcon>
-                    {(!collapsed || isMobile) && (
-                      <ListItemText 
-                        primary={item.text}
-                        primaryTypographyProps={{
-                          variant: 'body2',
-                          fontWeight: location.pathname === item.path ? 600 : 400,
-                          fontSize: { xs: '0.8rem', sm: '0.875rem' }
-                        }}
-                      />
-                    )}
-                  </ListItemButton>
-                </Tooltip>
-              </ListItem>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </List>
+                    </ListItemButton>
+                  </Tooltip>
+                </ListItem>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        </List>
+      </Box>
       
-      <Divider sx={{ mx: (collapsed && !isMobile) ? 1 : { xs: 1, sm: 2 }, my: 2 }} />
-      
-      {!isMobile && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-          <IconButton 
-            onClick={handleDrawerCollapse}
-            sx={{ 
-              bgcolor: 'action.hover',
-              '&:hover': {
-                bgcolor: 'action.selected',
-              }
-            }}
-          >
-            {collapsed ? <ChevronRight /> : <ChevronLeft />}
-          </IconButton>
-        </Box>
-      )}
+      <Box sx={{ mt: 'auto' }}>
+        <Divider sx={{ mx: (collapsed && !isMobile) ? 1 : { xs: 1, sm: 2 }, my: 2 }} />
+        
+        {!isMobile && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
+            <IconButton 
+              onClick={handleDrawerCollapse}
+              sx={{ 
+                bgcolor: 'action.hover',
+                '&:hover': {
+                  bgcolor: 'action.selected',
+                }
+              }}
+            >
+              {collapsed ? <ChevronRight /> : <ChevronLeft />}
+            </IconButton>
+          </Box>
+        )}
+      </Box>
     </motion.div>
   );
 
@@ -523,190 +528,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <Box sx={{ display: 'flex', width: '100%', overflow: 'hidden' }}>
       <CssBaseline />
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { 
-            xs: '100%',
-            sm: `calc(100% - ${currentDrawerWidth}px)` 
-          },
-          ml: { sm: `${currentDrawerWidth}px` },
-          transition: 'width 0.3s, margin-left 0.3s',
-          zIndex: theme.zIndex.drawer + 1,
-        }}
-      >
-        <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" component="div" sx={{ 
-            flexGrow: 1,
-            fontSize: { xs: '1rem', sm: '1.25rem' }
-          }}>
-            {location.pathname === '/dashboard' && '🏠 '}
-            {location.pathname === '/reports' && '📊 '}
-            {location.pathname === '/messages' && '💬 '}
-            {location.pathname === '/districts' && '🏘️ '}
-            {location.pathname === '/area-supervisors' && '👥 '}
-            {location.pathname === '/cith-centres' && '⛪ '}
-            {location.pathname === '/users' && '👤 '}
-            {location.pathname.charAt(1).toUpperCase() + location.pathname.slice(2).replace('-', ' ')}
-          </Typography>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
-            <Tooltip title="Messages">
-              <IconButton color="inherit" onClick={() => navigate('/messages')}>
-                <Badge badgeContent={unreadCount} color="error">
-                  <Message />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-            
-            <Tooltip title="Notifications">
-              <IconButton color="inherit" onClick={handleNotificationClick}>
-                <Badge badgeContent={unreadNotifications} color="secondary">
-                  <Notifications />
-                </Badge>
-              </IconButton>
-            </Tooltip>
-            
-            <IconButton
-              onClick={handleMenu}
-              sx={{ p: 0 }}
-            >
-              <Avatar 
-                sx={{ 
-                  width: { xs: 35, sm: 40 }, 
-                  height: { xs: 35, sm: 40 },
-                  background: darkMode 
-                    ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
-                    : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
-                  color: 'white',
-                  fontWeight: 'bold',
-                  fontSize: { xs: '0.9rem', sm: '1rem' }
-                }}
-              >
-                {user?.name?.charAt(0)}
-              </Avatar>
-            </IconButton>
-            
-            {/* User Menu */}
-            <Menu
-              anchorEl={anchorEl}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              keepMounted
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              open={Boolean(anchorEl)}
-              onClose={handleClose}
-              PaperProps={{
-                sx: {
-                  borderRadius: 2,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                  mt: 1,
-                  minWidth: { xs: 200, sm: 250 }
-                },
-              }}
-            >
-              <MenuItem onClick={() => handleMenuItemClick('/settings')} sx={{ py: 1.5, px: 2 }}>
-                <ListItemIcon>
-                  <Settings fontSize="small" />
-                </ListItemIcon>
-                <Box>
-                  <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                    Profile Settings
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                    {user?.email}
-                  </Typography>
-                </Box>
-              </MenuItem>
-              <Divider />
-              <MenuItem onClick={handleLogout} sx={{ py: 1.5, px: 2, color: 'error.main' }}>
-                <ListItemIcon>
-                  <ExitToApp fontSize="small" sx={{ color: 'error.main' }} />
-                </ListItemIcon>
-                <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                  Sign Out
-                </Typography>
-              </MenuItem>
-            </Menu>
-
-            {/* Notifications Menu */}
-            <Menu
-              anchorEl={notificationAnchorEl}
-              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-              keepMounted
-              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-              open={Boolean(notificationAnchorEl)}
-              onClose={handleNotificationClose}
-              PaperProps={{
-                sx: {
-                  borderRadius: 2,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                  mt: 1,
-                  maxWidth: { xs: 280, sm: 350 },
-                  minWidth: { xs: 250, sm: 300 },
-                },
-              }}
-            >
-              <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  Notifications
-                </Typography>
-              </Box>
-              {notifications.length === 0 ? (
-                <MenuItem>
-                  <Typography variant="body2" color="textSecondary">
-                    No notifications
-                  </Typography>
-                </MenuItem>
-              ) : (
-                notifications.map((notification) => (
-                  <MenuItem key={notification.id} sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-                    <Box sx={{ width: '100%' }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <Typography variant="body2" fontWeight={notification.read ? 400 : 600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                          {notification.title}
-                        </Typography>
-                        {!notification.read && (
-                          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', ml: 1 }} />
-                        )}
-                      </Box>
-                      <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
-                        {notification.message}
-                      </Typography>
-                      <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
-                        {notification.time.toLocaleTimeString()}
-                      </Typography>
-                    </Box>
-                  </MenuItem>
-                ))
-              )}
-              <Box sx={{ p: 1, textAlign: 'center', borderTop: 1, borderColor: 'divider' }}>
-                <Button size="small" onClick={() => navigate('/notifications')}>
-                  View All
-                </Button>
-              </Box>
-            </Menu>
-          </Box>
-        </Toolbar>
-      </AppBar>
       
+      {/* Sidebar/Drawer - This comes first and has the highest z-index */}
       <Box
         component="nav"
         sx={{ 
           width: { sm: currentDrawerWidth }, 
           flexShrink: { sm: 0 },
           transition: 'width 0.3s',
+          zIndex: theme.zIndex.drawer + 2, // Higher than AppBar
+          position: 'relative',
         }}
         aria-label="church navigation"
       >
+        {/* Mobile Drawer */}
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -717,11 +552,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: mobileDrawerWidth,
+              zIndex: theme.zIndex.drawer + 3,
             },
           }}
         >
           {drawer}
         </Drawer>
+        
+        {/* Desktop Drawer */}
         <Drawer
           variant="permanent"
           sx={{
@@ -731,6 +569,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               width: currentDrawerWidth,
               transition: 'width 0.3s',
               overflowX: 'hidden',
+              position: 'relative',
+              height: '100vh',
+              zIndex: theme.zIndex.drawer + 2,
             },
           }}
           open
@@ -738,26 +579,209 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {drawer}
         </Drawer>
       </Box>
-      
+
+      {/* Main Content Area */}
       <Box
-        component="main"
-        sx={{ 
-          flexGrow: 1, 
-          p: { xs: 2, sm: 3 }, 
+        sx={{
+          flexGrow: 1,
+          display: 'flex',
+          flexDirection: 'column',
           width: { 
             xs: '100%',
             sm: `calc(100% - ${currentDrawerWidth}px)` 
           },
-          minHeight: '100vh',
           transition: 'width 0.3s',
           overflow: 'hidden',
           maxWidth: '100%',
         }}
       >
-        <Toolbar />
-        <PageContainer>
-          {children}
-        </PageContainer>
+        {/* AppBar - Now positioned relative to main content, not fixed */}
+        <AppBar
+          position="relative" // Changed from "fixed" to "relative"
+          sx={{
+            width: '100%',
+            zIndex: theme.zIndex.drawer + 1, // Lower than drawer
+            boxShadow: 1,
+          }}
+        >
+          <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
+            <IconButton
+              color="inherit"
+              aria-label="open drawer"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2, display: { sm: 'none' } }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Typography variant="h6" component="div" sx={{ 
+              flexGrow: 1,
+              fontSize: { xs: '1rem', sm: '1.25rem' }
+            }}>
+              {location.pathname === '/dashboard' && '🏠 '}
+              {location.pathname === '/reports' && '📊 '}
+              {location.pathname === '/messages' && '💬 '}
+              {location.pathname === '/districts' && '🏘️ '}
+              {location.pathname === '/area-supervisors' && '👥 '}
+              {location.pathname === '/cith-centres' && '⛪ '}
+              {location.pathname === '/users' && '👤 '}
+              {location.pathname.charAt(1).toUpperCase() + location.pathname.slice(2).replace('-', ' ')}
+            </Typography>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
+              <Tooltip title="Messages">
+                <IconButton color="inherit" onClick={() => navigate('/messages')}>
+                  <Badge badgeContent={unreadCount} color="error">
+                    <Message />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+              
+              <Tooltip title="Notifications">
+                <IconButton color="inherit" onClick={handleNotificationClick}>
+                  <Badge badgeContent={unreadNotifications} color="secondary">
+                    <Notifications />
+                  </Badge>
+                </IconButton>
+              </Tooltip>
+              
+              <IconButton
+                onClick={handleMenu}
+                sx={{ p: 0 }}
+              >
+                <Avatar 
+                  sx={{ 
+                    width: { xs: 35, sm: 40 }, 
+                    height: { xs: 35, sm: 40 },
+                    background: darkMode 
+                      ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
+                      : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    fontSize: { xs: '0.9rem', sm: '1rem' }
+                  }}
+                >
+                  {user?.name?.charAt(0)}
+                </Avatar>
+              </IconButton>
+              
+              {/* User Menu */}
+              <Menu
+                anchorEl={anchorEl}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                keepMounted
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+                PaperProps={{
+                  sx: {
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    mt: 1,
+                    minWidth: { xs: 200, sm: 250 }
+                  },
+                }}
+              >
+                <MenuItem onClick={() => handleMenuItemClick('/settings')} sx={{ py: 1.5, px: 2 }}>
+                  <ListItemIcon>
+                    <Settings fontSize="small" />
+                  </ListItemIcon>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                      Profile Settings
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                      {user?.email}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <Divider />
+                <MenuItem onClick={handleLogout} sx={{ py: 1.5, px: 2, color: 'error.main' }}>
+                  <ListItemIcon>
+                    <ExitToApp fontSize="small" sx={{ color: 'error.main' }} />
+                  </ListItemIcon>
+                  <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                    Sign Out
+                  </Typography>
+                </MenuItem>
+              </Menu>
+
+              {/* Notifications Menu */}
+              <Menu
+                anchorEl={notificationAnchorEl}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                keepMounted
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                open={Boolean(notificationAnchorEl)}
+                onClose={handleNotificationClose}
+                PaperProps={{
+                  sx: {
+                    borderRadius: 2,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    mt: 1,
+                    maxWidth: { xs: 280, sm: 350 },
+                    minWidth: { xs: 250, sm: 300 },
+                  },
+                }}
+              >
+                <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                  <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                    Notifications
+                  </Typography>
+                </Box>
+                {notifications.length === 0 ? (
+                  <MenuItem>
+                    <Typography variant="body2" color="textSecondary">
+                      No notifications
+                    </Typography>
+                  </MenuItem>
+                ) : (
+                  notifications.map((notification) => (
+                    <MenuItem key={notification.id} sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+                      <Box sx={{ width: '100%' }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <Typography variant="body2" fontWeight={notification.read ? 400 : 600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                            {notification.title}
+                          </Typography>
+                          {!notification.read && (
+                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', ml: 1 }} />
+                          )}
+                        </Box>
+                        <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                          {notification.message}
+                        </Typography>
+                        <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
+                          {notification.time.toLocaleTimeString()}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))
+                )}
+                <Box sx={{ p: 1, textAlign: 'center', borderTop: 1, borderColor: 'divider' }}>
+                  <Button size="small" onClick={() => navigate('/notifications')}>
+                    View All
+                  </Button>
+                </Box>
+              </Menu>
+            </Box>
+          </Toolbar>
+        </AppBar>
+        
+        {/* Main Content */}
+        <Box
+          component="main"
+          sx={{ 
+            flexGrow: 1, 
+            p: { xs: 2, sm: 3 }, 
+            overflow: 'auto',
+            maxWidth: '100%',
+            minHeight: 'calc(100vh - 64px)', // Subtract AppBar height
+          }}
+        >
+          <PageContainer>
+            {children}
+          </PageContainer>
+        </Box>
       </Box>
     </Box>
   );
