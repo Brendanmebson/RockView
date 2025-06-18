@@ -15,7 +15,9 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.0.3",
-    "morgan": "^1.10.0"
+    "morgan": "^1.10.0",
+    "exceljs": "^4.4.0",
+    "pdfkit": "^0.15.0"
   },
   "engines": {
     "node": ">=18.0.0"
