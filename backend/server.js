@@ -82,6 +82,14 @@ app.get('/', (req, res) => {
 app.use('/api/public', require('./routes/publicRoutes'));
 app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/cithcentres', require('./routes/cithCentreRoutes'));
+app.use('/api/areasupervisors', require('./routes/areaSupervisorRoutes'));
+app.use('/api/districts', require('./routes/districtRoutes'));
+app.use('/api/export', require('./routes/exportRoutes'));
+app.use('/api/message', require('./routes/messageRoutes'));
+app.use('/api/zonalsupervisor', require('./routes/zonalSupervisorRoutes'));
+
 
 // 404 handler
 app.use('*', (req, res) => {
