@@ -23,34 +23,19 @@ interface CustomThemeProviderProps {
 }
 
 export const CustomThemeProvider: React.FC<CustomThemeProviderProps> = ({ children }) => {
-  // Check system preference and localStorage
+  // Always default to light mode, ignore system preference
   const getInitialTheme = (): boolean => {
     const savedTheme = localStorage.getItem('darkMode');
     if (savedTheme !== null) {
       return JSON.parse(savedTheme);
     }
-    // Check system preference
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Default to light mode instead of system preference
+    return false;
   };
 
-  const [darkMode, setDarkMode] = useState<boolean>(getInitialTheme);
+ const [darkMode, setDarkMode] = useState<boolean>(getInitialTheme);
 
-  // Listen for system theme changes
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      // Only auto-switch if user hasn't manually set a preference
-      const savedTheme = localStorage.getItem('darkMode');
-      if (savedTheme === null) {
-        setDarkMode(e.matches);
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  // Save theme preference and apply to document
+  // Remove system theme change listener since we want user control only
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
     

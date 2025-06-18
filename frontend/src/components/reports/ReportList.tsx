@@ -560,7 +560,19 @@ const ReportList: React.FC = () => {
                                 >
                                   View
                                 </Button>
-                                
+                              
+                              {user?.role === 'admin' && (
+                                <Button
+                                  size="small"
+                                  color="secondary"
+                                  variant="outlined"
+                                  startIcon={<Edit />}
+                                  onClick={() => navigate(`/admin/reports/${report._id}/edit`)}
+                                >
+                                  Admin Edit
+                                </Button>
+                              )}
+
                                 {/* Edit button for pending reports by original submitter */}
                                 {user?.role === 'cith_centre' && 
                                  report.submittedBy?._id === user._id && 

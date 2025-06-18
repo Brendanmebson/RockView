@@ -496,7 +496,7 @@ const approveReport = async (req, res) => {
     await report.save();
     
     // Return populated report
-    const populatedReport = await WeeklyReport.findById(report._id)
+   const populatedReport = await WeeklyReport.findById(report._id)
       .populate(getReportPopulationQuery());
     
     const sanitizedReport = sanitizeReportData([populatedReport])[0];
@@ -509,7 +509,7 @@ const approveReport = async (req, res) => {
 };
 
 // @desc    Admin comprehensive edit report
-// @route   PUT /api/reports/:id/admin-comprehensive-edit
+// @route   PUT /api/reports/:id/admin-edit
 // @access  Private (admin only)
 const adminComprehensiveEdit = async (req, res) => {
   try {
@@ -517,7 +517,7 @@ const adminComprehensiveEdit = async (req, res) => {
       data, 
       eventType, 
       eventDescription, 
-      targetApprovalLevel, // 'pending', 'area', 'district', or 'final'
+      targetApprovalLevel, // 'pending', 'area', 'zonal', 'district'
       resetApprovals 
     } = req.body;
     

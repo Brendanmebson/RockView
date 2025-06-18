@@ -16,6 +16,7 @@ import MessageDetail from './components/messages/MessageDetail';
 import ComposeMessage from './components/messages/ComposeMessage';
 import SettingsPage from './components/settings/SettingsPage';
 import UserManagement from './components/admin/UserManagement';
+import AdminReportEdit from './components/admin/AdminReportEdit';
 import DistrictManagement from './components/admin/DistrictManagement';
 import ZonalSupervisorManagement from './components/admin/ZonalSupervisorManagement';
 import AreaSupervisorManagement from './components/admin/AreaSupervisorManagement';
@@ -59,6 +60,7 @@ function App() {
               <Route path="/area-supervisors" element={<ProtectedRoute roles={['admin', 'district_pastor']}><Layout><AreaSupervisorManagement /></Layout></ProtectedRoute>} />
               <Route path="/cith-centres" element={<ProtectedRoute roles={['admin', 'district_pastor', 'area_supervisor']}><Layout><CithCentreManagement /></Layout></ProtectedRoute>} />
               <Route path="/zonal-supervisors" element={<ProtectedRoute roles={['admin', 'district_pastor']}><Layout><ZonalSupervisorManagement /></Layout></ProtectedRoute>} />
+              <Route path="/admin/reports/:id/edit" element={<AdminReportEdit />} />
 
 
               {/* Settings Route */}

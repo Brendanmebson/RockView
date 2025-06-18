@@ -73,49 +73,71 @@ const exportToExcel = async (req, res) => {
     }
     
     // Create workbook
-    const workbook = new ExcelJS.Workbook();
+     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Weekly Reports');
     
-    // Define columns
-    worksheet.columns = [
-      { header: 'District', key: 'district', width: 20 },
-      { header: 'Area Supervisor', key: 'areaSupervisor', width: 20 },
-      { header: 'CITH Centre', key: 'cithCentre', width: 25 },
-      { header: 'Location', key: 'location', width: 20 },
-      { header: 'Week', key: 'week', width: 15 },
-      { header: 'Event Type', key: 'eventType', width: 20 },
-      { header: 'Event Description', key: 'eventDescription', width: 25 },
-      { header: 'Male', key: 'male', width: 10 },
-      { header: 'Female', key: 'female', width: 10 },
-      { header: 'Children', key: 'children', width: 10 },
-      { header: 'Total Attendance', key: 'totalAttendance', width: 15 },
-      { header: 'Offerings', key: 'offerings', width: 15 },
-      { header: 'Testimonies', key: 'testimonies', width: 15 },
-      { header: 'First Timers', key: 'firstTimers', width: 15 },
-      { header: 'First Timers Followed Up', key: 'firstTimersFollowedUp', width: 20 },
-      { header: 'First Timers Converted', key: 'firstTimersConverted', width: 20 },
-      { header: 'Mode of Meeting', key: 'modeOfMeeting', width: 15 },
-      { header: 'Remarks', key: 'remarks', width: 30 },
-      { header: 'Submitted By', key: 'submittedBy', width: 15 },
-      { header: 'Area Approved By', key: 'areaApprovedBy', width: 15 },
-      { header: 'Zonal Approved By', key: 'zonalApprovedBy', width: 15 },
-      { header: 'District Approved By', key: 'districtApprovedBy', width: 15 },
-      { header: 'Status', key: 'status', width: 15 },
+    // Define columns with proper headers
+    const columns = [
+      { header: 'DISTRICT', key: 'district', width: 20 },
+      { header: 'AREA SUPERVISOR', key: 'areaSupervisor', width: 20 },
+      { header: 'CITH CENTRE', key: 'cithCentre', width: 25 },
+      { header: 'LOCATION', key: 'location', width: 20 },
+      { header: 'WEEK', key: 'week', width: 15 },
+      { header: 'EVENT TYPE', key: 'eventType', width: 20 },
+      { header: 'EVENT DESCRIPTION', key: 'eventDescription', width: 25 },
+      { header: 'MALE', key: 'male', width: 10 },
+      { header: 'FEMALE', key: 'female', width: 10 },
+      { header: 'CHILDREN', key: 'children', width: 10 },
+      { header: 'TOTAL ATTENDANCE', key: 'totalAttendance', width: 15 },
+      { header: 'OFFERINGS (₦)', key: 'offerings', width: 15 },
+      { header: 'TESTIMONIES', key: 'testimonies', width: 15 },
+      { header: 'FIRST TIMERS', key: 'firstTimers', width: 15 },
+      { header: 'FIRST TIMERS FOLLOWED UP', key: 'firstTimersFollowedUp', width: 20 },
+      { header: 'FIRST TIMERS CONVERTED', key: 'firstTimersConverted', width: 20 },
+      { header: 'MODE OF MEETING', key: 'modeOfMeeting', width: 15 },
+      { header: 'REMARKS', key: 'remarks', width: 30 },
+      { header: 'SUBMITTED BY', key: 'submittedBy', width: 15 },
+      { header: 'AREA APPROVED BY', key: 'areaApprovedBy', width: 15 },
+      { header: 'ZONAL APPROVED BY', key: 'zonalApprovedBy', width: 15 },
+      { header: 'DISTRICT APPROVED BY', key: 'districtApprovedBy', width: 15 },
+      { header: 'STATUS', key: 'status', width: 15 },
     ];
     
-    // Add data
-    reports.forEach(report => {
+    worksheet.columns = columns;
+    
+    // Style the header row with Excel-like formatting
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { 
+      bold: true, 
+      color: { argb: 'FFFFFFFF' },
+      size: 11,
+      name: 'Calibri'
+    };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF366092' } // Dark blue background
+    };
+    headerRow.alignment = { 
+      vertical: 'middle', 
+      horizontal: 'center',
+      wrapText: true 
+    };
+    headerRow.height = 25;
+    
+    // Add data with proper formatting
+    reports.forEach((report, index) => {
       const centre = report.cithCentreId || {};
       const area = centre.areaSupervisorId || {};
       const district = area.districtId || {};
       
-      worksheet.addRow({
+      const rowData = {
         district: district.name || 'Unknown District',
         areaSupervisor: area.name || 'Unknown Area',
         cithCentre: centre.name || 'Unknown Centre',
         location: centre.location || 'Unknown Location',
         week: report.week ? report.week.toISOString().split('T')[0] : 'Unknown Date',
-        eventType: report.eventType ? report.eventType.replace('_', ' ').toUpperCase() : 'REGULAR SERVICE',
+        eventType: report.eventType ? report.eventType.replace(/_/g, ' ').toUpperCase() : 'REGULAR SERVICE',
         eventDescription: report.eventDescription || '',
         male: report.data?.male || 0,
         female: report.data?.female || 0,
@@ -126,34 +148,47 @@ const exportToExcel = async (req, res) => {
         firstTimers: report.data?.numberOfFirstTimers || 0,
         firstTimersFollowedUp: report.data?.firstTimersFollowedUp || 0,
         firstTimersConverted: report.data?.firstTimersConvertedToCITH || 0,
-        modeOfMeeting: report.data?.modeOfMeeting || 'physical',
+        modeOfMeeting: (report.data?.modeOfMeeting || 'physical').toUpperCase(),
         remarks: report.data?.remarks || '',
         submittedBy: report.submittedBy?.name || 'Unknown User',
         areaApprovedBy: report.areaApprovedBy?.name || '',
         zonalApprovedBy: report.zonalApprovedBy?.name || '',
         districtApprovedBy: report.districtApprovedBy?.name || '',
-        status: report.status || 'unknown',
+        status: (report.status || 'unknown').replace(/_/g, ' ').toUpperCase(),
+      };
+      
+      const dataRow = worksheet.addRow(rowData);
+      
+      // Style data rows
+      dataRow.font = { name: 'Calibri', size: 10 };
+      dataRow.alignment = { vertical: 'middle', wrapText: true };
+      
+      // Alternate row colors
+      if (index % 2 === 1) {
+        dataRow.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF2F2F2' } // Light gray for alternating rows
+        };
+      }
+    });
+    
+    // Add borders to all cells
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
+        };
       });
     });
     
-    // Style the header row
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFE0E0E0' }
-    };
-    
-    // Add borders to all cells
-    worksheet.eachRow((row, rowNumber) => {
-      row.eachCell((cell, colNumber) => {
-        cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        };
-      });
+    // Auto-fit columns
+    worksheet.columns.forEach(column => {
+      if (column.width < 10) column.width = 10;
+      if (column.width > 50) column.width = 50;
     });
     
     // Set response headers

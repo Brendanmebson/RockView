@@ -619,15 +619,24 @@ const getDashboardData = async (req, res) => {
       user: req.user,
       stats: {},
       recentReports: [],
-      notifications: []
+      notifications: [],
+      // Add organizational data
+      districts: [],
+      areaSupervisors: [],
+      zonalSupervisors: [],
+      cithCentres: []
     };
 
-    // Get basic counts
-    const [totalUsers, totalDistricts, totalAreas, totalCentres] = await Promise.all([
+    // Get basic counts and organizational data
+    const [totalUsers, totalDistricts, totalAreas, totalCentres, districts, areas, zonals, centres] = await Promise.all([
       User.countDocuments(),
       District.countDocuments(),
       AreaSupervisor.countDocuments(),
-      CithCentre.countDocuments()
+      CithCentre.countDocuments(),
+      District.find().select('_id name districtNumber'),
+      AreaSupervisor.find().populate('districtId', 'name districtNumber').select('_id name districtId'),
+      ZonalSupervisor.find().populate('districtId', 'name districtNumber').select('_id name districtId'),
+      CithCentre.find().populate('areaSupervisorId', 'name').select('_id name location areaSupervisorId')
     ]);
 
     dashboardData.stats = {
@@ -636,6 +645,13 @@ const getDashboardData = async (req, res) => {
       totalAreas,
       totalCentres
     };
+
+    // Add organizational data to response
+    dashboardData.districts = districts;
+    dashboardData.areaSupervisors = areas;
+    dashboardData.zonalSupervisors = zonals;
+    dashboardData.cithCentres = centres;
+
 
     // Get role-specific data
     if (userRole === 'admin') {
@@ -696,7 +712,7 @@ const getDashboardData = async (req, res) => {
       }
     }
 
-    res.json(dashboardData);
+     res.json(dashboardData);
   } catch (error) {
     console.error('Get dashboard data error:', error);
     res.status(500).json({ message: 'Server error' });
