@@ -1,7 +1,8 @@
+// frontend/src/components/common/GridItem.tsx
 import React from 'react';
-import { Grid } from '@mui/material';
+import { Grid, GridProps } from '@mui/material';
 
-interface GridItemProps {
+interface GridItemProps extends GridProps {
   children: React.ReactNode;
   xs?: number;
   sm?: number;
@@ -11,7 +12,11 @@ interface GridItemProps {
 }
 
 const GridItem: React.FC<GridItemProps> = ({ children, ...props }) => {
-  return <Grid {...props}>{children}</Grid>;
+  return (
+    <Grid item {...props}>
+      {children}
+    </Grid>
+  );
 };
 
 export default GridItem;

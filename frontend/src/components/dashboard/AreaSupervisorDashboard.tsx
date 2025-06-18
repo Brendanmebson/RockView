@@ -20,6 +20,8 @@ import {
   CircularProgress,
   Alert,
   Paper,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { 
   CheckCircle, 
@@ -59,6 +61,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const AreaSupervisorDashboard: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const darkMode = theme.palette.mode === 'dark';
+  
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [pendingReports, setPendingReports] = useState<WeeklyReport[]>([]);
   const [monthlyStats, setMonthlyStats] = useState({
@@ -82,11 +89,6 @@ const AreaSupervisorDashboard: React.FC = () => {
   const [firstTimerData, setFirstTimerData] = useState<any[]>([]);
   const navigate = useNavigate();
   const { user, userArea, userDistrict } = useAuth();
-
-  // Use MUI's theme to determine dark mode
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { palette } = require('@mui/material/styles').useTheme ? require('@mui/material/styles').useTheme() : { palette: { mode: 'light' } };
-  const darkMode = palette.mode === 'dark';
 
   useEffect(() => {
     fetchDashboardData();
@@ -370,43 +372,62 @@ const AreaSupervisorDashboard: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ 
+      width: '100%', 
+      maxWidth: '100%',
+      overflow: 'hidden',
+      px: { xs: 0, sm: 0 }
+    }}>
       {/* Context Banner */}
       <Paper 
         elevation={3} 
         sx={{ 
-          p: 2, 
+          p: { xs: 1.5, sm: 2 }, 
           mb: 3, 
           background: 'linear-gradient(90deg, #2E7D32 0%, #1B5E20 100%)',
           color: 'white',
           borderRadius: 2,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          flexWrap: 'wrap', 
+          gap: { xs: 1.5, sm: 2 },
+          justifyContent: { xs: 'space-between', sm: 'flex-start' }
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '100%', sm: 'auto' } }}>
             <Business />
-            <Typography variant="subtitle1" fontWeight="bold">
+            <Typography variant="subtitle1" fontWeight="bold" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
               {userArea ? userArea.name : 'Loading Area...'}
             </Typography>
           </Box>
           
-          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+          {!isMobile && <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />}
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
             <Home />
-            <Typography variant="subtitle1">
+            <Typography variant="subtitle1" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
               {userDistrict ? userDistrict.name : 'Loading District...'}
             </Typography>
           </Box>
           
-          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ 
+            ml: { xs: 0, sm: 'auto' }, 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: { xs: 1, sm: 2 },
+            mt: { xs: 1, sm: 0 },
+            width: { xs: '100%', sm: 'auto' },
+            justifyContent: { xs: 'space-between', sm: 'flex-end' }
+          }}>
             <Chip 
               label={`${centres.length} CITH Centres`} 
               size="small" 
               sx={{ 
                 bgcolor: 'rgba(255,255,255,0.15)', 
                 color: 'white',
-                '& .MuiChip-label': { fontWeight: 500 }
+                '& .MuiChip-label': { fontWeight: 500, fontSize: { xs: '0.7rem', sm: '0.75rem' } }
               }} 
             />
             <Chip 
@@ -415,14 +436,14 @@ const AreaSupervisorDashboard: React.FC = () => {
               sx={{ 
                 bgcolor: 'primary.main', 
                 color: 'white',
-                '& .MuiChip-label': { fontWeight: 500 }
+                '& .MuiChip-label': { fontWeight: 500, fontSize: { xs: '0.7rem', sm: '0.75rem' } }
               }} 
             />
           </Box>
         </Box>
       </Paper>
 
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
         Area Supervisor Dashboard
       </Typography>
 
@@ -438,103 +459,172 @@ const AreaSupervisorDashboard: React.FC = () => {
         </Alert>
       )}
 
+      {/* Summary Stats Cards - Using Monthly Stats */}
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 3 }}>
+        <GridItem xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Avatar sx={{ 
+                bgcolor: darkMode ? '#64B5F6' : '#1976D2', 
+                mr: 2,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 }
+              }}>
+                <PeopleAlt />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Monthly Attendance
+                </Typography>
+                <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  {monthlyStats.totalMale + monthlyStats.totalFemale + monthlyStats.totalChildren}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                  <Chip label={`M: ${monthlyStats.totalMale}`} size="small" color="primary" variant="outlined" sx={{ fontSize: { xs: '0.6rem', sm: '0.75rem' } }} />
+                  <Chip label={`F: ${monthlyStats.totalFemale}`} size="small" color="secondary" variant="outlined" sx={{ fontSize: { xs: '0.6rem', sm: '0.75rem' } }} />
+                  <Chip label={`C: ${monthlyStats.totalChildren}`} size="small" color="info" variant="outlined" sx={{ fontSize: { xs: '0.6rem', sm: '0.75rem' } }} />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        <GridItem xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Avatar sx={{ 
+                bgcolor: darkMode ? '#81C784' : '#388E3C', 
+                mr: 2,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 }
+              }}>
+                <AttachMoney />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Monthly Offerings
+                </Typography>
+                <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  ₦{monthlyStats.totalOfferings.toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                  Avg: ₦{Math.round(monthlyStats.totalOfferings / Math.max(monthlyStats.totalReports, 1)).toLocaleString()} per service
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        <GridItem xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Avatar sx={{ 
+                bgcolor: darkMode ? '#FFB74D' : '#F57C00', 
+                mr: 2,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 }
+              }}>
+                <TrendingUp />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Monthly First Timers
+                </Typography>
+                <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  {monthlyStats.totalFirstTimers}
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, flexWrap: 'wrap' }}>
+                  <Chip 
+                    label={`${monthlyStats.totalFirstTimersFollowedUp} followed`} 
+                    size="small" 
+                    color="success" 
+                    variant="outlined" 
+                    sx={{ fontSize: { xs: '0.6rem', sm: '0.75rem' } }}
+                  />
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        <GridItem xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Avatar sx={{ 
+                bgcolor: darkMode ? '#BA68C8' : '#7B1FA2', 
+                mr: 2,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 }
+              }}>
+                <Assessment />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Monthly Testimonies
+                </Typography>
+                <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  {monthlyStats.totalTestimonies}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                  Across {monthlyStats.totalReports} services
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+      </Grid>
 
-{/* Summary Stats Cards - Using Monthly Stats */}
-<Grid container spacing={3} sx={{ mb: 3 }}>
-  <GridItem xs={12} md={3}>
-    <Card>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#64B5F6' : '#1976D2', mr: 2 }}>
-          <PeopleAlt />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
-          <Typography variant="h5">
-            {monthlyStats.totalMale + monthlyStats.totalFemale + monthlyStats.totalChildren}
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-            <Chip label={`M: ${monthlyStats.totalMale}`} size="small" color="primary" variant="outlined" />
-            <Chip label={`F: ${monthlyStats.totalFemale}`} size="small" color="secondary" variant="outlined" />
-            <Chip label={`C: ${monthlyStats.totalChildren}`} size="small" color="info" variant="outlined" />
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#81C784' : '#388E3C', mr: 2 }}>
-          <AttachMoney />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
-          <Typography variant="h5">₦{monthlyStats.totalOfferings.toLocaleString()}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            Avg: ₦{Math.round(monthlyStats.totalOfferings / Math.max(monthlyStats.totalReports, 1)).toLocaleString()} per service
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#FFB74D' : '#F57C00', mr: 2 }}>
-          <TrendingUp />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
-          <Typography variant="h5">{monthlyStats.totalFirstTimers}</Typography>
-          <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
-            <Chip 
-              label={`${monthlyStats.totalFirstTimersFollowedUp} followed`} 
-              size="small" 
-              color="success" 
-              variant="outlined" 
-            />
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#BA68C8' : '#7B1FA2', mr: 2 }}>
-          <Assessment />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Monthly Testimonies</Typography>
-          <Typography variant="h5">{monthlyStats.totalTestimonies}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            Across {monthlyStats.totalReports} services
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-</Grid>
-
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Attendance Trends Chart - Made Wider */}
         <GridItem xs={12}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Area Attendance Trends - {currentMonth}</Typography>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                Area Attendance Trends - {currentMonth}
+              </Typography>
               {attendanceData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={400}>
-                  <LineChart data={attendanceData}>
-                    <XAxis dataKey="week" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Line type="monotone" dataKey="male" name="Male" stroke="#2E7D32" />
-                    <Line type="monotone" dataKey="female" name="Female" stroke="#4CAF50" />
-                    <Line type="monotone" dataKey="children" name="Children" stroke="#66BB6A" />
-                    <Line type="monotone" dataKey="total" name="Total" stroke="#1B5E20" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
+                <Box sx={{ 
+                  width: '100%', 
+                  height: { xs: 300, sm: 350, md: 400 },
+                  overflow: 'hidden'
+                }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={attendanceData} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
+                      <XAxis 
+                        dataKey="week" 
+                        fontSize={isMobile ? 10 : 12}
+                        interval={isMobile ? 'preserveStartEnd' : 0}
+                      />
+                      <YAxis fontSize={isMobile ? 10 : 12} />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="male" name="Male" stroke="#2E7D32" />
+                      <Line type="monotone" dataKey="female" name="Female" stroke="#4CAF50" />
+                      <Line type="monotone" dataKey="children" name="Children" stroke="#66BB6A" />
+                      <Line type="monotone" dataKey="total" name="Total" stroke="#1B5E20" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
@@ -549,20 +639,30 @@ const AreaSupervisorDashboard: React.FC = () => {
         {/* Offerings Trend */}
         <GridItem xs={12} md={6}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 Offering Trends - {currentMonth}
               </Typography>
               {offeringTrends.length > 0 ? (
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={offeringTrends}>
-                    <XAxis dataKey="week" />
-                    <YAxis />
-                    <Tooltip formatter={(value) => [`₦${value.toLocaleString()}`, 'Amount']} />
-                    <Legend />
-                    <Bar dataKey="amount" name="Offering Amount" fill="#4CAF50" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <Box sx={{ 
+                  width: '100%', 
+                  height: { xs: 300, sm: 350, md: 400 },
+                  overflow: 'hidden'
+                }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={offeringTrends} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
+                      <XAxis 
+                        dataKey="week" 
+                        fontSize={isMobile ? 10 : 12}
+                        interval={isMobile ? 'preserveStartEnd' : 0}
+                      />
+                      <YAxis fontSize={isMobile ? 10 : 12} />
+                      <Tooltip formatter={(value) => [`₦${value.toLocaleString()}`, 'Amount']} />
+                      <Legend />
+                      <Bar dataKey="amount" name="Offering Amount" fill="#4CAF50" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
@@ -577,20 +677,32 @@ const AreaSupervisorDashboard: React.FC = () => {
         {/* First Timer Journey Tracking */}
         <GridItem xs={12} md={6}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>First Timer Journey - {currentMonth}</Typography>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                First Timer Journey - {currentMonth}
+              </Typography>
               {firstTimerData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={400}>
-                  <AreaChart data={firstTimerData}>
-                    <XAxis dataKey="week" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#2E7D32" stroke="#2E7D32" />
-                    <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#4CAF50" stroke="#4CAF50" />
-                    <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#66BB6A" stroke="#66BB6A" />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <Box sx={{ 
+                  width: '100%', 
+                  height: { xs: 300, sm: 350, md: 400 },
+                  overflow: 'hidden'
+                }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={firstTimerData} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
+                      <XAxis 
+                        dataKey="week" 
+                        fontSize={isMobile ? 10 : 12}
+                        interval={isMobile ? 'preserveStartEnd' : 0}
+                      />
+                      <YAxis fontSize={isMobile ? 10 : 12} />
+                      <Tooltip />
+                      <Legend />
+                      <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#2E7D32" stroke="#2E7D32" />
+                      <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#4CAF50" stroke="#4CAF50" />
+                      <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#66BB6A" stroke="#66BB6A" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </Box>
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">
@@ -605,33 +717,43 @@ const AreaSupervisorDashboard: React.FC = () => {
         {/* Centres Card */}
         <GridItem xs={12} md={6}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Supervised Centres</Typography>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                Supervised Centres
+              </Typography>
               {centres.length > 0 ? (
-                <TableContainer sx={{ maxHeight: 400 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Centre Name</TableCell>
-                        <TableCell>Location</TableCell>
-                        <TableCell>Leader</TableCell>
-                        <TableCell>Monthly Reports</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {centres.map((centre) => (
-                        <TableRow key={centre._id}>
-                          <TableCell>{centre.name || 'Unknown'}</TableCell>
-                          <TableCell>{centre.location || 'Unknown'}</TableCell>
-                          <TableCell>{centre.leaderName || 'TBD'}</TableCell>
-                          <TableCell>
-                            {reports.filter(r => r.cithCentreId?._id === centre._id).length}
-                          </TableCell>
+                <Box sx={{ overflow: 'auto', maxHeight: { xs: 300, sm: 400 } }}>
+                  <TableContainer>
+                    <Table size={isMobile ? "small" : "medium"}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Centre Name</TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>Location</TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>Leader</TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Monthly Reports</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {centres.map((centre) => (
+                          <TableRow key={centre._id}>
+                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                              {centre.name || 'Unknown'}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>
+                              {centre.location || 'Unknown'}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>
+                              {centre.leaderName || 'TBD'}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                              {reports.filter(r => r.cithCentreId?._id === centre._id).length}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
               ) : (
                 <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ py: 3 }}>
                   No centres assigned
@@ -644,56 +766,62 @@ const AreaSupervisorDashboard: React.FC = () => {
         {/* Pending Reports Card */}
         <GridItem xs={12} md={6}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 Reports Pending Approval
               </Typography>
               {pendingReports.length > 0 ? (
-                <TableContainer sx={{ maxHeight: 400 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>CITH Centre</TableCell>
-                        <TableCell>Week</TableCell>
-                        <TableCell>Attendance</TableCell>
-                        <TableCell>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {pendingReports.slice(0, 5).map((report) => (
-                        <TableRow key={report._id}>
-                          <TableCell>{report.cithCentreId?.name || 'Unknown Centre'}</TableCell>
-                          <TableCell>{new Date(report.week).toLocaleDateString()}</TableCell>
-                          <TableCell>
-                            {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
-                          </TableCell>
-                          <TableCell>
-                            <Box sx={{ display: 'flex', gap: 0.5 }}>
-                              <Button
-                                startIcon={<CheckCircle />}
-                                color="success"
-                                onClick={() => handleApprove(report._id)}
-                                size="small"
-                                variant="outlined"
-                              >
-                                Approve
-                              </Button>
-                              <Button
-                                startIcon={<Cancel />}
-                                color="error"
-                                onClick={() => handleReject(report._id)}
-                                size="small"
-                                variant="outlined"
-                              >
-                                Reject
-                              </Button>
-                            </Box>
-                          </TableCell>
+                <Box sx={{ overflow: 'auto', maxHeight: { xs: 300, sm: 400 } }}>
+                  <TableContainer>
+                    <Table size={isMobile ? "small" : "medium"}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>CITH Centre</TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>Week</TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Attendance</TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {pendingReports.slice(0, 5).map((report) => (
+                          <TableRow key={report._id}>
+                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                              {report.cithCentreId?.name || 'Unknown Centre'}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>
+                              {new Date(report.week).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                              {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
+                            </TableCell>
+                            <TableCell>
+                              <Box sx={{ display: 'flex', gap: 0.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                <Button
+                                  startIcon={<CheckCircle />}
+                                  color="success"
+                                  onClick={() => handleApprove(report._id)}
+                                  size="small"
+                                  variant="outlined"
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  startIcon={<Cancel />}
+                                  color="error"
+                                  onClick={() => handleReject(report._id)}
+                                  size="small"
+                                  variant="outlined"
+                                >
+                                  Reject
+                                </Button>
+                              </Box>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
               ) : (
                 <Typography variant="body2" color="textSecondary" sx={{ mt: 2, textAlign: 'center', py: 3 }}>
                   No pending reports
@@ -706,21 +834,29 @@ const AreaSupervisorDashboard: React.FC = () => {
         {/* Centre Performance Radar Chart - Moved to last position */}
         <GridItem xs={12}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Centre Performance Comparison - {currentMonth}</Typography>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                Centre Performance Comparison - {currentMonth}
+              </Typography>
               {centreComparisonData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={400}>
-                  <RadarChart outerRadius={120} data={centreComparisonData}>
-                    <PolarGrid />
-                    <PolarAngleAxis dataKey="name" />
-                    <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
-                    <Radar name="Attendance" dataKey="attendance" stroke="#2E7D32" fill="#2E7D32" fillOpacity={0.6} />
-                    <Radar name="Offerings" dataKey="offerings" stroke="#4CAF50" fill="#4CAF50" fillOpacity={0.6} />
-                    <Radar name="First Timers" dataKey="firstTimers" stroke="#66BB6A" fill="#66BB6A" fillOpacity={0.6} />
-                    <Legend />
-                    <Tooltip />
-                  </RadarChart>
-                </ResponsiveContainer>
+                <Box sx={{ 
+                  width: '100%', 
+                  height: { xs: 300, sm: 350, md: 400 },
+                  overflow: 'hidden'
+                }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart outerRadius={isMobile ? 80 : 120} data={centreComparisonData}>
+                      <PolarGrid />
+                      <PolarAngleAxis dataKey="name" fontSize={isMobile ? 10 : 12} />
+                      <PolarRadiusAxis angle={30} domain={[0, 'auto']} fontSize={isMobile ? 8 : 10} />
+                      <Radar name="Attendance" dataKey="attendance" stroke="#2E7D32" fill="#2E7D32" fillOpacity={0.6} />
+                      <Radar name="Offerings" dataKey="offerings" stroke="#4CAF50" fill="#4CAF50" fillOpacity={0.6} />
+                      <Radar name="First Timers" dataKey="firstTimers" stroke="#66BB6A" fill="#66BB6A" fillOpacity={0.6} />
+                      <Legend />
+                      <Tooltip />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </Box>
               ) : (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                   <Typography variant="body2" color="textSecondary">

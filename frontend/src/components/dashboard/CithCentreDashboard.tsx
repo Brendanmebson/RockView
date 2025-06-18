@@ -1,3 +1,4 @@
+// frontend/src/components/dashboard/CithCentreDashboard.tsx
 import React, { useEffect, useState } from 'react';
 import GridItem from '../common/GridItem';
 import {
@@ -19,6 +20,8 @@ import {
   Divider,
   CircularProgress,
   Alert,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { 
   Add, 
@@ -32,15 +35,18 @@ import {
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, 
          LineChart, Line, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { useTheme } from '@mui/material/styles';
 import api from '../../services/api';
 import { WeeklyReport, CithCentre, AreaSupervisor, District } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
+
 const CithCentreDashboard: React.FC = () => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const darkMode = theme.palette.mode === 'dark';
+  
   const [reports, setReports] = useState<WeeklyReport[]>([]);
   const [loading, setLoading] = useState(false);
   const [centreInfo, setCentreInfo] = useState<CithCentre | null>(null);
@@ -210,156 +216,248 @@ const CithCentreDashboard: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ 
+      width: '100%', 
+      maxWidth: '100%',
+      overflow: 'hidden',
+      px: { xs: 0, sm: 0 }
+    }}>
       {/* Context Banner */}
       <Paper 
         elevation={3} 
         sx={{ 
-          p: 2, 
+          p: { xs: 1.5, sm: 2 }, 
           mb: 3, 
           background: 'linear-gradient(90deg, #4A5568 0%, #2D3748 100%)',
           color: 'white',
           borderRadius: 2,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          flexWrap: 'wrap', 
+          gap: { xs: 1.5, sm: 2 },
+          justifyContent: { xs: 'space-between', sm: 'flex-start' }
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '100%', sm: 'auto' } }}>
             <LocationOn />
-            <Typography variant="subtitle1">
+            <Typography variant="subtitle1" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
               {centreInfo ? centreInfo.name : 'Loading...'}
             </Typography>
           </Box>
           
-          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+          {!isMobile && <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />}
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
             <Business />
-            <Typography variant="subtitle1">
+            <Typography variant="subtitle1" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
               {areaInfo ? areaInfo.name : 'Loading...'}
             </Typography>
           </Box>
           
-          <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />
+          {!isMobile && <Divider orientation="vertical" flexItem sx={{ bgcolor: 'rgba(255,255,255,0.2)' }} />}
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
             <Domain />
-            <Typography variant="subtitle1">
+            <Typography variant="subtitle1" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
               {districtInfo ? districtInfo.name : 'Loading...'}
             </Typography>
           </Box>
           
-          <Box sx={{ ml: 'auto' }}>
+          <Box sx={{ ml: { xs: 0, sm: 'auto' }, mt: { xs: 1, sm: 0 } }}>
             <Chip 
               label={currentMonth} 
               sx={{ 
                 bgcolor: 'primary.main', 
                 color: 'white',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                fontSize: { xs: '0.7rem', sm: '0.75rem' }
               }} 
             />
           </Box>
         </Box>
       </Paper>
 
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">CITH Centre Dashboard</Typography>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: { xs: 'flex-start', sm: 'center' }, 
+        mb: 3,
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 2, sm: 0 }
+      }}>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
+          CITH Centre Dashboard
+        </Typography>
         <Button
           variant="contained"
           startIcon={<Add />}
           onClick={() => navigate('/reports/new')}
+          size={isMobile ? "small" : "medium"}
         >
           Submit Report
         </Button>
       </Box>
 
-
-{/* Key Metrics - Monthly Stats */}
-<Grid container spacing={3} sx={{ mb: 3 }}>
-  <GridItem xs={12} md={3}>
-    <Card>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#64B5F6' : '#1976D2', mr: 2 }}>
-          <People />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Monthly Attendance</Typography>
-          <Typography variant="h5">{monthlyStats.totalAttendance}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {currentMonth}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#81C784' : '#388E3C', mr: 2 }}>
-          <AttachMoney />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Monthly Offerings</Typography>
-          <Typography variant="h5">₦{monthlyStats.totalOfferings.toLocaleString()}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {currentMonth}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#FFB74D' : '#F57C00', mr: 2 }}>
-          <TrendingUp />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Monthly First Timers</Typography>
-          <Typography variant="h5">{monthlyStats.totalFirstTimers}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {currentMonth}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#E57373' : '#D32F2F', mr: 2 }}>
-          <Assignment />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Reports Submitted</Typography>
-          <Typography variant="h5">{monthlyStats.totalReports}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {currentMonth}
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-</Grid>
+      {/* Key Metrics - Monthly Stats */}
+      <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 3 }}>
+        <GridItem xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Avatar sx={{ 
+                bgcolor: darkMode ? '#64B5F6' : '#1976D2', 
+                mr: 2,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 }
+              }}>
+                <People />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Monthly Attendance
+                </Typography>
+                <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  {monthlyStats.totalAttendance}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                  {currentMonth}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        <GridItem xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Avatar sx={{ 
+                bgcolor: darkMode ? '#81C784' : '#388E3C', 
+                mr: 2,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 }
+              }}>
+                <AttachMoney />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Monthly Offerings
+                </Typography>
+                <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  ₦{monthlyStats.totalOfferings.toLocaleString()}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                  {currentMonth}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        <GridItem xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Avatar sx={{ 
+                bgcolor: darkMode ? '#FFB74D' : '#F57C00', 
+                mr: 2,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 }
+              }}>
+                <TrendingUp />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Monthly First Timers
+                </Typography>
+                <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  {monthlyStats.totalFirstTimers}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                  {currentMonth}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+        
+        <GridItem xs={12} sm={6} md={3}>
+          <Card>
+            <CardContent sx={{ 
+              display: 'flex', 
+              alignItems: 'center',
+              p: { xs: 2, sm: 3 },
+              '&:last-child': { pb: { xs: 2, sm: 3 } }
+            }}>
+              <Avatar sx={{ 
+                bgcolor: darkMode ? '#E57373' : '#D32F2F', 
+                mr: 2,
+                width: { xs: 40, sm: 48 },
+                height: { xs: 40, sm: 48 }
+              }}>
+                <Assignment />
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  Reports Submitted
+                </Typography>
+                <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                  {monthlyStats.totalReports}
+                </Typography>
+                <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                  {currentMonth}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
+        </GridItem>
+      </Grid>
 
       {/* Charts Section */}
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Attendance Trend Line Chart - Made Wider */}
         <GridItem xs={12}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Monthly Attendance Trends</Typography>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={attendanceData}>
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" activeDot={{ r: 8 }} />
-                  <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" />
-                  <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" />
-                  <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                Monthly Attendance Trends
+              </Typography>
+              <Box sx={{ 
+                width: '100%', 
+                height: { xs: 300, sm: 350, md: 400 },
+                overflow: 'hidden'
+              }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={attendanceData} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
+                    <XAxis 
+                      dataKey="week" 
+                      fontSize={isMobile ? 10 : 12}
+                      interval={isMobile ? 'preserveStartEnd' : 0}
+                    />
+                    <YAxis fontSize={isMobile ? 10 : 12} />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" activeDot={{ r: isMobile ? 4 : 8 }} />
+                    <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" />
+                    <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" />
+                    <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
             </CardContent>
           </Card>
         </GridItem>
@@ -367,28 +465,36 @@ const CithCentreDashboard: React.FC = () => {
         {/* Demographic Pie Chart - Made Larger */}
         <GridItem xs={12} md={6}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Monthly Demographics Distribution</Typography>
-              <ResponsiveContainer width="100%" height={400}>
-                <PieChart>
-                  <Pie
-                    data={demographicData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
-                    outerRadius={120}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {demographicData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value) => [value, 'Count']} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                Monthly Demographics Distribution
+              </Typography>
+              <Box sx={{ 
+                width: '100%', 
+                height: { xs: 300, sm: 350, md: 400 },
+                overflow: 'hidden'
+              }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={demographicData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={!isMobile ? ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)` : false}
+                      outerRadius={isMobile ? 100 : 120}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {demographicData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [value, 'Count']} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Box>
             </CardContent>
           </Card>
         </GridItem>
@@ -396,17 +502,29 @@ const CithCentreDashboard: React.FC = () => {
         {/* Offerings Bar Chart */}
         <GridItem xs={12} md={6}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Weekly Offering Trends</Typography>
-              <ResponsiveContainer width="100%" height={400}>
-                <BarChart data={offeringData}>
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`₦${value.toLocaleString()}`, 'Amount']} />
-                  <Legend />
-                  <Bar dataKey="amount" name="Offering Amount" fill="#8884d8" />
-                </BarChart>
-              </ResponsiveContainer>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                Weekly Offering Trends
+              </Typography>
+              <Box sx={{ 
+                width: '100%', 
+                height: { xs: 300, sm: 350, md: 400 },
+                overflow: 'hidden'
+              }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={offeringData} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
+                    <XAxis 
+                      dataKey="week" 
+                      fontSize={isMobile ? 10 : 12}
+                      interval={isMobile ? 'preserveStartEnd' : 0}
+                    />
+                    <YAxis fontSize={isMobile ? 10 : 12} />
+                    <Tooltip formatter={(value) => [`₦${value.toLocaleString()}`, 'Amount']} />
+                    <Legend />
+                    <Bar dataKey="amount" name="Offering Amount" fill="#8884d8" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Box>
             </CardContent>
           </Card>
         </GridItem>
@@ -414,19 +532,31 @@ const CithCentreDashboard: React.FC = () => {
         {/* First Timer Conversion Funnel */}
         <GridItem xs={12}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>First Timer Journey Tracking</Typography>
-              <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={firstTimerData}>
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#8884d8" stroke="#8884d8" />
-                  <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#82ca9d" stroke="#82ca9d" />
-                  <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#ffc658" stroke="#ffc658" />
-                </AreaChart>
-              </ResponsiveContainer>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+                First Timer Journey Tracking
+              </Typography>
+              <Box sx={{ 
+                width: '100%', 
+                height: { xs: 300, sm: 350, md: 400 },
+                overflow: 'hidden'
+              }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={firstTimerData} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
+                    <XAxis 
+                      dataKey="week" 
+                      fontSize={isMobile ? 10 : 12}
+                      interval={isMobile ? 'preserveStartEnd' : 0}
+                    />
+                    <YAxis fontSize={isMobile ? 10 : 12} />
+                    <Tooltip />
+                    <Legend />
+                    <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#8884d8" stroke="#8884d8" />
+                    <Area type="monotone" dataKey="followedUp" name="Followed Up" stackId="2" fill="#82ca9d" stroke="#82ca9d" />
+                    <Area type="monotone" dataKey="converted" name="Converted" stackId="3" fill="#ffc658" stroke="#ffc658" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </Box>
             </CardContent>
           </Card>
         </GridItem>
@@ -434,54 +564,61 @@ const CithCentreDashboard: React.FC = () => {
         {/* Recent Reports Table */}
         <GridItem xs={12}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
+            <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+              <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 Recent Reports ({currentMonth})
               </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Week</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Total Attendance</TableCell>
-                      <TableCell>Offerings</TableCell>
-                      <TableCell>First Timers</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {reports.map((report) => (
-                      <TableRow key={report._id}>
-                        <TableCell>
-                          {new Date(report.week).toDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={report.status.replace('_', ' ').toUpperCase()}
-                            color={getStatusColor(report.status)}
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {report.data.male + report.data.female + report.data.children}
-                        </TableCell>
-                        <TableCell>₦{report.data.offerings.toLocaleString()}</TableCell>
-                        <TableCell>{report.data.numberOfFirstTimers}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="small"
-                            onClick={() => navigate(`/reports/${report._id}`)}
-                            variant="outlined"
-                          >
-                            View
-                          </Button>
-                        </TableCell>
+              <Box sx={{ overflow: 'auto' }}>
+                <TableContainer>
+                  <Table size={isMobile ? "small" : "medium"}>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Week</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Total Attendance</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Offerings</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>First Timers</TableCell>
+                        <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {reports.map((report) => (
+                        <TableRow key={report._id}>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                            {new Date(report.week).toDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Chip
+                              label={report.status.replace('_', ' ').toUpperCase()}
+                              color={getStatusColor(report.status)}
+                              size="small"
+                              sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                            />
+                          </TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                            {report.data.male + report.data.female + report.data.children}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                            ₦{report.data.offerings.toLocaleString()}
+                          </TableCell>
+                          <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>
+                            {report.data.numberOfFirstTimers}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="small"
+                              onClick={() => navigate(`/reports/${report._id}`)}
+                              variant="outlined"
+                            >
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
               {reports.length === 0 && !loading && (
                 <Typography variant="body2" sx={{ textAlign: 'center', py: 3 }}>
                   No reports found for {currentMonth}. Submit your first report to see data.

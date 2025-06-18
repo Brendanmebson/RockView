@@ -1,6 +1,7 @@
+// frontend/src/components/common/AnimatedComponents.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Box, Card, CardProps } from '@mui/material';
+import { Box, Card, CardProps, useMediaQuery, useTheme } from '@mui/material';
 
 // Animated Card component
 export const AnimatedCard: React.FC<CardProps & { delay?: number }> = ({ 
@@ -8,6 +9,13 @@ export const AnimatedCard: React.FC<CardProps & { delay?: number }> = ({
   delay = 0,
   ...props 
 }) => {
+  const theme = useTheme();
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  
+  if (prefersReducedMotion) {
+    return <Card {...props}>{children}</Card>;
+  }
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -24,6 +32,12 @@ export const AnimatedBox: React.FC<{ children: React.ReactNode; delay?: number }
   children, 
   delay = 0 
 }) => {
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  
+  if (prefersReducedMotion) {
+    return <>{children}</>;
+  }
+  
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -37,12 +51,19 @@ export const AnimatedBox: React.FC<{ children: React.ReactNode; delay?: number }
 
 // Animated Page Container
 export const PageContainer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  
+  if (prefersReducedMotion) {
+    return <div style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>{children}</div>;
+  }
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.3 }}
+      style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}
     >
       {children}
     </motion.div>
@@ -51,6 +72,12 @@ export const PageContainer: React.FC<{ children: React.ReactNode }> = ({ childre
 
 // Floating Animation for decorative elements
 export const FloatingElement: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
+  
+  if (prefersReducedMotion) {
+    return <>{children}</>;
+  }
+  
   return (
     <motion.div
       animate={{ 

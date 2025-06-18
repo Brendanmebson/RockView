@@ -22,6 +22,8 @@ import {
   Chip,
   Collapse,
   Button,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -50,14 +52,19 @@ import darkLogo from '../../assets/dark-logo.png';
 
 const drawerWidth = 280;
 const collapsedDrawerWidth = 70;
+const mobileDrawerWidth = 250;
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  
   const [mobileOpen, setMobileOpen] = React.useState(false);
-  const [collapsed, setCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(isMobile);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -67,7 +74,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const currentDrawerWidth = collapsed ? collapsedDrawerWidth : drawerWidth;
+  const currentDrawerWidth = isMobile ? mobileDrawerWidth : (collapsed ? collapsedDrawerWidth : drawerWidth);
+
+  // Auto-collapse on mobile
+  useEffect(() => {
+    if (isMobile && !collapsed) {
+      setCollapsed(true);
+    }
+  }, [isMobile]);
 
   useEffect(() => {
     fetchUnreadCount();
@@ -90,7 +104,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const fetchNotifications = async () => {
     try {
-      // Mock notifications for now - you can implement actual notifications endpoint
       setNotifications([
         {
           id: 1,
@@ -117,7 +130,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const handleDrawerCollapse = () => {
-    setCollapsed(!collapsed);
+    if (!isMobile) {
+      setCollapsed(!collapsed);
+    }
   };
 
   const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -155,28 +170,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         text: 'Dashboard', 
         icon: <Dashboard />, 
         path: '/dashboard', 
-        color: darkMode ? '#64B5F6' : '#1976D2', // Blue
+        color: darkMode ? '#64B5F6' : '#1976D2',
         badge: 0 
       },
       { 
         text: 'Reports', 
         icon: <BarChart />, 
         path: '/reports', 
-        color: darkMode ? '#81C784' : '#388E3C', // Green
+        color: darkMode ? '#81C784' : '#388E3C',
         badge: 0 
       },
       { 
         text: 'Messages', 
         icon: <Message />, 
         path: '/messages', 
-        color: darkMode ? '#FFB74D' : '#F57C00', // Orange
+        color: darkMode ? '#FFB74D' : '#F57C00',
         badge: unreadCount 
       },
       { 
         text: 'Settings', 
         icon: <Settings />, 
         path: '/settings', 
-        color: darkMode ? '#A1A1A1' : '#616161', // Grey
+        color: darkMode ? '#A1A1A1' : '#616161',
         badge: 0 
       },
     ];
@@ -189,35 +204,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             text: 'Districts', 
             icon: <Building size={20} />, 
             path: '/districts', 
-            color: darkMode ? '#E57373' : '#D32F2F', // Red
+            color: darkMode ? '#E57373' : '#D32F2F',
             badge: 0 
           },
           { 
             text: 'Zonal Supervisors', 
             icon: <Users size={20} />, 
             path: '/zonal-supervisors', 
-            color: darkMode ? '#BA68C8' : '#7B1FA2', // Purple
+            color: darkMode ? '#BA68C8' : '#7B1FA2',
             badge: 0 
           },
           { 
             text: 'Area Supervisors', 
             icon: <MapPin size={20} />, 
             path: '/area-supervisors', 
-            color: darkMode ? '#4FC3F7' : '#0288D1', // Light Blue
+            color: darkMode ? '#4FC3F7' : '#0288D1',
             badge: 0 
           },
           { 
             text: 'CITH Centres', 
             icon: <Home size={20} />, 
             path: '/cith-centres', 
-            color: darkMode ? '#FFD54F' : '#FFA000', // Amber
+            color: darkMode ? '#FFD54F' : '#FFA000',
             badge: 0 
           },
           { 
             text: 'Users', 
             icon: <People />, 
             path: '/admin/users', 
-            color: darkMode ? '#FF8A65' : '#E64A19', // Deep Orange
+            color: darkMode ? '#FF8A65' : '#E64A19',
             badge: 0 
           },
         ];
@@ -228,21 +243,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             text: 'Zonal Supervisors', 
             icon: <Users size={20} />, 
             path: '/zonal-supervisors', 
-            color: darkMode ? '#BA68C8' : '#7B1FA2', // Purple
+            color: darkMode ? '#BA68C8' : '#7B1FA2',
             badge: 0 
           },
           { 
             text: 'Area Supervisors', 
             icon: <MapPin size={20} />, 
             path: '/area-supervisors', 
-            color: darkMode ? '#4FC3F7' : '#0288D1', // Light Blue
+            color: darkMode ? '#4FC3F7' : '#0288D1',
             badge: 0 
           },
           { 
             text: 'CITH Centres', 
             icon: <Home size={20} />, 
             path: '/cith-centres', 
-            color: darkMode ? '#FFD54F' : '#FFA000', // Amber
+            color: darkMode ? '#FFD54F' : '#FFA000',
             badge: 0 
           },
         ];
@@ -253,14 +268,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             text: 'Area Supervisors', 
             icon: <MapPin size={20} />, 
             path: '/area-supervisors', 
-            color: darkMode ? '#4FC3F7' : '#0288D1', // Light Blue
+            color: darkMode ? '#4FC3F7' : '#0288D1',
             badge: 0 
           },
           { 
             text: 'CITH Centres', 
             icon: <Home size={20} />, 
             path: '/cith-centres', 
-            color: darkMode ? '#FFD54F' : '#FFA000', // Amber
+            color: darkMode ? '#FFD54F' : '#FFA000',
             badge: 0 
           },
         ];
@@ -271,7 +286,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             text: 'CITH Centres', 
             icon: <Home size={20} />, 
             path: '/cith-centres', 
-            color: darkMode ? '#FFD54F' : '#FFA000', // Amber
+            color: darkMode ? '#FFD54F' : '#FFA000',
             badge: 0 
           },
         ];
@@ -305,34 +320,47 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const renderUserContext = () => {
-    if (!user || collapsed) return null;
+    if (!user || (collapsed && !isMobile)) return null;
 
     const contextItemColor = darkMode ? '#A5D6A7' : '#2E7D32';
 
     return (
-      <Box sx={{ p: 2, background: 'rgba(0,0,0,0.03)', borderRadius: 2, m: 2, mt: 0 }}>
-        <Typography variant="subtitle2" color="textSecondary" gutterBottom>
+      <Box sx={{ 
+        p: { xs: 1.5, sm: 2 }, 
+        background: 'rgba(0,0,0,0.03)', 
+        borderRadius: 2, 
+        m: { xs: 1, sm: 2 }, 
+        mt: 0,
+        display: collapsed && !isMobile ? 'none' : 'block'
+      }}>
+        <Typography variant="subtitle2" color="textSecondary" gutterBottom sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
           Your Church Information
         </Typography>
         
         {userCentre && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <Home size={16} color={contextItemColor} />
-            <Typography variant="body2">{userCentre.name}</Typography>
+            <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+              {userCentre.name}
+            </Typography>
           </Box>
         )}
         
         {userArea && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <MapPin size={16} color={contextItemColor} />
-            <Typography variant="body2">{userArea.name}</Typography>
+            <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+              {userArea.name}
+            </Typography>
           </Box>
         )}
         
         {userDistrict && (
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Building size={16} color={contextItemColor} />
-            <Typography variant="body2">{userDistrict.name}</Typography>
+            <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+              {userDistrict.name}
+            </Typography>
           </Box>
         )}
       </Box>
@@ -346,28 +374,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       transition={{ duration: 0.3 }}
     >
       <Box sx={{ 
-        p: collapsed ? 1 : 3, 
+        p: collapsed && !isMobile ? 1 : { xs: 2, sm: 3 }, 
         textAlign: 'center', 
         background: darkMode 
           ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
           : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
-        minHeight: collapsed ? 70 : 'auto'
+        minHeight: collapsed && !isMobile ? 70 : 'auto'
       }}>
         <motion.div
-          whileHover={{ scale: collapsed ? 1 : 1.1 }}
+          whileHover={{ scale: (!collapsed || isMobile) ? 1.1 : 1 }}
           transition={{ type: 'spring', stiffness: 300 }}
         >
           <Box
             sx={{
-              width: collapsed ? 40 : 60,
-              height: collapsed ? 40 : 60,
+              width: collapsed && !isMobile ? 40 : { xs: 50, sm: 60 },
+              height: collapsed && !isMobile ? 40 : { xs: 50, sm: 60 },
               borderRadius: '50%',
               background: 'rgba(255,255,255,0.1)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               mx: 'auto',
-              mb: collapsed ? 0 : 2,
+              mb: collapsed && !isMobile ? 0 : { xs: 1.5, sm: 2 },
               overflow: 'hidden',
             }}
           >
@@ -375,31 +403,34 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               src={darkMode ? darkLogo : lightLogo} 
               alt="House on the Rock" 
               style={{
-                width: collapsed ? 30 : 50,
-                height: collapsed ? 30 : 50,
+                width: collapsed && !isMobile ? 30 : isMobile ? 40 : 50,
+                height: collapsed && !isMobile ? 30 : isMobile ? 40 : 50,
                 objectFit: 'contain'
               }}
             />
           </Box>
         </motion.div>
-        {!collapsed && (
+        {(!collapsed || isMobile) && (
           <>
-            <Typography variant="h5" color="white" fontWeight="bold">
+            <Typography variant="h5" color="white" fontWeight="bold" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               RockView
             </Typography>
-            <Typography variant="caption" color="rgba(255,255,255,0.7)">
+            <Typography variant="caption" color="rgba(255,255,255,0.7)" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
               Church Attendance System
             </Typography>
           </>
         )}
       </Box>
       
-      {!collapsed && (
-        <Box sx={{ p: 2, background: darkMode ? 'rgba(255,255,255,0.05)' : '#f8f9fa' }}>
-          <Typography variant="body2" color="textSecondary" textAlign="center">
+      {(!collapsed || isMobile) && (
+        <Box sx={{ 
+          p: { xs: 1.5, sm: 2 }, 
+          background: darkMode ? 'rgba(255,255,255,0.05)' : '#f8f9fa' 
+        }}>
+          <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
             {getWelcomeMessage()}, {user?.name?.split(' ')[0]}!
           </Typography>
-          <Typography variant="caption" color="textSecondary" textAlign="center" display="block">
+          <Typography variant="caption" color="textSecondary" textAlign="center" display="block" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
             {getRoleDisplayName(user?.role || '')}
           </Typography>
         </Box>
@@ -407,7 +438,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {renderUserContext()}
 
-      <List sx={{ px: collapsed ? 1 : 2 }}>
+      <List sx={{ px: collapsed && !isMobile ? 1 : { xs: 1, sm: 2 } }}>
         <AnimatePresence>
           {menuItems.map((item, index) => (
             <motion.div
@@ -417,14 +448,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               transition={{ delay: index * 0.1 }}
             >
               <ListItem disablePadding sx={{ mb: 1 }}>
-                <Tooltip title={collapsed ? item.text : ''} placement="right">
+                <Tooltip title={(collapsed && !isMobile) ? item.text : ''} placement="right">
                   <ListItemButton
                     onClick={() => navigate(item.path)}
                     selected={location.pathname === item.path}
                     sx={{
                       borderRadius: 3,
-                      py: 1.5,
-                      justifyContent: collapsed ? 'center' : 'flex-start',
+                      py: { xs: 1, sm: 1.5 },
+                      justifyContent: (collapsed && !isMobile) ? 'center' : 'flex-start',
                       '&.Mui-selected': {
                         background: `${item.color}20`,
                         '&:hover': {
@@ -438,7 +469,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   >
                     <ListItemIcon sx={{ 
                       color: item.color, 
-                      minWidth: collapsed ? 'auto' : 40,
+                      minWidth: (collapsed && !isMobile) ? 'auto' : { xs: 35, sm: 40 },
                       justifyContent: 'center'
                     }}>
                       {item.badge && item.badge > 0 ? (
@@ -449,12 +480,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         item.icon
                       )}
                     </ListItemIcon>
-                    {!collapsed && (
+                    {(!collapsed || isMobile) && (
                       <ListItemText 
                         primary={item.text}
                         primaryTypographyProps={{
                           variant: 'body2',
                           fontWeight: location.pathname === item.path ? 600 : 400,
+                          fontSize: { xs: '0.8rem', sm: '0.875rem' }
                         }}
                       />
                     )}
@@ -466,38 +498,44 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </AnimatePresence>
       </List>
       
-      <Divider sx={{ mx: collapsed ? 1 : 2, my: 2 }} />
+      <Divider sx={{ mx: (collapsed && !isMobile) ? 1 : { xs: 1, sm: 2 }, my: 2 }} />
       
-      <Box sx={{ display: { xs: 'none', sm: 'flex' }, justifyContent: 'center', p: 1 }}>
-        <IconButton 
-          onClick={handleDrawerCollapse}
-          sx={{ 
-            bgcolor: 'action.hover',
-            '&:hover': {
-              bgcolor: 'action.selected',
-            }
-          }}
-        >
-          {collapsed ? <ChevronRight /> : <ChevronLeft />}
-        </IconButton>
-      </Box>
+      {!isMobile && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
+          <IconButton 
+            onClick={handleDrawerCollapse}
+            sx={{ 
+              bgcolor: 'action.hover',
+              '&:hover': {
+                bgcolor: 'action.selected',
+              }
+            }}
+          >
+            {collapsed ? <ChevronRight /> : <ChevronLeft />}
+          </IconButton>
+        </Box>
+      )}
     </motion.div>
   );
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
   return (
-    <Box sx={{ display: 'flex' }}>
+    <Box sx={{ display: 'flex', width: '100%', overflow: 'hidden' }}>
       <CssBaseline />
       <AppBar
         position="fixed"
         sx={{
-          width: { sm: `calc(100% - ${currentDrawerWidth}px)` },
+          width: { 
+            xs: '100%',
+            sm: `calc(100% - ${currentDrawerWidth}px)` 
+          },
           ml: { sm: `${currentDrawerWidth}px` },
           transition: 'width 0.3s, margin-left 0.3s',
+          zIndex: theme.zIndex.drawer + 1,
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
@@ -507,7 +545,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" component="div" sx={{ 
+            flexGrow: 1,
+            fontSize: { xs: '1rem', sm: '1.25rem' }
+          }}>
             {location.pathname === '/dashboard' && '🏠 '}
             {location.pathname === '/reports' && '📊 '}
             {location.pathname === '/messages' && '💬 '}
@@ -518,7 +559,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {location.pathname.charAt(1).toUpperCase() + location.pathname.slice(2).replace('-', ' ')}
           </Typography>
           
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
             <Tooltip title="Messages">
               <IconButton color="inherit" onClick={() => navigate('/messages')}>
                 <Badge badgeContent={unreadCount} color="error">
@@ -541,13 +582,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             >
               <Avatar 
                 sx={{ 
-                  width: 40, 
-                  height: 40,
+                  width: { xs: 35, sm: 40 }, 
+                  height: { xs: 35, sm: 40 },
                   background: darkMode 
                     ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
                     : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
                   color: 'white',
                   fontWeight: 'bold',
+                  fontSize: { xs: '0.9rem', sm: '1rem' }
                 }}
               >
                 {user?.name?.charAt(0)}
@@ -567,6 +609,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   borderRadius: 2,
                   boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                   mt: 1,
+                  minWidth: { xs: 200, sm: 250 }
                 },
               }}
             >
@@ -575,8 +618,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <Settings fontSize="small" />
                 </ListItemIcon>
                 <Box>
-                  <Typography variant="body2">Profile Settings</Typography>
-                  <Typography variant="caption" color="textSecondary">
+                  <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                    Profile Settings
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     {user?.email}
                   </Typography>
                 </Box>
@@ -586,7 +631,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <ListItemIcon>
                   <ExitToApp fontSize="small" sx={{ color: 'error.main' }} />
                 </ListItemIcon>
-                <Typography variant="body2">Sign Out</Typography>
+                <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                  Sign Out
+                </Typography>
               </MenuItem>
             </Menu>
 
@@ -603,13 +650,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   borderRadius: 2,
                   boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
                   mt: 1,
-                  maxWidth: 350,
-                  minWidth: 300,
+                  maxWidth: { xs: 280, sm: 350 },
+                  minWidth: { xs: 250, sm: 300 },
                 },
               }}
             >
               <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-                <Typography variant="h6">Notifications</Typography>
+                <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+                  Notifications
+                </Typography>
               </Box>
               {notifications.length === 0 ? (
                 <MenuItem>
@@ -622,17 +671,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <MenuItem key={notification.id} sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
                     <Box sx={{ width: '100%' }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <Typography variant="body2" fontWeight={notification.read ? 400 : 600}>
+                        <Typography variant="body2" fontWeight={notification.read ? 400 : 600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                           {notification.title}
                         </Typography>
                         {!notification.read && (
                           <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', ml: 1 }} />
                         )}
                       </Box>
-                      <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block' }}>
+                      <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                         {notification.message}
                       </Typography>
-                      <Typography variant="caption" color="textSecondary">
+                      <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
                         {notification.time.toLocaleTimeString()}
                       </Typography>
                     </Box>
@@ -667,7 +716,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             display: { xs: 'block', sm: 'none' },
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
-              width: drawerWidth,
+              width: mobileDrawerWidth,
             },
           }}
         >
@@ -694,10 +743,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         component="main"
         sx={{ 
           flexGrow: 1, 
-          p: 3, 
-          width: { sm: `calc(100% - ${currentDrawerWidth}px)` },
+          p: { xs: 2, sm: 3 }, 
+          width: { 
+            xs: '100%',
+            sm: `calc(100% - ${currentDrawerWidth}px)` 
+          },
           minHeight: '100vh',
           transition: 'width 0.3s',
+          overflow: 'hidden',
+          maxWidth: '100%',
         }}
       >
         <Toolbar />

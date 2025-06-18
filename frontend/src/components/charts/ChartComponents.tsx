@@ -27,6 +27,7 @@ import {
   Area,
   ComposedChart,
 } from 'recharts';
+import { Box, useTheme, useMediaQuery } from '@mui/material';
 
 interface ChartContainerProps {
   title: string;
@@ -39,41 +40,78 @@ export const ChartContainer: React.FC<ChartContainerProps> = ({
   height = 300, 
   children 
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  
+  const responsiveHeight = isMobile ? Math.max(250, height * 0.8) : isTablet ? Math.max(280, height * 0.9) : height;
+  
   return (
-    <div>
-      <h4 style={{ marginBottom: '10px' }}>{title}</h4>
-      <div style={{ width: '100%', height: height }}>
-        <ResponsiveContainer>
+    <Box sx={{ width: '100%', mb: 2 }}>
+      <Box component="h4" sx={{ 
+        marginBottom: { xs: 1, sm: 2 }, 
+        fontSize: { xs: '1rem', sm: '1.1rem', md: '1.25rem' },
+        fontWeight: 500,
+        color: 'text.primary',
+        m: 0,
+        mb: { xs: 1, sm: 2 }
+      }}>
+        {title}
+      </Box>
+      <Box sx={{ 
+        width: '100%', 
+        height: responsiveHeight,
+        minHeight: { xs: 250, sm: 280, md: responsiveHeight },
+        '& .recharts-wrapper': {
+          width: '100% !important',
+          height: '100% !important'
+        }
+      }}>
+        <ResponsiveContainer width="100%" height="100%">
           {children}
         </ResponsiveContainer>
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 
 // CITH Centre Level Charts (Basic)
 export const SimpleAttendanceChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="Attendance Trends">
-      <LineChart data={data}>
+      <LineChart data={data} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="week" />
-        <YAxis />
+        <XAxis 
+          dataKey="week" 
+          fontSize={isMobile ? 10 : 12}
+          interval={isMobile ? 'preserveStartEnd' : 0}
+        />
+        <YAxis fontSize={isMobile ? 10 : 12} />
         <Tooltip />
         <Legend />
-        <Line type="monotone" dataKey="total" name="Total Attendance" stroke="#8884d8" activeDot={{ r: 8 }} />
+        <Line type="monotone" dataKey="total" name="Total Attendance" stroke="#8884d8" activeDot={{ r: isMobile ? 4 : 8 }} />
       </LineChart>
     </ChartContainer>
   );
 };
 
 export const SimpleOfferingChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="Offering History">
-      <BarChart data={data}>
+      <BarChart data={data} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="week" />
-        <YAxis />
+        <XAxis 
+          dataKey="week" 
+          fontSize={isMobile ? 10 : 12}
+          interval={isMobile ? 'preserveStartEnd' : 0}
+        />
+        <YAxis fontSize={isMobile ? 10 : 12} />
         <Tooltip />
         <Legend />
         <Bar dataKey="amount" name="Offering Amount" fill="#82ca9d" />
@@ -83,6 +121,8 @@ export const SimpleOfferingChart = ({ data }: { data: any[] }) => {
 };
 
 export const SimpleDemographicsChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
   
   return (
@@ -93,8 +133,8 @@ export const SimpleDemographicsChart = ({ data }: { data: any[] }) => {
           cx="50%"
           cy="50%"
           labelLine={false}
-          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-          outerRadius={80}
+          label={isMobile ? false : ({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+          outerRadius={isMobile ? 60 : 80}
           fill="#8884d8"
           dataKey="value"
         >
@@ -103,6 +143,7 @@ export const SimpleDemographicsChart = ({ data }: { data: any[] }) => {
           ))}
         </Pie>
         <Tooltip />
+        {!isMobile && <Legend />}
       </PieChart>
     </ChartContainer>
   );
@@ -110,30 +151,40 @@ export const SimpleDemographicsChart = ({ data }: { data: any[] }) => {
 
 // Area Supervisor Level Charts (Intermediate)
 export const DetailedAttendanceChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="Detailed Attendance Breakdown">
-      <LineChart data={data}>
+      <LineChart data={data} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="week" />
-        <YAxis />
+        <XAxis 
+          dataKey="week" 
+          fontSize={isMobile ? 10 : 12}
+          interval={isMobile ? 'preserveStartEnd' : 0}
+        />
+        <YAxis fontSize={isMobile ? 10 : 12} />
         <Tooltip />
         <Legend />
-        <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" />
-        <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" />
-        <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" />
-        <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={2} />
+        <Line type="monotone" dataKey="male" name="Male" stroke="#8884d8" strokeWidth={isMobile ? 1 : 2} />
+        <Line type="monotone" dataKey="female" name="Female" stroke="#82ca9d" strokeWidth={isMobile ? 1 : 2} />
+        <Line type="monotone" dataKey="children" name="Children" stroke="#ffc658" strokeWidth={isMobile ? 1 : 2} />
+        <Line type="monotone" dataKey="total" name="Total" stroke="#ff7300" strokeWidth={isMobile ? 2 : 3} />
       </LineChart>
     </ChartContainer>
   );
 };
 
 export const CentreComparisonChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="Centre Performance Comparison">
-      <RadarChart outerRadius={90} data={data}>
+      <RadarChart outerRadius={isMobile ? 60 : 90} data={data}>
         <PolarGrid />
-        <PolarAngleAxis dataKey="name" />
-        <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
+        <PolarAngleAxis dataKey="name" fontSize={isMobile ? 10 : 12} />
+        <PolarRadiusAxis angle={30} domain={[0, 'auto']} fontSize={isMobile ? 8 : 10} />
         <Radar name="Attendance" dataKey="attendance" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
         <Radar name="Offerings" dataKey="offerings" stroke="#82ca9d" fill="#82ca9d" fillOpacity={0.6} />
         <Radar name="First Timers" dataKey="firstTimers" stroke="#ffc658" fill="#ffc658" fillOpacity={0.6} />
@@ -145,12 +196,19 @@ export const CentreComparisonChart = ({ data }: { data: any[] }) => {
 };
 
 export const FirstTimerFunnelChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="First Timer Conversion Funnel">
-      <AreaChart data={data}>
+      <AreaChart data={data} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="week" />
-        <YAxis />
+        <XAxis 
+          dataKey="week" 
+          fontSize={isMobile ? 10 : 12}
+          interval={isMobile ? 'preserveStartEnd' : 0}
+        />
+        <YAxis fontSize={isMobile ? 10 : 12} />
         <Tooltip />
         <Legend />
         <Area type="monotone" dataKey="firstTimers" name="First Timers" stackId="1" fill="#8884d8" stroke="#8884d8" />
@@ -163,12 +221,22 @@ export const FirstTimerFunnelChart = ({ data }: { data: any[] }) => {
 
 // District Pastor Level Charts (Advanced)
 export const AreaPerformanceChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="Area Performance Comparison">
-      <BarChart data={data}>
+      <BarChart data={data} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis />
+        <XAxis 
+          dataKey="name" 
+          fontSize={isMobile ? 10 : 12}
+          interval={0}
+          angle={isMobile ? -45 : 0}
+          textAnchor={isMobile ? 'end' : 'middle'}
+          height={isMobile ? 60 : 30}
+        />
+        <YAxis fontSize={isMobile ? 10 : 12} />
         <Tooltip />
         <Legend />
         <Bar dataKey="attendance" name="Attendance" fill="#8884d8" />
@@ -181,13 +249,20 @@ export const AreaPerformanceChart = ({ data }: { data: any[] }) => {
 };
 
 export const DistrictGrowthChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="District Growth Metrics">
-      <ComposedChart data={data}>
+      <ComposedChart data={data} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="week" />
-        <YAxis yAxisId="left" />
-        <YAxis yAxisId="right" orientation="right" />
+        <XAxis 
+          dataKey="week" 
+          fontSize={isMobile ? 10 : 12}
+          interval={isMobile ? 'preserveStartEnd' : 0}
+        />
+        <YAxis yAxisId="left" fontSize={isMobile ? 10 : 12} />
+        <YAxis yAxisId="right" orientation="right" fontSize={isMobile ? 10 : 12} />
         <Tooltip />
         <Legend />
         <Bar yAxisId="left" dataKey="total" name="Total Attendance" fill="#8884d8" />
@@ -199,14 +274,16 @@ export const DistrictGrowthChart = ({ data }: { data: any[] }) => {
 };
 
 export const ConversionFunnelChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
   
   return (
     <ChartContainer title="Conversion Rate Analysis">
-      <BarChart data={data} layout="vertical">
+      <BarChart data={data} layout="vertical" margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis type="number" />
-        <YAxis type="category" dataKey="name" />
+        <XAxis type="number" fontSize={isMobile ? 10 : 12} />
+        <YAxis type="category" dataKey="name" fontSize={isMobile ? 10 : 12} />
         <Tooltip />
         <Legend />
         <Bar dataKey="value" fill="#8884d8">
@@ -221,13 +298,28 @@ export const ConversionFunnelChart = ({ data }: { data: any[] }) => {
 
 // Admin Level Charts (Most Complex)
 export const CentrePerformanceScatterChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="Centre Performance Analysis" height={400}>
-      <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+      <ScatterChart margin={{ top: 20, right: isMobile ? 10 : 20, bottom: 20, left: isMobile ? 10 : 20 }}>
         <CartesianGrid />
-        <XAxis type="number" dataKey="attendance" name="Attendance" unit=" people" />
-        <YAxis type="number" dataKey="offerings" name="Offerings" unit=" ₦" />
-        <ZAxis type="number" dataKey="firstTimers" range={[40, 160]} name="First Timers" />
+        <XAxis 
+          type="number" 
+          dataKey="attendance" 
+          name="Attendance" 
+          unit=" people" 
+          fontSize={isMobile ? 10 : 12}
+        />
+        <YAxis 
+          type="number" 
+          dataKey="offerings" 
+          name="Offerings" 
+          unit=" ₦" 
+          fontSize={isMobile ? 10 : 12}
+        />
+        <ZAxis type="number" dataKey="firstTimers" range={[isMobile ? 20 : 40, isMobile ? 80 : 160]} name="First Timers" />
         <Tooltip cursor={{ strokeDasharray: '3 3' }} />
         <Legend />
         <Scatter name="Festac District" data={data.filter(d => d.district === 'Festac')} fill="#8884d8" />
@@ -240,12 +332,22 @@ export const CentrePerformanceScatterChart = ({ data }: { data: any[] }) => {
 };
 
 export const DistrictComparisonChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
   return (
     <ChartContainer title="District Performance Comparison" height={350}>
-      <BarChart data={data}>
+      <BarChart data={data} margin={{ top: 5, right: isMobile ? 5 : 30, left: isMobile ? 5 : 20, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis />
+        <XAxis 
+          dataKey="name" 
+          fontSize={isMobile ? 10 : 12}
+          interval={0}
+          angle={isMobile ? -45 : 0}
+          textAnchor={isMobile ? 'end' : 'middle'}
+          height={isMobile ? 60 : 30}
+        />
+        <YAxis fontSize={isMobile ? 10 : 12} />
         <Tooltip />
         <Legend />
         <Bar dataKey="attendance" fill="#8884d8" name="Attendance" />
@@ -257,6 +359,8 @@ export const DistrictComparisonChart = ({ data }: { data: any[] }) => {
 };
 
 export const OrganizationTreemapChart = ({ data }: { data: any[] }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const COLORS = ['#8889DD', '#9597E4', '#8DC77B', '#A5D297', '#E2CF45', '#F8C12D'];
 
   // Custom content function for Treemap
@@ -279,13 +383,13 @@ export const OrganizationTreemapChart = ({ data }: { data: any[] }) => {
             strokeOpacity: 1 / (depth + 1e-10),
           }}
         />
-        {depth === 1 && width > 50 && height > 20 && (
+        {depth === 1 && width > (isMobile ? 30 : 50) && height > (isMobile ? 15 : 20) && (
           <text
             x={x + width / 2}
             y={y + height / 2 + 7}
             textAnchor="middle"
             fill="#fff"
-            fontSize={12}
+            fontSize={isMobile ? 10 : 12}
           >
             {name}
           </text>

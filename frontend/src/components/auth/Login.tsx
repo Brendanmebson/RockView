@@ -11,13 +11,14 @@ import {
   Link,
   InputAdornment,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { Email, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 import { PageContainer, FloatingElement } from '../common/AnimatedComponents';
-// frontend/src/components/auth/Login.tsx (continued)
 import { useThemeContext } from '../../context/ThemeContext';
 
 // Import the logos
@@ -25,6 +26,10 @@ import lightLogo from '../../assets/light-logo.png';
 import darkLogo from '../../assets/dark-logo.png';
 
 const Login: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -62,58 +67,83 @@ const Login: React.FC = () => {
           justifyContent: 'center',
           position: 'relative',
           overflow: 'hidden',
+          padding: { xs: 1, sm: 2 },
         }}
       >
-        {/* Decorative floating elements */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '10%',
-            left: '10%',
-            opacity: 0.1,
-          }}
-        >
-          <FloatingElement>
-            <img 
-              src={darkMode ? darkLogo : lightLogo} 
-              alt="House on the Rock" 
-              style={{ width: 100, height: 100 }}
-            />
-          </FloatingElement>
-        </Box>
-        
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: '10%',
-            right: '10%',
-            opacity: 0.1,
-          }}
-        >
-          <FloatingElement>
-            <img 
-              src={darkMode ? darkLogo : lightLogo} 
-              alt="House on the Rock" 
-              style={{ width: 80, height: 80 }}
-            />
-          </FloatingElement>
-        </Box>
+        {/* Decorative floating elements - Hide on mobile for cleaner look */}
+        {!isMobile && (
+          <>
+            <Box
+              sx={{
+                position: 'absolute',
+                top: { sm: '10%', md: '15%' },
+                left: { sm: '5%', md: '10%' },
+                opacity: 0.1,
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
+              <FloatingElement>
+                <img 
+                  src={darkMode ? darkLogo : lightLogo} 
+                  alt="House on the Rock" 
+                  style={{ 
+                    width: isTablet ? 60 : 100, 
+                    height: isTablet ? 60 : 100 
+                  }}
+                />
+              </FloatingElement>
+            </Box>
+            
+            <Box
+              sx={{
+                position: 'absolute',
+                bottom: { sm: '10%', md: '15%' },
+                right: { sm: '5%', md: '10%' },
+                opacity: 0.1,
+                display: { xs: 'none', sm: 'block' },
+              }}
+            >
+              <FloatingElement>
+                <img 
+                  src={darkMode ? darkLogo : lightLogo} 
+                  alt="House on the Rock" 
+                  style={{ 
+                    width: isTablet ? 50 : 80, 
+                    height: isTablet ? 50 : 80 
+                  }}
+                />
+              </FloatingElement>
+            </Box>
+          </>
+        )}
 
-        <Container component="main" maxWidth="xs">
+        <Container 
+          component="main" 
+          maxWidth="sm"
+          sx={{
+            width: '100%',
+            maxWidth: { xs: '100%', sm: '500px', md: '450px' },
+            px: { xs: 0, sm: 2 },
+          }}
+        >
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
             <Paper
-              elevation={12}
+              elevation={isMobile ? 0 : 12}
               sx={{
-                padding: 4,
-                borderRadius: 4,
+                padding: { xs: 3, sm: 4 },
+                borderRadius: { xs: 0, sm: 4 },
                 background: darkMode 
                   ? 'rgba(30, 30, 30, 0.95)' 
                   : 'rgba(255, 255, 255, 0.95)',
                 backdropFilter: 'blur(10px)',
+                minHeight: { xs: '100vh', sm: 'auto' },
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: { xs: 'center', sm: 'flex-start' },
               }}
             >
               <Box
@@ -121,6 +151,7 @@ const Login: React.FC = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
+                  width: '100%',
                 }}
               >
                 <motion.div
@@ -130,8 +161,8 @@ const Login: React.FC = () => {
                 >
                   <Box
                     sx={{
-                      width: 80,
-                      height: 80,
+                      width: { xs: 60, sm: 80 },
+                      height: { xs: 60, sm: 80 },
                       borderRadius: '50%',
                       background: darkMode 
                         ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
@@ -139,7 +170,7 @@ const Login: React.FC = () => {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      mb: 2,
+                      mb: { xs: 2, sm: 3 },
                       boxShadow: '0 4px 20px rgba(46, 125, 50, 0.3)',
                       overflow: 'hidden',
                     }}
@@ -148,18 +179,37 @@ const Login: React.FC = () => {
                       src={darkMode ? darkLogo : lightLogo} 
                       alt="House on the Rock" 
                       style={{
-                        width: 60,
-                        height: 60,
+                        width: isMobile ? 45 : 60,
+                        height: isMobile ? 45 : 60,
                         objectFit: 'contain'
                       }}
                     />
                   </Box>
                 </motion.div>
 
-                <Typography component="h1" variant="h3" color="primary" sx={{ mb: 1 }}>
+                <Typography 
+                  component="h1" 
+                  variant={isMobile ? "h4" : "h3"} 
+                  color="primary" 
+                  sx={{ 
+                    mb: 1,
+                    textAlign: 'center',
+                    fontSize: { xs: '1.75rem', sm: '2.125rem', md: '3rem' }
+                  }}
+                >
                   RockView
                 </Typography>
-                <Typography variant="h6" color="textSecondary" sx={{ mb: 3 }}>
+                
+                <Typography 
+                  variant={isMobile ? "body1" : "h6"} 
+                  color="textSecondary" 
+                  sx={{ 
+                    mb: { xs: 3, sm: 4 },
+                    textAlign: 'center',
+                    px: { xs: 1, sm: 0 },
+                    lineHeight: 1.4,
+                  }}
+                >
                   Welcome back to House on the Rock CITH attendance system
                 </Typography>
 
@@ -167,9 +217,15 @@ const Login: React.FC = () => {
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    style={{ width: '100%' }}
+                    style={{ width: '100%', marginBottom: 16 }}
                   >
-                    <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>
+                    <Alert 
+                      severity="error" 
+                      sx={{ 
+                        borderRadius: 2,
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }}
+                    >
                       {error}
                     </Alert>
                   </motion.div>
@@ -200,8 +256,14 @@ const Login: React.FC = () => {
                         </InputAdornment>
                       ),
                     }}
-                    sx={{ mb: 2 }}
+                    sx={{ 
+                      mb: 2,
+                      '& .MuiInputBase-root': {
+                        fontSize: { xs: '1rem', sm: '1.125rem' },
+                      }
+                    }}
                   />
+                  
                   <TextField
                     margin="normal"
                     required
@@ -231,8 +293,14 @@ const Login: React.FC = () => {
                         </InputAdornment>
                       ),
                     }}
-                    sx={{ mb: 3 }}
+                    sx={{ 
+                      mb: 3,
+                      '& .MuiInputBase-root': {
+                        fontSize: { xs: '1rem', sm: '1.125rem' },
+                      }
+                    }}
                   />
+                  
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -244,8 +312,8 @@ const Login: React.FC = () => {
                       sx={{
                         mt: 2,
                         mb: 2,
-                        py: 1.5,
-                        fontSize: '1.1rem',
+                        py: { xs: 1.5, sm: 2 },
+                        fontSize: { xs: '1rem', sm: '1.1rem' },
                         background: darkMode 
                           ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
                           : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
@@ -272,17 +340,21 @@ const Login: React.FC = () => {
                       )}
                     </Button>
                   </motion.div>
+                  
                   <Box textAlign="center">
                     <Link
                       component={RouterLink}
                       to="/register"
-                      variant="body2"
+                      variant={isMobile ? "body2" : "body1"}
                       sx={{
                         color: 'secondary.main',
                         textDecoration: 'none',
                         '&:hover': {
                           textDecoration: 'underline',
                         },
+                        display: 'block',
+                        lineHeight: 1.4,
+                        px: { xs: 1, sm: 0 },
                       }}
                     >
                       Don't have an account? Join our church community

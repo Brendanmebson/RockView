@@ -14,7 +14,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles }) => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        width: '100%'
+      }}>
         <CircularProgress />
       </Box>
     );
@@ -28,7 +34,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  return <>{children}</>;
+  return <Box sx={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>{children}</Box>;
 };
 
 export default ProtectedRoute;

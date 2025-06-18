@@ -27,6 +27,8 @@ import {
   TextField,
   IconButton,
   Tooltip as MuiTooltip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { 
   People, 
@@ -83,8 +85,11 @@ interface PositionRequest {
 }
 
 const AdminDashboard: React.FC = () => {
-  const theme = require('@mui/material/styles').useTheme ? require('@mui/material/styles').useTheme() : undefined;
-  const darkMode = theme ? theme.palette.mode === 'dark' : false;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+  const darkMode = theme.palette.mode === 'dark';
+  
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalDistricts: 0,
@@ -510,70 +515,81 @@ const AdminDashboard: React.FC = () => {
  const pendingRequests = positionRequests.filter(req => req.status === 'pending');
 
  return (
-   <Box>
+   <Box sx={{ 
+     width: '100%', 
+     maxWidth: '100%',
+     overflow: 'hidden',
+     px: { xs: 0, sm: 0 }
+   }}>
      {/* Organization Overview */}
      <Paper 
        elevation={3} 
        sx={{ 
-         p: 2, 
+         p: { xs: 1.5, sm: 2 },
          mb: 3, 
          background: 'linear-gradient(90deg, #4A5568 0%, #2D3748 100%)',
          color: 'white',
          borderRadius: 2,
+         mx: { xs: 0, sm: 0 },
        }}
      >
        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-         <Typography variant="h6" sx={{ mb: 1 }}>
+         <Typography variant="h6" sx={{ mb: 1, fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
            Church Organization Overview
          </Typography>
          
-         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+         <Box sx={{ 
+           display: 'flex', 
+           flexWrap: 'wrap', 
+           gap: { xs: 2, sm: 3 },
+           justifyContent: { xs: 'space-between', sm: 'flex-start' }
+         }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
              <LocationCity fontSize="small" />
-             <Typography variant="body2">
+             <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                {stats.assignedDistricts}/{stats.totalDistricts} Districts Assigned
              </Typography>
            </Box>
            
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
              <Group fontSize="small" />
-             <Typography variant="body2">
+             <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                {stats.assignedZonals}/{stats.totalZonalSupervisors} Zones Assigned
              </Typography>
            </Box>
            
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
              <Map fontSize="small" />
-             <Typography variant="body2">
+             <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                {stats.assignedAreas}/{stats.totalAreaSupervisors} Areas Assigned
              </Typography>
            </Box>
            
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
              <Home fontSize="small" />
-             <Typography variant="body2">
+             <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                {stats.assignedCentres}/{stats.totalCithCentres} Centres Assigned
              </Typography>
            </Box>
            
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
              <BarChart fontSize="small" />
-             <Typography variant="body2">
+             <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                {recentReports.length} Reports
              </Typography>
            </Box>
            
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
              <People fontSize="small" />
-             <Typography variant="body2">
+             <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                {stats.totalUsers} Active Users
              </Typography>
            </Box>
 
            {pendingRequests.length > 0 && (
-             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: { xs: '45%', sm: 'auto' } }}>
                <Assignment fontSize="small" />
-               <Typography variant="body2">
+               <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                  {pendingRequests.length} Pending Requests
                </Typography>
              </Box>
@@ -582,7 +598,7 @@ const AdminDashboard: React.FC = () => {
        </Box>
      </Paper>
 
-     <Typography variant="h4" gutterBottom>
+     <Typography variant="h4" gutterBottom sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
        Admin Dashboard
      </Typography>
 
@@ -591,84 +607,97 @@ const AdminDashboard: React.FC = () => {
      {/* Position Change Requests Section */}
      {pendingRequests.length > 0 && (
        <Card sx={{ mb: 3 }}>
-         <CardContent>
-           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+         <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, flexWrap: 'wrap' }}>
              <ManageAccounts color="primary" />
-             <Typography variant="h6">Pending Position Change Requests</Typography>
+             <Typography variant="h6" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+               Pending Position Change Requests
+             </Typography>
              <Chip label={pendingRequests.length} color="warning" size="small" />
            </Box>
            
-           <TableContainer>
-             <Table>
-               <TableHead>
-                 <TableRow>
-                   <TableCell>User</TableCell>
-                   <TableCell>Current Role</TableCell>
-                   <TableCell>Requested Role</TableCell>
-                   <TableCell>Target Position</TableCell>
-                   <TableCell>Date Requested</TableCell>
-                   <TableCell>Actions</TableCell>
-                 </TableRow>
-               </TableHead>
-               <TableBody>
-                 {pendingRequests.map((request) => (
-                   <TableRow key={request._id}>
-                     <TableCell>
-                       <Box>
-                         <Typography variant="body2" fontWeight="medium">
-                           {request.userId.name}
-                         </Typography>
-                         <Typography variant="caption" color="textSecondary">
-                           {request.userId.email}
-                         </Typography>
-                       </Box>
-                     </TableCell>
-                     <TableCell>{getRoleName(request.currentRole)}</TableCell>
-                     <TableCell>{getRoleName(request.newRole)}</TableCell>
-                     <TableCell>{request.targetEntityName || 'Loading...'}</TableCell>
-                     <TableCell>{new Date(request.createdAt).toLocaleDateString()}</TableCell>
-                     <TableCell>
-                       <Box sx={{ display: 'flex', gap: 1 }}>
-                         <MuiTooltip title="Approve Request">
-                           <IconButton
-                             size="small"
-                             color="success"
-                             onClick={() => handleApproveRequest(request._id)}
-                           >
-                             <CheckCircle />
-                           </IconButton>
-                         </MuiTooltip>
-                         <MuiTooltip title="Reject Request">
-                           <IconButton
-                             size="small"
-                             color="error"
-                             onClick={() => openRejectDialog(request)}
-                           >
-                             <Cancel />
-                           </IconButton>
-                         </MuiTooltip>
-                         <MuiTooltip title="View Details">
-                           <IconButton
-                             size="small"
-                             color="primary"
-                             onClick={() => navigate('/admin/position-requests')}
-                           >
-                             <Visibility />
-                           </IconButton>
-                         </MuiTooltip>
-                       </Box>
-                     </TableCell>
+           <Box sx={{ overflow: 'auto' }}>
+             <TableContainer>
+               <Table size={isMobile ? "small" : "medium"}>
+                 <TableHead>
+                   <TableRow>
+                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>User</TableCell>
+                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Current Role</TableCell>
+                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Requested Role</TableCell>
+                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>Target Position</TableCell>
+                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>Date Requested</TableCell>
+                     <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Actions</TableCell>
                    </TableRow>
-                 ))}
-               </TableBody>
-             </Table>
-           </TableContainer>
+                 </TableHead>
+                 <TableBody>
+                   {pendingRequests.map((request) => (
+                     <TableRow key={request._id}>
+                       <TableCell sx={{ p: { xs: 1, sm: 2 } }}>
+                         <Box>
+                           <Typography variant="body2" fontWeight="medium" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                             {request.userId.name}
+                           </Typography>
+                           <Typography variant="caption" color="textSecondary" sx={{ display: { xs: 'none', sm: 'block' } }}>
+                             {request.userId.email}
+                           </Typography>
+                         </Box>
+                       </TableCell>
+                       <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                         {getRoleName(request.currentRole)}
+                       </TableCell>
+                       <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                         {getRoleName(request.newRole)}
+                       </TableCell>
+                       <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', sm: 'table-cell' } }}>
+                         {request.targetEntityName || 'Loading...'}
+                       </TableCell>
+                       <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, display: { xs: 'none', md: 'table-cell' } }}>
+                         {new Date(request.createdAt).toLocaleDateString()}
+                       </TableCell>
+                       <TableCell>
+                         <Box sx={{ display: 'flex', gap: 0.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+                           <MuiTooltip title="Approve Request">
+                             <IconButton
+                               size="small"
+                               color="success"
+                               onClick={() => handleApproveRequest(request._id)}
+                             >
+                               <CheckCircle fontSize="small" />
+                             </IconButton>
+                           </MuiTooltip>
+                           <MuiTooltip title="Reject Request">
+                             <IconButton
+                               size="small"
+                               color="error"
+                               onClick={() => openRejectDialog(request)}
+                             >
+                               <Cancel fontSize="small" />
+                             </IconButton>
+                           </MuiTooltip>
+                           <MuiTooltip title="View Details">
+                             <IconButton
+                               size="small"
+                               color="primary"
+                               onClick={() => navigate('/admin/position-requests')}
+                             >
+                               <Visibility fontSize="small" />
+                             </IconButton>
+                           </MuiTooltip>
+                         </Box>
+                       </TableCell>
+                     </TableRow>
+                   ))}
+                 </TableBody>
+               </Table>
+             </TableContainer>
+           </Box>
            
            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
              <Button
                variant="outlined"
                onClick={() => navigate('/admin/position-requests')}
                startIcon={<ManageAccounts />}
+               size={isMobile ? "small" : "medium"}
              >
                Manage All Requests
              </Button>
@@ -678,110 +707,199 @@ const AdminDashboard: React.FC = () => {
      )}
 
      {/* Summary stats cards */}
- <Grid container spacing={3} sx={{ mb: 3 }}>
-  <GridItem xs={12} md={3}>
-    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/admin/users')}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#64B5F6' : '#1976D2', mr: 2 }}>
-          <PeopleAlt />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Total Users</Typography>
-          <Typography variant="h5">{stats.totalUsers}</Typography>
-          <Typography variant="caption" color="textSecondary">Excludes admins</Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/districts')}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#E57373' : '#D32F2F', mr: 2 }}>
-          <Business />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Districts</Typography>
-          <Typography variant="h5">{stats.totalDistricts}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {stats.assignedDistricts} Assigned
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/zonal-supervisors')}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#BA68C8' : '#7B1FA2', mr: 2 }}>
-          <Group />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Zonal Supervisors</Typography>
-          <Typography variant="h5">{stats.totalZonalSupervisors}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {stats.assignedZonals} Assigned
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-  <GridItem xs={12} md={3}>
-    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/area-supervisors')}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#4FC3F7' : '#0288D1', mr: 2 }}>
-          <AccountTree />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">Area Supervisors</Typography>
-          <Typography variant="h5">{stats.totalAreaSupervisors}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {stats.assignedAreas} Assigned
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-</Grid>
+     <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 3 }}>
+       <GridItem xs={12} sm={6} md={3}>
+         <Card sx={{ cursor: 'pointer', height: '100%' }} onClick={() => navigate('/admin/users')}>
+           <CardContent sx={{ 
+             display: 'flex', 
+             alignItems: 'center',
+             p: { xs: 2, sm: 3 },
+             '&:last-child': { pb: { xs: 2, sm: 3 } }
+           }}>
+             <Avatar sx={{ 
+               bgcolor: darkMode ? '#64B5F6' : '#1976D2', 
+               mr: 2,
+               width: { xs: 40, sm: 48 },
+               height: { xs: 40, sm: 48 }
+             }}>
+               <PeopleAlt />
+             </Avatar>
+             <Box sx={{ minWidth: 0, flex: 1 }}>
+               <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                 Total Users
+               </Typography>
+               <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                 {stats.totalUsers}
+               </Typography>
+               <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                 Excludes admins
+               </Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+       
+       <GridItem xs={12} sm={6} md={3}>
+         <Card sx={{ cursor: 'pointer', height: '100%' }} onClick={() => navigate('/districts')}>
+           <CardContent sx={{ 
+             display: 'flex', 
+             alignItems: 'center',
+             p: { xs: 2, sm: 3 },
+             '&:last-child': { pb: { xs: 2, sm: 3 } }
+           }}>
+             <Avatar sx={{ 
+               bgcolor: darkMode ? '#E57373' : '#D32F2F', 
+               mr: 2,
+               width: { xs: 40, sm: 48 },
+               height: { xs: 40, sm: 48 }
+             }}>
+               <Business />
+             </Avatar>
+             <Box sx={{ minWidth: 0, flex: 1 }}>
+               <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                 Districts
+               </Typography>
+               <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                 {stats.totalDistricts}
+               </Typography>
+               <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                 {stats.assignedDistricts} Assigned
+               </Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+       
+       <GridItem xs={12} sm={6} md={3}>
+         <Card sx={{ cursor: 'pointer', height: '100%' }} onClick={() => navigate('/zonal-supervisors')}>
+           <CardContent sx={{ 
+             display: 'flex', 
+             alignItems: 'center',
+             p: { xs: 2, sm: 3 },
+             '&:last-child': { pb: { xs: 2, sm: 3 } }
+           }}>
+             <Avatar sx={{ 
+               bgcolor: darkMode ? '#BA68C8' : '#7B1FA2', 
+               mr: 2,
+               width: { xs: 40, sm: 48 },
+               height: { xs: 40, sm: 48 }
+             }}>
+               <Group />
+             </Avatar>
+             <Box sx={{ minWidth: 0, flex: 1 }}>
+               <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                 Zonal Supervisors
+               </Typography>
+               <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                 {stats.totalZonalSupervisors}
+               </Typography>
+               <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                 {stats.assignedZonals} Assigned
+               </Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+       
+       <GridItem xs={12} sm={6} md={3}>
+         <Card sx={{ cursor: 'pointer', height: '100%' }} onClick={() => navigate('/area-supervisors')}>
+           <CardContent sx={{ 
+             display: 'flex', 
+             alignItems: 'center',
+             p: { xs: 2, sm: 3 },
+             '&:last-child': { pb: { xs: 2, sm: 3 } }
+           }}>
+             <Avatar sx={{ 
+               bgcolor: darkMode ? '#4FC3F7' : '#0288D1', 
+               mr: 2,
+               width: { xs: 40, sm: 48 },
+               height: { xs: 40, sm: 48 }
+             }}>
+               <AccountTree />
+             </Avatar>
+             <Box sx={{ minWidth: 0, flex: 1 }}>
+               <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                 Area Supervisors
+               </Typography>
+               <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                 {stats.totalAreaSupervisors}
+               </Typography>
+               <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                 {stats.assignedAreas} Assigned
+               </Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+     </Grid>
 
-<Grid container spacing={3} sx={{ mb: 3 }}>
-  <GridItem xs={12} md={6}>
-    <Card sx={{ cursor: 'pointer' }} onClick={() => navigate('/cith-centres')}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center' }}>
-        <Avatar sx={{ bgcolor: darkMode ? '#FFD54F' : '#FFA000', mr: 2 }}>
-          <Home />
-        </Avatar>
-        <Box>
-          <Typography variant="body2" color="textSecondary">CITH Centres</Typography>
-          <Typography variant="h5">{stats.totalCithCentres}</Typography>
-          <Typography variant="caption" color="textSecondary">
-            {stats.assignedCentres} Assigned
-          </Typography>
-        </Box>
-      </CardContent>
-    </Card>
-  </GridItem>
-</Grid>
+     <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 3 }}>
+       <GridItem xs={12} md={6}>
+         <Card sx={{ cursor: 'pointer', height: '100%' }} onClick={() => navigate('/cith-centres')}>
+           <CardContent sx={{ 
+             display: 'flex', 
+             alignItems: 'center',
+             p: { xs: 2, sm: 3 },
+             '&:last-child': { pb: { xs: 2, sm: 3 } }
+           }}>
+             <Avatar sx={{ 
+               bgcolor: darkMode ? '#FFD54F' : '#FFA000', 
+               mr: 2,
+               width: { xs: 40, sm: 48 },
+               height: { xs: 40, sm: 48 }
+             }}>
+               <Home />
+             </Avatar>
+             <Box sx={{ minWidth: 0, flex: 1 }}>
+               <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                 CITH Centres
+               </Typography>
+               <Typography variant="h5" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+                 {stats.totalCithCentres}
+               </Typography>
+               <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
+                 {stats.assignedCentres} Assigned
+               </Typography>
+             </Box>
+           </CardContent>
+         </Card>
+       </GridItem>
+     </Grid>
 
-
-     <Grid container spacing={3}>
-       {/* District Performance Comparison - Make full width */}
+     <Grid container spacing={{ xs: 2, sm: 3 }}>
+       {/* District Performance Comparison - Full width with responsive height */}
        <GridItem xs={12}>
          <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>District Structure & Assignment</Typography>
+           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+             <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+               District Structure & Assignment
+             </Typography>
              {districtData.length > 0 ? (
-               <ResponsiveContainer width="100%" height={400}>
-                 <ReBarChart data={districtData}>
-                   <XAxis dataKey="name" />
-                   <YAxis />
-                   <Tooltip />
-                   <Legend />
-                   <Bar dataKey="centres" fill="#ffc658" name="CITH Centres" />
-                   <Bar dataKey="areas" fill="#82ca9d" name="Area Supervisors" />
-                   <Bar dataKey="zonals" fill="#8dd1e1" name="Zonal Supervisors" />
-                   <Bar dataKey="assigned" fill="#8884d8" name="Pastor Assigned" />
-                 </ReBarChart>
-               </ResponsiveContainer>
+               <Box sx={{ 
+                 width: '100%', 
+                 height: { xs: 300, sm: 350, md: 400 },
+                 overflow: 'hidden'
+               }}>
+                 <ResponsiveContainer width="100%" height="100%">
+                   <ReBarChart data={districtData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                     <XAxis 
+                       dataKey="name" 
+                       fontSize={isMobile ? 10 : 12}
+                       interval={0}
+                       angle={isMobile ? -45 : 0}
+                       textAnchor={isMobile ? 'end' : 'middle'}
+                       height={isMobile ? 60 : 30}
+                     />
+                     <YAxis fontSize={isMobile ? 10 : 12} />
+                     <Tooltip />
+                     <Legend />
+                     <Bar dataKey="centres" fill="#ffc658" name="CITH Centres" />
+                     <Bar dataKey="areas" fill="#82ca9d" name="Area Supervisors" />
+                     <Bar dataKey="zonals" fill="#8dd1e1" name="Zonal Supervisors" />
+                     <Bar dataKey="assigned" fill="#8884d8" name="Pastor Assigned" />
+                   </ReBarChart>
+                 </ResponsiveContainer>
+               </Box>
              ) : (
                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                  <Typography variant="body2" color="textSecondary">
@@ -793,32 +911,40 @@ const AdminDashboard: React.FC = () => {
          </Card>
        </GridItem>
        
-       {/* System User Distribution - Make larger */}
+       {/* System User Distribution */}
        <GridItem xs={12} md={6}>
          <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>User Distribution</Typography>
+           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+             <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+               User Distribution
+             </Typography>
              {usersByRole.length > 0 && usersByRole.some(role => role.value > 0) ? (
-               <ResponsiveContainer width="100.5%" height={450}>
-                 <PieChart>
-                   <Pie
-                     data={usersByRole.filter(role => role.value > 0)}
-                     cx="50%"
-                     cy="50%"
-                     labelLine={false}
-                     label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
-                     outerRadius={140}
-                     fill="#8884d8"
-                     dataKey="value"
-                   >
-                     {usersByRole.filter(role => role.value > 0).map((entry, index) => (
-                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                     ))}
-                   </Pie>
-                   <Tooltip formatter={(value, name) => [value, name]} />
-                   <Legend />
-                 </PieChart>
-               </ResponsiveContainer>
+               <Box sx={{ 
+                 width: '100%', 
+                 height: { xs: 350, sm: 400, md: 450 },
+                 overflow: 'hidden'
+               }}>
+                 <ResponsiveContainer width="100%" height="100%">
+                   <PieChart>
+                     <Pie
+                       data={usersByRole.filter(role => role.value > 0)}
+                       cx="50%"
+                       cy="50%"
+                       labelLine={false}
+                       label={!isMobile ? ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)` : false}
+                       outerRadius={isMobile ? 100 : 140}
+                       fill="#8884d8"
+                       dataKey="value"
+                     >
+                       {usersByRole.filter(role => role.value > 0).map((entry, index) => (
+                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                       ))}
+                     </Pie>
+                     <Tooltip formatter={(value, name) => [value, name]} />
+                     <Legend />
+                   </PieChart>
+                 </ResponsiveContainer>
+               </Box>
              ) : (
                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
                  <Typography variant="body2" color="textSecondary">
@@ -830,76 +956,84 @@ const AdminDashboard: React.FC = () => {
          </Card>
        </GridItem>
 
-{/* Reports Status Overview - New Chart */}
+       {/* Reports Status Overview */}
        <GridItem xs={12} md={6}>
-  <Card>
-    <CardContent>
-      <Typography variant="h6" gutterBottom>Reports Status Overview</Typography>
-      {recentReports.length > 0 ? (
-        <ResponsiveContainer width="100%" height={400}>
-          <PieChart>
-            <Pie
-              data={[
-                { 
-                  name: 'Pending', 
-                  value: recentReports.filter(r => r.status === 'pending').length,
-                  color: '#FF9800'
-                },
-                { 
-                  name: 'Area Approved', 
-                  value: recentReports.filter(r => r.status === 'area_approved').length,
-                  color: '#2196F3'
-                },
-                { 
-                  name: 'District Approved', 
-                  value: recentReports.filter(r => r.status === 'district_approved').length,
-                  color: '#4CAF50'
-                },
-                { 
-                  name: 'Rejected', 
-                  value: recentReports.filter(r => r.status === 'rejected').length,
-                  color: '#F44336'
-                }
-              ].filter(item => item.value > 0)}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)`}
-              outerRadius={120}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {[
-                { name: 'Pending', value: recentReports.filter(r => r.status === 'pending').length },
-                { name: 'Area Approved', value: recentReports.filter(r => r.status === 'area_approved').length },
-                { name: 'District Approved', value: recentReports.filter(r => r.status === 'district_approved').length },
-                { name: 'Rejected', value: recentReports.filter(r => r.status === 'rejected').length }
-              ].filter(item => item.value > 0).map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.name === 'Pending' ? '#FF9800' : 
-                  entry.name === 'Area Approved' ? '#2196F3' :
-                  entry.name === 'District Approved' ? '#4CAF50' : '#F44336'} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(value) => [value, 'Reports']} />
-            <Legend />
-          </PieChart>
-        </ResponsiveContainer>
-      ) : (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-          <Typography variant="body2" color="textSecondary">
-            No reports data available
-          </Typography>
-        </Box>
-      )}
-    </CardContent>
-  </Card>
-</GridItem>
+         <Card>
+           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+             <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+               Reports Status Overview
+             </Typography>
+             {recentReports.length > 0 ? (
+               <Box sx={{ 
+                 width: '100%',
+                 height: { xs: 300, sm: 350, md: 400 },
+                 overflow: 'hidden'
+               }}>
+                 <ResponsiveContainer width="100%" height="100%">
+                   <PieChart>
+                     <Pie
+                       data={[
+                         { 
+                           name: 'Pending', 
+                           value: recentReports.filter(r => r.status === 'pending').length,
+                           color: '#FF9800'
+                         },
+                         { 
+                           name: 'Area Approved', 
+                           value: recentReports.filter(r => r.status === 'area_approved').length,
+                           color: '#2196F3'
+                         },
+                         { 
+                           name: 'District Approved', 
+                           value: recentReports.filter(r => r.status === 'district_approved').length,
+                           color: '#4CAF50'
+                         },
+                         { 
+                           name: 'Rejected', 
+                           value: recentReports.filter(r => r.status === 'rejected').length,
+                           color: '#F44336'
+                         }
+                       ].filter(item => item.value > 0)}
+                       cx="50%"
+                       cy="50%"
+                       labelLine={false}
+                       label={!isMobile ? ({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(1)}%)` : false}
+                       outerRadius={isMobile ? 100 : 120}
+                       fill="#8884d8"
+                       dataKey="value"
+                     >
+                       {[
+                         { name: 'Pending', value: recentReports.filter(r => r.status === 'pending').length },
+                         { name: 'Area Approved', value: recentReports.filter(r => r.status === 'area_approved').length },
+                         { name: 'District Approved', value: recentReports.filter(r => r.status === 'district_approved').length },
+                         { name: 'Rejected', value: recentReports.filter(r => r.status === 'rejected').length }
+                       ].filter(item => item.value > 0).map((entry, index) => (
+                         <Cell key={`cell-${index}`} fill={entry.name === 'Pending' ? '#FF9800' : 
+                           entry.name === 'Area Approved' ? '#2196F3' :
+                           entry.name === 'District Approved' ? '#4CAF50' : '#F44336'} />
+                       ))}
+                     </Pie>
+                     <Tooltip formatter={(value) => [value, 'Reports']} />
+                     <Legend />
+                   </PieChart>
+                 </ResponsiveContainer>
+               </Box>
+             ) : (
+               <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                 <Typography variant="body2" color="textSecondary">
+                   No reports data available
+                 </Typography>
+               </Box>
+             )}
+           </CardContent>
+         </Card>
+       </GridItem>
 
        {/* Quick Action Links */}
        <GridItem xs={12} md={6}>
          <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>
+           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+             <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                Quick Actions
              </Typography>
              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -908,6 +1042,8 @@ const AdminDashboard: React.FC = () => {
                  onClick={() => navigate('/districts')}
                  fullWidth
                  startIcon={<Business />}
+                 size={isMobile ? "small" : "medium"}
+                 sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
                >
                  Manage Districts ({stats.assignedDistricts}/{stats.totalDistricts} Assigned)
                </Button>
@@ -916,6 +1052,8 @@ const AdminDashboard: React.FC = () => {
                  onClick={() => navigate('/zonal-supervisors')}
                  fullWidth
                  startIcon={<Group />}
+                 size={isMobile ? "small" : "medium"}
+                 sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
                >
                  Manage Zonal Supervisors ({stats.assignedZonals}/{stats.totalZonalSupervisors} Assigned)
                </Button>
@@ -924,6 +1062,8 @@ const AdminDashboard: React.FC = () => {
                  onClick={() => navigate('/area-supervisors')}
                  fullWidth
                  startIcon={<AccountTree />}
+                 size={isMobile ? "small" : "medium"}
+                 sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
                >
                  Manage Area Supervisors ({stats.assignedAreas}/{stats.totalAreaSupervisors} Assigned)
                </Button>
@@ -932,6 +1072,8 @@ const AdminDashboard: React.FC = () => {
                  onClick={() => navigate('/cith-centres')}
                  fullWidth
                  startIcon={<Home />}
+                 size={isMobile ? "small" : "medium"}
+                 sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
                >
                  Manage CITH Centres ({stats.assignedCentres}/{stats.totalCithCentres} Assigned)
                </Button>
@@ -940,6 +1082,8 @@ const AdminDashboard: React.FC = () => {
                  onClick={() => navigate('/admin/users')}
                  fullWidth
                  startIcon={<People />}
+                 size={isMobile ? "small" : "medium"}
+                 sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
                >
                  Manage Users ({stats.totalUsers} Active)
                </Button>
@@ -949,6 +1093,8 @@ const AdminDashboard: React.FC = () => {
                  fullWidth
                  startIcon={<ManageAccounts />}
                  color={pendingRequests.length > 0 ? 'warning' : 'primary'}
+                 size={isMobile ? "small" : "medium"}
+                 sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
                >
                  Position Requests {pendingRequests.length > 0 && `(${pendingRequests.length})`}
                </Button>
@@ -957,6 +1103,8 @@ const AdminDashboard: React.FC = () => {
                  onClick={() => navigate('/reports')}
                  fullWidth
                  startIcon={<BarChart />}
+                 size={isMobile ? "small" : "medium"}
+                 sx={{ justifyContent: 'flex-start', textAlign: 'left' }}
                >
                  View All Reports
                </Button>
@@ -968,51 +1116,56 @@ const AdminDashboard: React.FC = () => {
        {/* Recent Reports */}
        <GridItem xs={12}>
          <Card>
-           <CardContent>
-             <Typography variant="h6" gutterBottom>Recent Reports</Typography>
+           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+             <Typography variant="h6" gutterBottom sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
+               Recent Reports
+             </Typography>
              {recentReports.length > 0 ? (
-               <TableContainer>
-                 <Table size="small">
-                   <TableHead>
-                     <TableRow>
-                       <TableCell>Centre</TableCell>
-                       <TableCell>Date</TableCell>
-                       <TableCell>Attendance</TableCell>
-                       <TableCell>Status</TableCell>
-                     </TableRow>
-                   </TableHead>
-                   <TableBody>
-                     {recentReports.slice(0, 5).map((report) => (
-                       <TableRow key={report._id}>
-                         <TableCell>
-                           {report.cithCentreId?.name || 'Unknown Centre'}
-                         </TableCell>
-                         <TableCell>
-                           {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
-                         </TableCell>
-                         <TableCell>
-                           {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
-                         </TableCell>
-                         <TableCell>
-                           <Chip
-                             label={report.status.replace('_', ' ').toUpperCase()}
-                             color={
-                               report.status === 'district_approved' 
-                                 ? 'success' 
-                                 : report.status === 'area_approved' 
-                                 ? 'info' 
-                                 : report.status === 'pending' 
-                                 ? 'warning' 
-                                 : 'error'
-                             }
-                             size="small"
-                           />
-                         </TableCell>
+               <Box sx={{ overflow: 'auto' }}>
+                 <TableContainer>
+                   <Table size={isMobile ? "small" : "medium"}>
+                     <TableHead>
+                       <TableRow>
+                         <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Centre</TableCell>
+                         <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Date</TableCell>
+                         <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Attendance</TableCell>
+                         <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Status</TableCell>
                        </TableRow>
-                     ))}
-                   </TableBody>
-                 </Table>
-               </TableContainer>
+                     </TableHead>
+                     <TableBody>
+                       {recentReports.slice(0, 5).map((report) => (
+                         <TableRow key={report._id}>
+                           <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                             {report.cithCentreId?.name || 'Unknown Centre'}
+                           </TableCell>
+                           <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                             {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
+                           </TableCell>
+                           <TableCell sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                             {(report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0)}
+                           </TableCell>
+                           <TableCell>
+                             <Chip
+                               label={report.status.replace('_', ' ').toUpperCase()}
+                               color={
+                                 report.status === 'district_approved' 
+                                   ? 'success' 
+                                   : report.status === 'area_approved' 
+                                   ? 'info' 
+                                   : report.status === 'pending' 
+                                   ? 'warning' 
+                                   : 'error'
+                               }
+                               size="small"
+                               sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}
+                             />
+                           </TableCell>
+                         </TableRow>
+                       ))}
+                     </TableBody>
+                   </Table>
+                 </TableContainer>
+               </Box>
              ) : (
                <Typography variant="body2" color="textSecondary" textAlign="center" sx={{ py: 2 }}>
                  No reports submitted yet
@@ -1033,7 +1186,7 @@ const AdminDashboard: React.FC = () => {
      </Grid>
 
     {/* Rejection Dialog */}
-    <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)}>
+    <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} maxWidth="sm" fullWidth>
       <DialogTitle>Reject Position Change Request</DialogTitle>
       <DialogContent>
         <Typography sx={{ mb: 2 }}>
@@ -1063,7 +1216,13 @@ const AdminDashboard: React.FC = () => {
     </Dialog>
 
     {/* This Month Activity - Updated to show actual data */}
-    <Box sx={{ position: 'fixed', bottom: 80, right: 16, zIndex: 1000 }}>
+    <Box sx={{ 
+      position: 'fixed', 
+      bottom: { xs: 16, sm: 80 }, 
+      right: 16, 
+      zIndex: 1000,
+      display: { xs: 'none', sm: 'block' }
+    }}>
       <Paper 
         elevation={6} 
         sx={{ 
