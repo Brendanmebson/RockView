@@ -612,12 +612,12 @@ const Register: React.FC = () => {
                     District Pastor
                   </Box>
                 </MenuItem>
-                <MenuItem value="admin">
+                {/* <MenuItem value="admin">
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Users size={16} />
                     Administrator
                   </Box>
-                </MenuItem>
+                </MenuItem> */}
               </Select>
             </FormControl>
           </motion.div>
