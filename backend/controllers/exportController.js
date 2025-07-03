@@ -65,9 +65,6 @@ const exportToExcel = async (req, res) => {
         }
       })
       .populate('submittedBy', 'name')
-      .populate('areaApprovedBy', 'name')
-      .populate('zonalApprovedBy', 'name')
-      .populate('districtApprovedBy', 'name')
       .sort({ week: -1 });
     
     console.log(`Found ${reports.length} reports for export`); // Debug log
@@ -84,15 +81,7 @@ const exportToExcel = async (req, res) => {
     workbook.creator = 'RockView Church System';
     workbook.created = new Date();
     
-    const worksheet = workbook.addWorksheet('Weekly Reports', {
-      pageSetup: {
-        paperSize: 9, // A4
-        orientation: 'landscape',
-        fitToPage: true,
-        fitToHeight: 0,
-        fitToWidth: 1
-      }
-    });
+    const worksheet = workbook.addWorksheet('Weekly Reports');
     
     // Define columns with better formatting
     const columns = [

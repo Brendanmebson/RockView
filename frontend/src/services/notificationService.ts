@@ -1,20 +1,30 @@
-// frontend/src/components/notifications/NotificationService.ts
+// frontend/src/services/notificationService.ts
 import api from './api';
 
 export interface Notification {
-  id: string;
+  _id: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: 'report_submitted' | 'report_approved' | 'report_rejected' | 'system' | 'message';
   read: boolean;
   createdAt: string;
   actionUrl?: string;
-  metadata?: any;
+  sender?: {
+    _id: string;
+    name: string;
+    email: string;
+    role: string;
+  };
+  metadata?: {
+    reportId?: string;
+    messageId?: string;
+  };
 }
 
 class NotificationService {
   private notifications: Notification[] = [];
   private listeners: Array<(notifications: Notification[]) => void> = [];
+  private unreadCount: number = 0;
 
   // Add listener for notification updates
   addListener(callback: (notifications: Notification[]) => void) {
@@ -34,36 +44,9 @@ class NotificationService {
   // Fetch notifications from server
   async fetchNotifications(): Promise<Notification[]> {
     try {
-      // For now, generate mock notifications based on user activity
-      const mockNotifications: Notification[] = [
-        {
-          id: '1',
-          title: 'New Report Submitted',
-          message: 'A new weekly report has been submitted and requires your approval',
-          type: 'info',
-          read: false,
-          createdAt: new Date().toISOString(),
-          actionUrl: '/reports',
-        },
-        {
-          id: '2',
-          title: 'Report Approved',
-          message: 'Your weekly report has been approved by the district pastor',
-          type: 'success',
-          read: false,
-          createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        },
-        {
-          id: '3',
-          title: 'System Maintenance',
-          message: 'Scheduled maintenance will occur tonight from 2:00 AM to 4:00 AM',
-          type: 'warning',
-          read: true,
-          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        },
-      ];
-
-      this.notifications = mockNotifications;
+      const response = await api.get('/notifications?limit=50');
+      this.notifications = response.data.notifications || [];
+      this.unreadCount = response.data.unreadCount || 0;
       this.notifyListeners();
       return this.notifications;
     } catch (error) {
@@ -72,12 +55,28 @@ class NotificationService {
     }
   }
 
+  // Get unread count
+  async fetchUnreadCount(): Promise<number> {
+    try {
+      const response = await api.get('/notifications/unread-count');
+      this.unreadCount = response.data.count || 0;
+      return this.unreadCount;
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+  }
+
   // Mark notification as read
   async markAsRead(notificationId: string): Promise<void> {
     try {
-      const notification = this.notifications.find(n => n.id === notificationId);
-      if (notification) {
+      await api.put(`/notifications/${notificationId}/read`);
+      
+      // Update local state
+      const notification = this.notifications.find(n => n._id === notificationId);
+      if (notification && !notification.read) {
         notification.read = true;
+        this.unreadCount = Math.max(0, this.unreadCount - 1);
         this.notifyListeners();
       }
     } catch (error) {
@@ -88,33 +87,34 @@ class NotificationService {
   // Mark all notifications as read
   async markAllAsRead(): Promise<void> {
     try {
+      await api.put('/notifications/mark-all-read');
+      
+      // Update local state
       this.notifications.forEach(notification => {
         notification.read = true;
       });
+      this.unreadCount = 0;
       this.notifyListeners();
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
   }
 
-  // Get unread count
+  // Get unread count (local)
   getUnreadCount(): number {
-    return this.notifications.filter(n => !n.read).length;
+    return this.unreadCount;
   }
 
-  // Add new notification (for real-time updates)
-  addNotification(notification: Omit<Notification, 'id'>): void {
-    const newNotification: Notification = {
-      ...notification,
-      id: Date.now().toString(),
-    };
-    this.notifications.unshift(newNotification);
-    this.notifyListeners();
-  }
-
-  // Get all notifications
+  // Get all notifications (local)
   getNotifications(): Notification[] {
     return this.notifications;
+  }
+
+  // Poll for new notifications
+  startPolling(intervalMs: number = 30000) {
+    setInterval(async () => {
+      await this.fetchNotifications();
+    }, intervalMs);
   }
 }
 

@@ -5,6 +5,12 @@ const AreaSupervisor = require('../models/AreaSupervisor');
 const District = require('../models/District');
 const User = require('../models/User');
 
+const {
+  notifyReportSubmitted,
+  notifyReportApproved,
+  notifyReportRejected,
+} = require('./notificationController');
+
 // Helper function to safely populate report data
 const getReportPopulationQuery = () => {
   return [
@@ -154,6 +160,9 @@ const submitReport = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+await notifyReportSubmitted(report._id, cithCentreId, req.user._id);
+res.status(201).json(populatedReport);
+
 
 // @desc    Get reports based on user role
 // @route   GET /api/reports
@@ -494,6 +503,16 @@ const approveReport = async (req, res) => {
     }
     
     await report.save();
+
+    // Send notifications
+let approvalLevel = 'area';
+if (report.status === 'district_approved') {
+  approvalLevel = 'district';
+} else if (report.status === 'zonal_approved') {
+  approvalLevel = 'zonal';
+}
+    await notifyReportApproved(report._id, report.cithCentreId, req.user._id, approvalLevel); 
+
     
     // Return populated report
    const populatedReport = await WeeklyReport.findById(report._id)
@@ -671,6 +690,9 @@ const rejectReport = async (req, res) => {
     report.rejectedAt = new Date();
     
     await report.save();
+    // Send rejection notification
+    await notifyReportRejected(report._id, report, req.user._id, reason.trim());
+
     
     // Return populated report
     const populatedReport = await WeeklyReport.findById(report._id)

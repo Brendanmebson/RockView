@@ -3,8 +3,8 @@ const express = require('express');
 const router = express.Router();
 const {
   sendMessage,
-  getMessages,
-  getMessageById,
+  getConversations,
+  getConversationMessages,
   deleteMessage,
   getUnreadCount,
   markMessagesAsRead,
@@ -13,15 +13,13 @@ const { protect } = require('../middleware/auth');
 
 router.use(protect);
 
-router.route('/')
-  .get(getMessages)
-  .post(sendMessage);
-
+// Chat-style routes
+router.get('/conversations', getConversations);
+router.get('/conversation/:userId', getConversationMessages);
+router.get('/Users', getAvailableUsers);
+router.post('/send', sendMessage);
 router.get('/unread/count', getUnreadCount);
 router.put('/mark-read', markMessagesAsRead);
-
-router.route('/:id')
-  .get(getMessageById)
-  .delete(deleteMessage);
+router.delete('/:id', deleteMessage);
 
 module.exports = router;

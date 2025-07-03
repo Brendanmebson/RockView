@@ -8,136 +8,133 @@ import {
   TableHead,
   TableRow,
   Paper,
-  Box,
   Card,
   CardContent,
   Typography,
+  Box,
   useTheme,
   useMediaQuery,
 } from '@mui/material';
 
-interface Column {
-  key: string;
+interface Column<T> {
+  key: keyof T | string;
   label: string;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: any, row: T) => React.ReactNode;
   hideOnMobile?: boolean;
-  width?: string | number;
 }
 
-interface ResponsiveTableProps {
-  columns: Column[];
-  data: any[];
-  onRowClick?: (row: any) => void;
-  loading?: boolean;
+interface ResponsiveTableProps<T> {
+  columns: Column<T>[];
+  data: T[];
+  onRowClick?: (row: T) => void;
   emptyMessage?: string;
 }
 
-const ResponsiveTable: React.FC<ResponsiveTableProps> = ({
+function ResponsiveTable<T extends { _id: string }>({
   columns,
   data,
   onRowClick,
-  loading,
   emptyMessage = 'No data available'
-}) => {
+}: ResponsiveTableProps<T>) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  if (isMobile) {
-    // Mobile Card View
+  if (data.length === 0) {
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {data.length === 0 ? (
-          <Card>
-            <CardContent>
-              <Typography variant="body2" color="textSecondary" textAlign="center">
-                {emptyMessage}
-              </Typography>
-            </CardContent>
-          </Card>
-        ) : (
-          data.map((row, index) => (
-            <Card 
-              key={index} 
-              sx={{ 
-                cursor: onRowClick ? 'pointer' : 'default',
-                '&:hover': onRowClick ? { boxShadow: 3 } : {}
-              }}
-              onClick={() => onRowClick?.(row)}
-            >
-              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                {columns
-                  .filter(col => !col.hideOnMobile)
-                  .map((column) => (
-                    <Box key={column.key} sx={{ mb: 1, display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="caption" color="textSecondary" sx={{ fontWeight: 'bold' }}>
-                        {column.label}:
-                      </Typography>
-                      <Typography variant="body2" sx={{ textAlign: 'right', ml: 1 }}>
-                        {column.render ? column.render(row[column.key], row) : row[column.key]}
-                      </Typography>
-                    </Box>
-                  ))}
-              </CardContent>
-            </Card>
-          ))
-        )}
+      <Box sx={{ textAlign: 'center', py: 4 }}>
+        <Typography variant="body1" color="textSecondary">
+          {emptyMessage}
+        </Typography>
       </Box>
     );
   }
 
-  // Desktop/Tablet Table View
+  if (isMobile) {
+    // Mobile card layout
+    return (
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {data.map((row) => (
+          <Card 
+            key={row._id} 
+            sx={{ 
+              cursor: onRowClick ? 'pointer' : 'default',
+              '&:hover': onRowClick ? {
+                boxShadow: 2,
+                transform: 'translateY(-1px)',
+              } : {}
+            }}
+            onClick={() => onRowClick?.(row)}
+          >
+            <CardContent>
+              {columns
+                .filter(col => !col.hideOnMobile)
+                .map((column) => {
+                  const value = typeof column.key === 'string' && column.key in row 
+                    ? (row as any)[column.key] 
+                    : undefined;
+                  const displayValue = column.render 
+                    ? column.render(value, row)
+                    : value;
+                  
+                  return (
+                    <Box key={String(column.key)} sx={{ mb: 1 }}>
+                      <Typography variant="caption" color="textSecondary">
+                        {column.label}:
+                      </Typography>
+                      <Typography variant="body2">
+                        {displayValue || '—'}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+            </CardContent>
+          </Card>
+        ))}
+      </Box>
+    );
+  }
+
+  // Desktop table layout
   return (
-    <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
-      <Table sx={{ minWidth: isTablet ? 600 : 750 }} size={isTablet ? "small" : "medium"}>
+    <TableContainer component={Paper}>
+      <Table>
         <TableHead>
           <TableRow>
             {columns.map((column) => (
-              <TableCell 
-                key={column.key}
-                sx={{ 
-                  fontWeight: 'bold',
-                  width: column.width,
-                  fontSize: { xs: '0.75rem', sm: '0.875rem' }
-                }}
-              >
+              <TableCell key={String(column.key)}>
                 {column.label}
               </TableCell>
             ))}
           </TableRow>
         </TableHead>
         <TableBody>
-          {data.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={columns.length} align="center" sx={{ py: 4 }}>
-                <Typography variant="body2" color="textSecondary">
-                  {emptyMessage}
-                </Typography>
-              </TableCell>
-            </TableRow>
-          ) : (
-            data.map((row, index) => (
-              <TableRow 
-                key={index}
-                sx={{ 
-                  cursor: onRowClick ? 'pointer' : 'default',
-                  '&:hover': onRowClick ? { backgroundColor: 'action.hover' } : {},
-                  '& td': { fontSize: { xs: '0.75rem', sm: '0.875rem' } }
-                }}
-                onClick={() => onRowClick?.(row)}
-              >
-                {columns.map((column) => (
-                  <TableCell key={column.key}>
-                    {column.render ? column.render(row[column.key], row) : row[column.key]}
+          {data.map((row) => (
+            <TableRow 
+              key={row._id}
+              hover={!!onRowClick}
+              sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
+              onClick={() => onRowClick?.(row)}
+            >
+              {columns.map((column) => {
+                const value = typeof column.key === 'string' && column.key in row 
+                  ? (row as any)[column.key] 
+                  : undefined;
+                const displayValue = column.render 
+                  ? column.render(value, row)
+                  : value;
+                
+                return (
+                  <TableCell key={String(column.key)}>
+                    {displayValue || '—'}
                   </TableCell>
-                ))}
-              </TableRow>
-            ))
-          )}
+                );
+              })}
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </TableContainer>
   );
-};
+}
 
 export default ResponsiveTable;

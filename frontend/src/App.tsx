@@ -11,9 +11,7 @@ import DashboardMain from './components/dashboard/DashboardMain';
 import ReportList from './components/reports/ReportList';
 import ReportForm from './components/reports/ReportForm';
 import ReportDetail from './components/reports/ReportDetail';
-import MessageList from './components/messages/MessageList';
-import MessageDetail from './components/messages/MessageDetail';
-import ComposeMessage from './components/messages/ComposeMessage';
+import ChatInterface from './components/messages/ChatInterface'; // Assuming this is used somewhere
 import SettingsPage from './components/settings/SettingsPage';
 import UserManagement from './components/admin/UserManagement';
 import AdminReportEdit from './components/admin/AdminReportEdit';
@@ -25,6 +23,7 @@ import AdminPositionRequests from './components/admin/AdminPositionRequests';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { CssBaseline } from '@mui/material';
+
 
 function App() {
   return (
@@ -49,10 +48,7 @@ function App() {
               <Route path="/reports/:id/edit" element={<ProtectedRoute roles={['cith_centre']}><Layout><ReportForm /></Layout></ProtectedRoute>} />
               
               {/* Messages Routes */}
-              <Route path="/messages" element={<ProtectedRoute><Layout><MessageList /></Layout></ProtectedRoute>} />
-              <Route path="/messages/compose" element={<ProtectedRoute><Layout><ComposeMessage /></Layout></ProtectedRoute>} />
-              <Route path="/messages/:id" element={<ProtectedRoute><Layout><MessageDetail /></Layout></ProtectedRoute>} />
-              
+              <Route path="/messages" element={<ProtectedRoute><Layout><ChatInterface /></Layout></ProtectedRoute>} />
               {/* Admin Routes */}
               <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><Layout><UserManagement /></Layout></ProtectedRoute>} />
               <Route path="/admin/position-requests" element={<ProtectedRoute roles={['admin']}><Layout><AdminPositionRequests /></Layout></ProtectedRoute>} />

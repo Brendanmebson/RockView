@@ -78,7 +78,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const handleNotificationUpdate = (updatedNotifications: any[]) => {
       setNotifications(updatedNotifications);
     };
-    
+      notificationService.startPolling(30000); // Poll every 30 seconds
+
     notificationService.addListener(handleNotificationUpdate);
     
     return () => {
@@ -113,13 +114,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const fetchNotifications = async () => {
-    try {
-      const fetchedNotifications = await notificationService.fetchNotifications();
-      setNotifications(fetchedNotifications);
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    }
-  };
+  try {
+    await notificationService.fetchNotifications();
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+  }
+};
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -532,7 +532,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           width: { sm: currentDrawerWidth }, 
           flexShrink: { sm: 0 },
           transition: 'width 0.3s',
-          zIndex: theme.zIndex.drawer + 10, // Much higher than AppBar
+    zIndex: { xs: theme.zIndex.drawer + 20, sm: theme.zIndex.drawer + 10 }, // Higher on mobile
           position: 'relative',
           height: '100vh',
         }}
@@ -549,9 +549,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: mobileDrawerWidth,
-              zIndex: theme.zIndex.drawer + 15,
+              zIndex: theme.zIndex.drawer + 25,
               height: '100vh',
             },
+            '& .MuiBackdrop-root': {
+        zIndex: theme.zIndex.drawer + 24,
+            }
           }}
         >
           {drawer}
@@ -602,7 +605,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           position="relative"
           sx={{
             width: '100%',
-            zIndex: theme.zIndex.drawer + 1, // Lower than drawer
+      zIndex: { xs: theme.zIndex.drawer - 1, sm: theme.zIndex.drawer + 1 }, // Lower on mobile
             boxShadow: 1,
           }}
         >
@@ -731,72 +734,82 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     Notifications
                   </Typography>
                 </Box>
-                {notifications.length === 0 ? (
-                  <MenuItem>
-                    <Typography variant="body2" color="textSecondary">
-                      No notifications
-                    </Typography>
-                  </MenuItem>
-                ) : (
-                  notifications.map((notification) => (
-                    <MenuItem 
-                      key={notification.id} 
-                      sx={{ 
-                        py: 1.5, 
-                        borderBottom: 1, 
-                        borderColor: 'divider',
-                        cursor: 'pointer',
-                        '&:hover': {
-                          backgroundColor: 'action.hover',
-                        }
-                      }}
-                      onClick={() => {
-                        if (notification.actionUrl) {
-                          navigate(notification.actionUrl);
-                        }
-                        notificationService.markAsRead(notification.id);
-                        handleNotificationClose();
-                      }}
-                    >
-                      <Box sx={{ width: '100%' }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <Typography 
-                            variant="body2" 
-                            fontWeight={notification.read ? 400 : 600} 
-                            sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-                          >
-                            {notification.title}
-                          </Typography>
-                          {!notification.read && (
-                            <Box sx={{ 
-                              width: 8, 
-                              height: 8, 
-                              borderRadius: '50%', 
-                              bgcolor: notification.type === 'error' ? 'error.main' : 
-                                        notification.type === 'warning' ? 'warning.main' :
-                                        notification.type === 'success' ? 'success.main' : 'primary.main',
-                              ml: 1 
-                            }} />
-                          )}
-                        </Box>
-                        <Typography 
-                          variant="caption" 
-                          color="textSecondary" 
-                          sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                        >
-                          {notification.message}
-                        </Typography>
-                        <Typography 
-                          variant="caption" 
-                          color="textSecondary" 
-                          sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' } }}
-                        >
-                          {new Date(notification.createdAt).toLocaleTimeString()}
-                        </Typography>
-                      </Box>
-                    </MenuItem>
-                  ))
-                )}
+               {notifications.length === 0 ? (
+  <MenuItem>
+    <Typography variant="body2" color="textSecondary">
+      No notifications
+    </Typography>
+  </MenuItem>
+) : (
+  notifications.slice(0, 5).map((notification) => ( // Show only first 5
+    <MenuItem 
+      key={notification._id} 
+      sx={{ 
+        py: 1.5, 
+        borderBottom: 1, 
+        borderColor: 'divider',
+        cursor: 'pointer',
+        '&:hover': {
+          backgroundColor: 'action.hover',
+        }
+      }}
+      onClick={() => {
+        if (notification.actionUrl) {
+          navigate(notification.actionUrl);
+        }
+        notificationService.markAsRead(notification._id);
+        handleNotificationClose();
+      }}
+    >
+      <Box sx={{ width: '100%' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <Typography 
+            variant="body2" 
+            fontWeight={notification.read ? 400 : 600} 
+            sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+          >
+            {notification.title}
+          </Typography>
+          {!notification.read && (
+            <Box sx={{ 
+              width: 8, 
+              height: 8, 
+              borderRadius: '50%', 
+              bgcolor: notification.type === 'report_rejected' ? 'error.main' : 
+                        notification.type === 'report_approved' ? 'success.main' :
+                        notification.type === 'report_submitted' ? 'warning.main' : 'primary.main',
+              ml: 1 
+            }} />
+          )}
+        </Box>
+        <Typography 
+          variant="caption" 
+          color="textSecondary" 
+          sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+        >
+          {notification.message}
+        </Typography>
+        {notification.sender && (
+          <Typography 
+            variant="caption" 
+            color="textSecondary" 
+            sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' } }}
+          >
+            From: {notification.sender.name}
+          </Typography>
+        )}
+        <Typography 
+          variant="caption" 
+          color="textSecondary" 
+          sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' } }}
+        >
+          {new Date(notification.createdAt).toLocaleTimeString()}
+        </Typography>
+      </Box>
+    </MenuItem>
+  ))
+)}
+
                 <Box sx={{ p: 1, textAlign: 'center', borderTop: 1, borderColor: 'divider' }}>
                   <Button size="small" onClick={() => navigate('/notifications')}>
                     View All

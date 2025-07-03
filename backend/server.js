@@ -173,6 +173,8 @@ try {
   app.use('/api/reports', require('./routes/reportRoutes'));
   app.use('/api/messages', require('./routes/messageRoutes'));
   app.use('/api/export', require('./routes/exportRoutes'));
+  app.use('/api/notifications', require('./routes/notificationRoutes'));
+
   
   console.log('✅ All routes loaded successfully');
 } catch (error) {

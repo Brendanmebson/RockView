@@ -17,6 +17,7 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      default: 'Chat Message',
     },
     content: {
       type: String,
@@ -28,6 +29,11 @@ const messageSchema = new mongoose.Schema(
     },
     readAt: {
       type: Date,
+    },
+    messageType: {
+      type: String,
+      enum: ['chat', 'email'],
+      default: 'chat',
     },
     priority: {
       type: String,
