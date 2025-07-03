@@ -42,7 +42,7 @@ export const AnimatedBox: React.FC<{ children: React.ReactNode; delay?: number }
     <motion.div
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.4, delay }}
+      transition={{ duration: 0.5, delay }}
     >
       {children}
     </motion.div>

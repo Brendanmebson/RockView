@@ -54,6 +54,9 @@ import { WeeklyReport, CithCentre, AreaSupervisor } from '../../types';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
+import ResponsiveTable from '../common/ResponsiveTable';
+
+
 
 const ReportList: React.FC = () => {
   const [reports, setReports] = useState<WeeklyReport[]>([]);
@@ -509,163 +512,199 @@ const ReportList: React.FC = () => {
         </Card>
 
         <Card>
-          <CardContent>
-            {loading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <>
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>CITH Centre</TableCell>
-                        <TableCell>Week</TableCell>
-                        <TableCell>Total Attendance</TableCell>
-                        <TableCell>Offerings</TableCell>
-                        <TableCell>First Timers</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Actions</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {reports.map((report) => {
-                        const safeData = getSafeReportData(report);
-                        return (
-                          <TableRow key={report._id}>
-                            <TableCell>{getSafeCentreName(report)}</TableCell>
-                            <TableCell>
-                              {report.week ? new Date(report.week).toLocaleDateString() : 'Unknown Date'}
-                            </TableCell>
-                            <TableCell>
-                              {safeData.male + safeData.female + safeData.children}
-                            </TableCell>
-                            <TableCell>₦{safeData.offerings.toLocaleString()}</TableCell>
-                            <TableCell>{safeData.numberOfFirstTimers}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={getStatusDisplayName(report.status)}
-                                color={getStatusColor(report.status)}
-                                size="small"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  startIcon={<Visibility />}
-                                  onClick={() => navigate(`/reports/${report._id}`)}
-                                >
-                                  View
-                                </Button>
-                              
-                              {user?.role === 'admin' && (
-                                <Button
-                                  size="small"
-                                  color="secondary"
-                                  variant="outlined"
-                                  startIcon={<Edit />}
-                                  onClick={() => navigate(`/admin/reports/${report._id}/edit`)}
-                                >
-                                  Admin Edit
-                                </Button>
-                              )}
-
-                                {/* Edit button for pending reports by original submitter */}
-                                {user?.role === 'cith_centre' && 
-                                 report.submittedBy?._id === user._id && 
-                                 report.status === 'pending' && (
-                                  <Button
-                                    size="small"
-                                    color="secondary"
-                                    variant="outlined"
-                                    startIcon={<Edit />}
-                                    onClick={() => navigate(`/reports/${report._id}/edit`)}
-                                  >
-                                    Edit
-                                  </Button>
-                                )}
-                                
-                                {/* Delete button */}
-                                {canDeleteReport(report) && (
-                                  <Button
-                                    size="small"
-                                    color="error"
-                                    variant="outlined"
-                                    startIcon={<Delete />}
-                                    onClick={() => openDeleteDialog(report)}
-                                  >
-                                    Delete
-                                  </Button>
-                                )}
-                                
-                                {/* Approval buttons for area supervisors and district pastors */}
-                                {canApproveReports() && report.status === 
-                                  (user?.role === 'area_supervisor' ? 'pending' : 'area_approved') && (
-                                  <Box sx={{ display: 'flex', gap: 1 }}>
-                                    <Button
-                                      size="small"
-                                      color="success"
-                                      variant="outlined"
-                                      startIcon={<CheckCircle />}
-                                      onClick={() => handleApprove(report._id)}
-                                    >
-                                      Approve
-                                    </Button>
-                                    <Button
-                                      size="small"
-                                      color="error"
-                                      variant="outlined"
-                                      startIcon={<Cancel />}
-                                      onClick={() => handleReject(report._id)}
-                                    >
-                                      Reject
-                                    </Button>
-                                  </Box>
-                                )}
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-                
-                {reports.length === 0 && !loading && (
-                  <Box sx={{ py: 4, textAlign: 'center' }}>
-                    <Typography variant="body1" color="textSecondary">
-                      No reports found
-                    </Typography>
-                    {user?.role === 'cith_centre' && (
-                      <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        onClick={() => navigate('/reports/new')}
-                        sx={{ mt: 2 }}
-                      >
-                        Submit Your First Report
-                      </Button>
-                    )}
-                  </Box>
-                )}
-              </>
-            )}
-            
-            {totalPages > 1 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                <Pagination
-                  count={totalPages}
-                  page={filters.page}
-                  onChange={(_, page) => setFilters(prev => ({ ...prev, page }))}
-                  color="primary"
+  <CardContent>
+    {loading ? (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    ) : (
+      <>
+        <ResponsiveTable
+          columns={[
+            {
+              key: 'cithCentre',
+              label: 'CITH Centre',
+              render: (_, row) => getSafeCentreName(row),
+            },
+            {
+              key: 'week',
+              label: 'Week',
+              render: (_, row) => row.week ? new Date(row.week).toLocaleDateString() : 'Unknown Date',
+              hideOnMobile: false,
+            },
+            {
+              key: 'attendance',
+              label: 'Total Attendance',
+              render: (_, row) => {
+                const data = getSafeReportData(row);
+                return data.male + data.female + data.children;
+              },
+            },
+            {
+              key: 'offerings',
+              label: 'Offerings',
+              render: (_, row) => {
+                const data = getSafeReportData(row);
+                return `₦${data.offerings.toLocaleString()}`;
+              },
+              hideOnMobile: true,
+            },
+            {
+              key: 'firstTimers',
+              label: 'First Timers',
+              render: (_, row) => {
+                const data = getSafeReportData(row);
+                return data.numberOfFirstTimers;
+              },
+              hideOnMobile: true,
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              render: (_, row) => (
+                <Chip
+                  label={getStatusDisplayName(row.status)}
+                  color={getStatusColor(row.status)}
+                  size="small"
                 />
-              </Box>
-            )}
-          </CardContent>
-        </Card>
+              ),
+            },
+            {
+              key: 'actions',
+              label: 'Actions',
+              render: (_, row) => (
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<Visibility />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/reports/${row._id}`);
+                    }}
+                  >
+                    View
+                  </Button>
+                
+                  {user?.role === 'admin' && (
+                    <Button
+                      size="small"
+                      color="secondary"
+                      variant="outlined"
+                      startIcon={<Edit />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/reports/${row._id}/edit`);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  )}
+
+                  {/* Edit button for pending reports by original submitter */}
+                  {user?.role === 'cith_centre' && 
+                   row.submittedBy?._id === user._id && 
+                   row.status === 'pending' && (
+                    <Button
+                      size="small"
+                      color="secondary"
+                      variant="outlined"
+                      startIcon={<Edit />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/reports/${row._id}/edit`);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                  
+                  {/* Delete button */}
+                  {canDeleteReport(row) && (
+                    <Button
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      startIcon={<Delete />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteDialog(row);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  )}
+                  
+                  {/* Approval buttons for area supervisors and district pastors */}
+                  {canApproveReports() && row.status === 
+                    (user?.role === 'area_supervisor' ? 'pending' : 'area_approved') && (
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button
+                        size="small"
+                        color="success"
+                        variant="outlined"
+                        startIcon={<CheckCircle />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApprove(row._id);
+                        }}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        variant="outlined"
+                        startIcon={<Cancel />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReject(row._id);
+                        }}
+                      >
+                        Reject
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+              ),
+            },
+          ]}
+          data={reports}
+          onRowClick={(row) => navigate(`/reports/${row._id}`)}
+          emptyMessage={
+            user?.role === 'cith_centre' 
+              ? 'No reports found. Submit your first report to get started.'
+              : 'No reports found'
+          }
+        />
+        
+        {reports.length === 0 && !loading && user?.role === 'cith_centre' && (
+          <Box sx={{ py: 4, textAlign: 'center' }}>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={() => navigate('/reports/new')}
+              sx={{ mt: 2 }}
+            >
+              Submit Your First Report
+            </Button>
+          </Box>
+        )}
+      </>
+    )}
+    
+    {totalPages > 1 && (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+        <Pagination
+          count={totalPages}
+          page={filters.page}
+          onChange={(_, page) => setFilters(prev => ({ ...prev, page }))}
+          color="primary"
+        />
+      </Box>
+    )}
+  </CardContent>
+</Card>
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>

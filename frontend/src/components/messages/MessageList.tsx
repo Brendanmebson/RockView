@@ -1,59 +1,55 @@
-// frontend/src/components/messages/MessageList.tsx
+// src/components/messages/MessageList.tsx
 import React, { useEffect, useState } from 'react';
 import {
   Box,
   Card,
   CardContent,
   Typography,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  Avatar,
-  Chip,
   Button,
   Tabs,
   Tab,
   IconButton,
-  Checkbox,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   Fab,
   Badge,
-  Tooltip,
   Alert,
+  CircularProgress,
+  Paper,
+  Avatar,
+  Chip,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import {
   Inbox,
   Send,
   Delete,
   MarkEmailRead,
-  MarkEmailUnread,
   Add,
   Reply,
-  Forward,
-  Star,
-  StarBorder,
+  Message,
+  MoreVert,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import ChatMessage from './ChatMessage';
+
+interface MessageUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 interface Message {
   _id: string;
-  from: {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-  } | null; // Allow null
-  to: {
-    _id: string;
-    name: string;
-    email: string;
-    role: string;
-  } | null; // Allow null
+  from: MessageUser | null;
+  to: MessageUser | null;
   subject: string;
   content: string;
   isRead: boolean;
@@ -63,7 +59,32 @@ interface Message {
   readAt?: string;
 }
 
+// Props interface for ChatMessage component to ensure type safety
+interface ChatMessageProps {
+  message: {
+    _id: string;
+    from: MessageUser;
+    to: MessageUser;
+    subject: string;
+    content: string;
+    isRead: boolean;
+    priority: string;
+    category: string;
+    createdAt: string;
+    readAt?: string;
+  };
+  onReply: () => void;
+  onSelect: (selected: boolean) => void;
+  isSelected: boolean;
+  showDetails: boolean;
+  currentTab: number;
+}
+
 const MessageList: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const { user } = useAuth();
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
   const [currentTab, setCurrentTab] = useState(0);
@@ -78,14 +99,26 @@ const MessageList: React.FC = () => {
     fetchUnreadCount();
   }, [currentTab]);
 
+  useEffect(() => {
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchMessages();
+      fetchUnreadCount();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [currentTab]);
+
   const fetchMessages = async () => {
     setLoading(true);
+    setError('');
     try {
       const type = currentTab === 0 ? 'inbox' : 'sent';
-      const response = await api.get(`/messages?type=${type}`);
-      setMessages(response.data.messages);
+      const response = await api.get(`/messages?type=${type}&limit=50`);
+      setMessages(response.data.messages || []);
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to fetch messages');
+      console.error('Error fetching messages:', error);
     } finally {
       setLoading(false);
     }
@@ -105,27 +138,8 @@ const MessageList: React.FC = () => {
     setSelectedMessages([]);
   };
 
-  const handleMessageClick = (messageId: string) => {
-    navigate(`/messages/${messageId}`);
-  };
-
-  const handleSelectMessage = (messageId: string) => {
-    setSelectedMessages(prev => 
-      prev.includes(messageId) 
-        ? prev.filter(id => id !== messageId)
-        : [...prev, messageId]
-    );
-  };
-
-  const handleMarkAsRead = async () => {
-    try {
-      await api.put('/messages/mark-read', { messageIds: selectedMessages });
-      fetchMessages();
-      fetchUnreadCount();
-      setSelectedMessages([]);
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Failed to mark messages as read');
-    }
+  const handleReply = (message: Message) => {
+    navigate('/messages/compose', { state: { replyTo: message } });
   };
 
   const handleDeleteMessages = async () => {
@@ -141,37 +155,17 @@ const MessageList: React.FC = () => {
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent':
-        return 'error';
-      case 'high':
-        return 'warning';
-      case 'normal':
-        return 'primary';
-      case 'low':
-        return 'default';
-      default:
-        return 'default';
+  const handleMarkAsRead = async () => {
+    try {
+      await api.put('/messages/mark-read', { messageIds: selectedMessages });
+      fetchMessages();
+      fetchUnreadCount();
+      setSelectedMessages([]);
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Failed to mark messages as read');
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 1) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays <= 7) {
-      return date.toLocaleDateString([], { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    }
-  };
-
-  // Helper functions to safely get user names
   const getFromName = (message: Message) => {
     return message.from?.name || 'Unknown Sender';
   };
@@ -180,164 +174,222 @@ const MessageList: React.FC = () => {
     return message.to?.name || 'Unknown Recipient';
   };
 
-  const getFromInitial = (message: Message) => {
-    const name = getFromName(message);
-    return name.charAt(0).toUpperCase();
+  // Helper function to create a safe message for ChatMessage component
+  const createSafeMessage = (message: Message): ChatMessageProps['message'] => {
+  const defaultUser = {
+    _id: 'unknown',
+    name: 'Unknown User',
+    email: 'unknown@example.com',
+    role: 'unknown'
   };
 
-  const getToInitial = (message: Message) => {
-    const name = getToName(message);
-    return name.charAt(0).toUpperCase();
+  return {
+    _id: message._id,
+    from: message.from || defaultUser,
+    to: message.to || defaultUser,
+    subject: message.subject || 'No Subject',
+    content: message.content || '',
+    isRead: message.isRead,
+    priority: message.priority || 'normal',
+    category: message.category || 'general',
+    createdAt: message.createdAt,
+    readAt: message.readAt
   };
+};
 
   return (
-    <Box>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Messages</Typography>
+        <Typography variant="h4" sx={{ fontSize: { xs: '1.75rem', sm: '2.125rem' } }}>
+          Messages
+        </Typography>
+        {!isMobile && (
+          <Button
+            variant="contained"
+            startIcon={<Add />}
+            onClick={() => navigate('/messages/compose')}
+          >
+            New Message
+          </Button>
+        )}
+      </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Chat Interface */}
+      <Card sx={{ flex: 1, display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)' }}>
+        {/* Tabs Header */}
+        <Box sx={{ 
+          borderBottom: 1, 
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          px: 2,
+          py: 1
+        }}>
+          <Tabs value={currentTab} onChange={handleTabChange} variant="fullWidth">
+            <Tab 
+              icon={
+                <Badge badgeContent={unreadCount} color="error">
+                  <Inbox />
+                </Badge>
+              } 
+              label={isMobile ? '' : 'Inbox'}
+              sx={{ minWidth: isMobile ? 'auto' : 120 }}
+            />
+            <Tab 
+              icon={<Send />} 
+              label={isMobile ? '' : 'Sent'} 
+              sx={{ minWidth: isMobile ? 'auto' : 120 }}
+            />
+          </Tabs>
+          
+          {isMobile && (
+            <IconButton
+              color="primary"
+              onClick={() => navigate('/messages/compose')}
+              sx={{ ml: 1 }}
+            >
+              <Add />
+            </IconButton>
+          )}
+        </Box>
+
+        {/* Action Bar */}
+        {selectedMessages.length > 0 && (
+          <Box sx={{ 
+            display: 'flex', 
+            gap: 1, 
+            p: 2, 
+            bgcolor: 'action.hover',
+            borderBottom: 1,
+            borderColor: 'divider'
+          }}>
+            <Typography variant="body2" sx={{ flexGrow: 1, alignSelf: 'center' }}>
+              {selectedMessages.length} message(s) selected
+            </Typography>
+            {currentTab === 0 && (
+              <Button size="small" startIcon={<MarkEmailRead />} onClick={handleMarkAsRead}>
+                Mark Read
+              </Button>
+            )}
+            <Button 
+              size="small" 
+              color="error" 
+              startIcon={<Delete />} 
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              Delete
+            </Button>
+          </Box>
+        )}
+
+        {/* Messages Container */}
+        <Box sx={{ 
+          flex: 1, 
+          overflow: 'auto',
+          bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.50',
+          position: 'relative'
+        }}>
+          {loading ? (
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              height: '100%' 
+            }}>
+              <CircularProgress />
+            </Box>
+          ) : messages.length === 0 ? (
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              alignItems: 'center', 
+              justifyContent: 'center',
+              height: '100%',
+              textAlign: 'center',
+              p: 4
+            }}>
+              <Message sx={{ fontSize: 64, mb: 2, opacity: 0.3, color: 'text.secondary' }} />
+              <Typography variant="h6" gutterBottom color="text.secondary">
+                {currentTab === 0 ? 'No messages in inbox' : 'No sent messages'}
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 3, color: 'text.secondary' }}>
+                {currentTab === 0 
+                  ? 'When you receive messages, they\'ll appear here' 
+                  : 'Messages you send will appear here'
+                }
+              </Typography>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => navigate('/messages/compose')}
+              >
+                Send Your First Message
+              </Button>
+            </Box>
+          ) : (
+            <Box sx={{ p: 2 }}>
+              <AnimatePresence>
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={message._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <ChatMessage
+                      message={createSafeMessage(message)}
+                      onReply={() => handleReply(message)}
+                      onSelect={(selected: boolean) => {
+                        if (selected) {
+                          setSelectedMessages(prev => [...prev, message._id]);
+                        } else {
+                          setSelectedMessages(prev => prev.filter(id => id !== message._id));
+                        }
+                      }}
+                      isSelected={selectedMessages.includes(message._id)}
+                      showDetails={true}
+                      currentTab={currentTab}
+                    />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </Box>
+          )}
+        </Box>
+      </Card>
+
+      {/* Floating Action Button for Mobile */}
+      {isMobile && (
         <Fab
           color="primary"
           onClick={() => navigate('/messages/compose')}
-          sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1000 }}
+          sx={{ 
+            position: 'fixed', 
+            bottom: 16, 
+            right: 16, 
+            zIndex: 1000 
+          }}
         >
           <Add />
         </Fab>
-      </Box>
-
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
-
-      <Card>
-        <CardContent>
-          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-            <Tabs value={currentTab} onChange={handleTabChange}>
-              <Tab 
-                icon={
-                  <Badge badgeContent={unreadCount} color="error">
-                    <Inbox />
-                  </Badge>
-                } 
-                label="Inbox" 
-              />
-              <Tab icon={<Send />} label="Sent" />
-            </Tabs>
-          </Box>
-
-          {selectedMessages.length > 0 && (
-            <Box sx={{ display: 'flex', gap: 1, mb: 2, p: 1, bgcolor: 'action.hover', borderRadius: 1 }}>
-              <Typography variant="body2" sx={{ flexGrow: 1, alignSelf: 'center' }}>
-                {selectedMessages.length} message(s) selected
-              </Typography>
-              {currentTab === 0 && (
-                <Button size="small" startIcon={<MarkEmailRead />} onClick={handleMarkAsRead}>
-                  Mark as Read
-                </Button>
-              )}
-              <Button 
-                size="small" 
-                color="error" 
-                startIcon={<Delete />} 
-                onClick={() => setDeleteDialogOpen(true)}
-              >
-                Delete
-              </Button>
-            </Box>
-          )}
-
-          <List>
-            {messages.map((message) => (
-              <ListItem
-                key={message._id}
-                sx={{
-                  cursor: 'pointer',
-                  borderRadius: 1,
-                  mb: 1,
-                  bgcolor: message.isRead || currentTab === 1 ? 'transparent' : 'action.hover',
-                  '&:hover': { bgcolor: 'action.selected' },
-                }}
-              >
-                <Checkbox
-                  checked={selectedMessages.includes(message._id)}
-                  onChange={() => handleSelectMessage(message._id)}
-                  sx={{ mr: 1 }}
-                />
-                <ListItemAvatar>
-                  <Avatar>
-                    {currentTab === 0 
-                      ? getFromInitial(message)
-                      : getToInitial(message)
-                    }
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography 
-                        variant="body2" 
-                        fontWeight={message.isRead || currentTab === 1 ? 'normal' : 'bold'}
-                        sx={{ minWidth: 150 }}
-                      >
-                        {currentTab === 0 ? getFromName(message) : getToName(message)}
-                      </Typography>
-                      {message.priority !== 'normal' && (
-                        <Chip 
-                          label={message.priority.toUpperCase()} 
-                          size="small" 
-                          color={getPriorityColor(message.priority)}
-                        />
-                      )}
-                    </Box>
-                  }
-                  secondary={
-                    <Box>
-                      <Typography 
-                        variant="body2" 
-                        fontWeight={message.isRead || currentTab === 1 ? 'normal' : 'bold'}
-                        sx={{ 
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '60ch'
-                        }}
-                      >
-                        {message.subject}
-                      </Typography>
-                      <Typography 
-                        variant="caption" 
-                        color="textSecondary"
-                        sx={{ 
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          maxWidth: '80ch',
-                          display: 'block'
-                        }}
-                      >
-                        {message.content}
-                      </Typography>
-                    </Box>
-                  }
-                  onClick={() => handleMessageClick(message._id)}
-                />
-                <Typography variant="caption" color="textSecondary" sx={{ ml: 2 }}>
-                  {formatDate(message.createdAt)}
-                </Typography>
-              </ListItem>
-            ))}
-          </List>
-
-          {messages.length === 0 && !loading && (
-            <Typography variant="body1" textAlign="center" sx={{ py: 4 }}>
-              {currentTab === 0 ? 'No messages in inbox' : 'No sent messages'}
-            </Typography>
-          )}
-        </CardContent>
-      </Card>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle>Delete Messages</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to Delete {selectedMessages.length} message(s)? 
+            Are you sure you want to delete {selectedMessages.length} message(s)? 
             This action cannot be undone.
           </Typography>
         </DialogContent>

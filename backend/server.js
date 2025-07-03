@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const mongoose = require('mongoose');
 require('dotenv').config();
 
 const connectDB = require('./config/database');
@@ -92,16 +93,51 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    uptime: process.uptime(),
-    memory: process.memoryUsage()
-  });
-});
+// Health check endpoints (for uptime monitoring)
+const healthCheck = async (req, res) => {
+  try {
+    // Check database connection
+    const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+    
+    // Basic health info
+    const healthData = {
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: dbStatus,
+      memory: {
+        used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024 * 100) / 100,
+        total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024 * 100) / 100,
+      },
+      environment: process.env.NODE_ENV || 'development',
+      version: process.env.npm_package_version || '1.0.0'
+    };
+
+    // If database is disconnected, return 503
+    if (dbStatus !== 'connected') {
+      return res.status(503).json({
+        ...healthData,
+        status: 'UNHEALTHY',
+        error: 'Database disconnected'
+      });
+    }
+
+    res.status(200).json(healthData);
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      uptime: process.uptime()
+    });
+  }
+};
+
+// Multiple health check endpoints for different monitoring services
+app.get('/health', healthCheck);
+app.get('/ping', healthCheck);
+app.get('/api/ping', healthCheck);
+app.get('/api/health', healthCheck);
 
 // Root route
 app.get('/', (req, res) => {
@@ -110,7 +146,13 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     status: 'running',
     environment: process.env.NODE_ENV,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    endpoints: {
+      health: '/health, /ping, /api/ping, /api/health',
+      api: '/api/*',
+      docs: 'Available routes listed below'
+    }
   });
 });
 
@@ -155,19 +197,23 @@ app.use('*', (req, res) => {
     message: `Route ${req.originalUrl} not found`,
     timestamp: new Date().toISOString(),
     availableRoutes: [
-      'GET /health',
-      'GET /',
-      'GET /api/public/*',
-      'POST /api/auth/login',
-      'POST /api/auth/register',
-      'GET /api/auth/profile',
-      'GET /api/users',
-      'GET /api/districts',
-      'GET /api/area-supervisors',
-      'GET /api/cith-centres',
-      'GET /api/reports',
-      'GET /api/messages',
-      'GET /api/export/*'
+      'GET /health - Health check',
+      'GET /ping - Health check (alternative)',
+      'GET /api/ping - Health check (API)',
+      'GET /api/health - Health check (API alternative)',
+      'GET / - API info',
+      'GET /api/public/* - Public endpoints',
+      'POST /api/auth/login - User login',
+      'POST /api/auth/register - User registration',
+      'GET /api/auth/profile - User profile',
+      'GET /api/users - Users management',
+      'GET /api/districts - Districts management',
+      'GET /api/zonal-supervisors - Zonal supervisors',
+      'GET /api/area-supervisors - Area supervisors',
+      'GET /api/cith-centres - CITH centres',
+      'GET /api/reports - Weekly reports',
+      'GET /api/messages - Messaging system',
+      'GET /api/export/* - Data export'
     ]
   });
 });
@@ -175,16 +221,29 @@ app.use('*', (req, res) => {
 // Global error handler
 app.use(errorHandler);
 
+// Database connection event handlers
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️  MongoDB disconnected');
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('✅ MongoDB reconnected');
+});
+
 // Graceful error handling
 process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-  console.error('Shutting down...');
+  console.error('💥 Uncaught Exception:', err);
+  console.error('🔄 Shutting down...');
   process.exit(1);
 });
 
 process.on('unhandledRejection', (err, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', err);
-  console.error('Shutting down...');
+  console.error('💥 Unhandled Rejection at:', promise, 'reason:', err);
+  console.error('🔄 Shutting down...');
   process.exit(1);
 });
 
@@ -192,14 +251,24 @@ process.on('unhandledRejection', (err, promise) => {
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`🚀 RockView Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   console.log(`📍 Server URL: ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}`);
-  console.log(`🗄️  Database: ${process.env.MONGODB_URI ? 'Connected' : 'Not configured'}`);
-  console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? 'Configured' : 'Not configured'}`);
+  console.log(`🗄️  Database: ${mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Not connected'}`);
+  console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✅ Configured' : '❌ Not configured'}`);
+  
+  // Health check endpoints for monitoring
+  console.log('\n🏥 Health Check Endpoints (for UptimeRobot):');
+  console.log(`  GET  ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/ping`);
+  console.log(`  GET  ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/health`);
+  console.log(`  GET  ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/api/ping`);
+  console.log(`  GET  ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/api/health`);
   
   // Log available routes
   console.log('\n📋 Available API Routes:');
   console.log('  GET  /health                    - Health check');
+  console.log('  GET  /ping                      - Health check (alternative)');
+  console.log('  GET  /api/ping                  - Health check (API)');
+  console.log('  GET  /api/health                - Health check (API alternative)');
   console.log('  GET  /                          - API info');
   console.log('  GET  /api/public/*             - Public endpoints');
   console.log('  POST /api/auth/register        - User registration');
@@ -207,6 +276,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('  GET  /api/auth/profile         - User profile');
   console.log('  GET  /api/users                - Users management');
   console.log('  GET  /api/districts            - Districts management');
+  console.log('  GET  /api/zonal-supervisors    - Zonal supervisors');
   console.log('  GET  /api/area-supervisors     - Area supervisors');
   console.log('  GET  /api/cith-centres         - CITH centres');
   console.log('  GET  /api/reports              - Weekly reports');
@@ -217,23 +287,76 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   if (process.env.NODE_ENV === 'development') {
     console.log('\n🌐 Allowed CORS origins:', allowedOrigins);
   }
+  
+  // UptimeRobot setup instructions
+  console.log('\n🤖 UptimeRobot Setup Instructions:');
+  console.log('1. Go to https://uptimerobot.com');
+  console.log('2. Create a new monitor');
+  console.log('3. Set Monitor Type: HTTP(s)');
+  console.log('4. Set Friendly Name: RockView Health Check');
+  console.log(`5. Set URL: ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/ping`);
+  console.log('6. Set Monitoring Interval: 5 minutes');
+  console.log('7. Enable notifications for downtime alerts');
 });
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
-  server.close(() => {
-    console.log('Process terminated');
+const gracefulShutdown = (signal) => {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+  
+  server.close(async () => {
+    console.log('🔄 HTTP server closed');
+    
+    try {
+      await mongoose.connection.close();
+      console.log('🗄️  Database connection closed');
+    } catch (error) {
+      console.error('❌ Error closing database connection:', error);
+    }
+    
+    console.log('✅ Process terminated gracefully');
     process.exit(0);
   });
-});
+  
+  // Force close server after 10 seconds
+  setTimeout(() => {
+    console.error('⏰ Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 10000);
+};
 
-process.on('SIGINT', () => {
-  console.log('SIGINT received. Shutting down gracefully...');
-  server.close(() => {
-    console.log('Process terminated');
-    process.exit(0);
-  });
-});
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Keep alive function to prevent server from sleeping (for free hosting)
+const keepAlive = () => {
+  setInterval(() => {
+    if (process.env.NODE_ENV === 'production') {
+      // Make a request to keep the server alive
+      const http = require('http');
+      const options = {
+        hostname: 'localhost',
+        port: PORT,
+        path: '/ping',
+        method: 'GET'
+      };
+      
+      const req = http.request(options, (res) => {
+        console.log(`Keep-alive ping: ${res.statusCode}`);
+      });
+      
+      req.on('error', (e) => {
+        console.error(`Keep-alive error: ${e.message}`);
+      });
+      
+      req.end();
+    }
+  }, 14 * 60 * 1000); // Ping every 14 minutes
+};
+
+// Start keep-alive only in production
+if (process.env.NODE_ENV === 'production') {
+  console.log('🔄 Starting keep-alive service...');
+  keepAlive();
+}
 
 module.exports = app;

@@ -18,6 +18,8 @@ import {
   TableContainer,
   TableRow,
   Paper,
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
 import {
   ArrowBack,
@@ -38,6 +40,8 @@ const ReportDetail: React.FC = () => {
   const [report, setReport] = useState<WeeklyReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const theme = useTheme();
+const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   useEffect(() => {
     fetchReport();
@@ -133,35 +137,59 @@ const ReportDetail: React.FC = () => {
   return (
     <Box>
       {/* Header with Back Button */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBack />}
-            onClick={() => navigate('/reports')}
-          >
-            Back to Reports
-          </Button>
-          <Typography variant="h4">Report Details</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-          <Button
-            variant="outlined"
-            startIcon={<Download />}
-            onClick={() => handleExport('xlsx')}
-          >
-            Export Excel
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<GetApp />}
-            onClick={() => handleExport('pdf')}
-          >
-            Export PDF
-          </Button>
-          {getStatusChip(report.status)}
-        </Box>
-      </Box>
+<Box sx={{ mb: 3 }}>
+  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+    <Button
+      variant="outlined"
+      startIcon={<ArrowBack />}
+      onClick={() => navigate('/reports')}
+      size={isMobile ? "small" : "medium"}
+    >
+      {isMobile ? 'Back' : 'Back to Reports'}
+    </Button>
+    <Typography variant="h4" sx={{ fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+      Report Details
+    </Typography>
+  </Box>
+  
+  {/* Mobile-responsive action buttons */}
+  <Box sx={{ 
+    display: 'flex', 
+    flexDirection: { xs: 'column', sm: 'row' },
+    gap: 1,
+    alignItems: { xs: 'stretch', sm: 'center' },
+    justifyContent: { xs: 'stretch', sm: 'space-between' }
+  }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: { xs: 'column', sm: 'row' },
+      gap: 1,
+      flex: { xs: 1, sm: 'none' }
+    }}>
+      <Button
+        variant="outlined"
+        startIcon={<Download />}
+        onClick={() => handleExport('xlsx')}
+        size={isMobile ? "small" : "medium"}
+        fullWidth={isMobile}
+      >
+        Excel
+      </Button>
+      <Button
+        variant="outlined"
+        startIcon={<GetApp />}
+        onClick={() => handleExport('pdf')}
+        size={isMobile ? "small" : "medium"}
+        fullWidth={isMobile}
+      >
+        PDF
+      </Button>
+    </Box>
+    <Box sx={{ alignSelf: { xs: 'center', sm: 'flex-end' } }}>
+      {getStatusChip(report.status)}
+    </Box>
+  </Box>
+</Box>
 
       {/* Meta Information */}
       <Card sx={{ mb: 3 }}>

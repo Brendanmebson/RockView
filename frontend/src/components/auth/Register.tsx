@@ -23,6 +23,8 @@ import {
   DialogContent,
   DialogActions,
   CircularProgress,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -68,6 +70,8 @@ interface ZonalSupervisor {
 }
 
 const Register: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { darkMode } = useThemeContext();
   const lightLogo = getLogo(false);
   const darkLogo = getLogo(true);
@@ -113,6 +117,13 @@ const Register: React.FC = () => {
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
   const steps = ['Personal Info', 'Role Selection', 'Assignment'];
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     fetchDistricts();
@@ -354,6 +365,13 @@ const Register: React.FC = () => {
         setError('Please enter a valid phone number');
         return;
       }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        setError('Please enter a valid email address');
+        return;
+      }
     } else if (activeStep === 1) {
       if (!formData.role) {
         setError('Please select your role');
@@ -372,6 +390,7 @@ const Register: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setError('');
     setLoading(true);
 
@@ -397,463 +416,456 @@ const Register: React.FC = () => {
     try {
       await register(formData);
       navigate('/dashboard');
-    } catch (error: any) {
-      setError(error.response?.data?.message || 'Registration failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+      } catch (error: any) {
+     setError(error.response?.data?.message || 'Registration failed');
+   } finally {
+     setLoading(false);
+   }
+ };
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
-  };
+ const togglePasswordVisibility = () => {
+   setShowPassword(!showPassword);
+ };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return <Users size={20} />;
-      case 'district_pastor':
-        return <Building size={20} />;
-      case 'zonal_supervisor':
-        return <Users size={20} />;
-      case 'area_supervisor':
-        return <Business fontSize="small" />;
-      case 'cith_centre':
-        return <Home size={20} />;
-      default:
-        return <Badge />;
-    }
-  };
+ const getRoleIcon = (role: string) => {
+   switch (role) {
+     case 'admin':
+       return <Users size={20} />;
+     case 'district_pastor':
+       return <Building size={20} />;
+     case 'zonal_supervisor':
+       return <Users size={20} />;
+     case 'area_supervisor':
+       return <Business fontSize="small" />;
+     case 'cith_centre':
+       return <Home size={20} />;
+     default:
+       return <Badge />;
+   }
+ };
 
-  const getSafeDistrictName = (district: District) => {
-    return district.name || 'Unknown District';
-  };
+ const getSafeDistrictName = (district: District) => {
+   return district.name || 'Unknown District';
+ };
 
-  const getSafeAreaName = (area: AreaSupervisor) => {
-    return area.name || 'Unknown Area';
-  };
+ const getSafeAreaName = (area: AreaSupervisor) => {
+   return area.name || 'Unknown Area';
+ };
 
-  const getSafeZonalName = (zonal: ZonalSupervisor) => {
-    return zonal.name || 'Unknown Zone';
-  };
+ const getSafeZonalName = (zonal: ZonalSupervisor) => {
+   return zonal.name || 'Unknown Zone';
+ };
 
-  const getSafeCentreName = (centre: CithCentre) => {
-    return centre.name || 'Unknown Centre';
-  };
+ const getSafeCentreName = (centre: CithCentre) => {
+   return centre.name || 'Unknown Centre';
+ };
 
-  const LogoComponent = ({ size }: { size: number }) => {
-    const logoSrc = darkMode ? darkLogo : lightLogo;
-    
-    if (logoSrc) {
-      return (
-        <img 
-          src={logoSrc} 
-          alt="House on the Rock" 
-          style={{
-            width: size,
-            height: size,
-            objectFit: 'contain'
-          }}
-        />
-      );
-    }
-    
-    return (
-      <Box
-        sx={{
-          width: size,
-          height: size,
-          borderRadius: '50%',
-          background: darkMode 
-            ? 'linear-gradient(45deg, #66BB6A, #4CAF50)'
-            : 'linear-gradient(45deg, #2E7D32, #4CAF50)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: size * 0.4,
-        }}
-      >
-        H
-      </Box>
-    );
-  };
+ const LogoComponent = ({ size }: { size: number }) => {
+   const logoSrc = darkMode ? darkLogo : lightLogo;
+   
+   if (logoSrc) {
+     return (
+       <img 
+         src={logoSrc} 
+         alt="House on the Rock" 
+         style={{
+           width: size,
+           height: size,
+           objectFit: 'contain'
+         }}
+       />
+     );
+   }
+   
+   return (
+     <Box
+       sx={{
+         width: size,
+         height: size,
+         borderRadius: '50%',
+         background: darkMode 
+           ? 'linear-gradient(45deg, #66BB6A, #4CAF50)'
+           : 'linear-gradient(45deg, #2E7D32, #4CAF50)',
+         display: 'flex',
+         alignItems: 'center',
+         justifyContent: 'center',
+         color: 'white',
+         fontWeight: 'bold',
+         fontSize: size * 0.4,
+       }}
+     >
+       H
+     </Box>
+   );
+ };
 
-  const renderStepContent = (step: number) => {
-    switch (step) {
-      case 0:
-        return (
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-          >
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                required
-                fullWidth
-                name="name"
-                label="Full Name"
-                value={formData.name}
-                onChange={handleChange}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Person color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                required
-                fullWidth
-                name="email"
-                label="Email Address"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Email color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              <TextField
-                required
-                fullWidth
-                name="phone"
-                label="Phone Number"
-                type="tel"
-                value={formData.phone}
-                onChange={handleChange}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Phone color="action" />
-                    </InputAdornment>
-                  ),
-                }}
-                helperText="Enter your phone number with country code (e.g., +234...)"
-              />
-              <TextField
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={handleChange}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle password visibility"
-                        onClick={togglePasswordVisibility}
-                        edge="end"
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                helperText="Password must be at least 6 characters long"
-              />
-            </Box>
-          </motion.div>
-        );
-      case 1:
-        return (
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-          >
-            <FormControl fullWidth required>
-              <InputLabel>Role in Church</InputLabel>
-              <Select
-                name="role"
-                value={formData.role}
-                onChange={handleSelectChange('role')}
-                startAdornment={
-                  <InputAdornment position="start">
-                    {getRoleIcon(formData.role)}
-                  </InputAdornment>
-                }
-              >
-                <MenuItem value="cith_centre">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Home size={16} />
-                    CITH Centre Leader
-                  </Box>
-                </MenuItem>
-                <MenuItem value="area_supervisor">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Business sx={{ fontSize: 16 }} />
-                    Area Supervisor
-                  </Box>
-                </MenuItem>
-                <MenuItem value="zonal_supervisor">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Users size={16} />
-                    Zonal Supervisor
-                  </Box>
-                </MenuItem>
-                <MenuItem value="district_pastor">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Building size={16} />
-                    District Pastor
-                  </Box>
-                </MenuItem>
-                {/* <MenuItem value="admin">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Users size={16} />
-                    Administrator
-                  </Box>
-                </MenuItem> */}
-              </Select>
-            </FormControl>
-          </motion.div>
-        );
-      case 2:
-        return (
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-          >
-            {/* District Pastor selection */}
-            {formData.role === 'district_pastor' && (
-              <FormControl fullWidth required>
-                <InputLabel>Select Your District</InputLabel>
-                <Select
-                  name="districtId"
-                  value={formData.districtId}
-                  onChange={handleSelectChange('districtId')}
-                  startAdornment={
-                    <InputAdornment position="start">
-                      <Building size={16} />
-                    </InputAdornment>
-                  }
-                  disabled={fetchingDistricts}
-                >
-                  {fetchingDistricts ? (
-                    <MenuItem value="">
-                      <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
-                    </MenuItem>
-                  ) : districts.length === 0 ? (
-                    <MenuItem value="">No districts available</MenuItem>
-                  ) : (
-                    districts.map((district) => (
-                      <MenuItem key={district._id} value={district._id}>
-                        <Box>
-                          <Typography variant="body1">{getSafeDistrictName(district)}</Typography>
-                          <Typography variant="caption" color="textSecondary">
-                            District {district.districtNumber} - {district.displayText || district.pastorName}
-                          </Typography>
-                        </Box>
-                      </MenuItem>
-                    ))
-                  )}
-                </Select>
-                {districts.length === 0 && !fetchingDistricts && (
-                  <Typography variant="caption" color="error" sx={{ mt: 1 }}>
-                    No districts available. Please contact administrator.
-                  </Typography>
-                )}
-              </FormControl>
-            )}
+ const renderStepContent = (step: number) => {
+   switch (step) {
+     case 0:
+       return (
+         <motion.div
+           initial={{ opacity: 0, x: 50 }}
+           animate={{ opacity: 1, x: 0 }}
+           exit={{ opacity: 0, x: -50 }}
+         >
+           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+             <TextField
+               required
+               fullWidth
+               name="name"
+               label="Full Name"
+               value={formData.name}
+               onChange={handleChange}
+               variant="outlined"
+               InputLabelProps={{
+                 shrink: true,
+               }}
+               InputProps={{
+                 startAdornment: (
+                   <InputAdornment position="start">
+                     <Person color="action" />
+                   </InputAdornment>
+                 ),
+               }}
+               sx={{
+                 '& .MuiOutlinedInput-root': {
+                   '& fieldset': {
+                     borderColor: 'rgba(0, 0, 0, 0.23)',
+                   },
+                   '&:hover fieldset': {
+                     borderColor: 'primary.main',
+                   },
+                   '&.Mui-focused fieldset': {
+                     borderColor: 'primary.main',
+                   },
+                 },
+                 '& .MuiInputLabel-root': {
+                   backgroundColor: 'background.paper',
+                   px: 0.5,
+                   '&.Mui-focused': {
+                     color: 'primary.main',
+                   },
+                 },
+               }}
+             />
+             <TextField
+               required
+               fullWidth
+               name="email"
+               label="Email Address"
+               type="email"
+               value={formData.email}
+               onChange={handleChange}
+               variant="outlined"
+               InputLabelProps={{
+                 shrink: true,
+               }}
+               InputProps={{
+                 startAdornment: (
+                   <InputAdornment position="start">
+                     <Email color="action" />
+                   </InputAdornment>
+                 ),
+               }}
+               sx={{
+                 '& .MuiOutlinedInput-root': {
+                   '& fieldset': {
+                     borderColor: 'rgba(0, 0, 0, 0.23)',
+                   },
+                   '&:hover fieldset': {
+                     borderColor: 'primary.main',
+                   },
+                   '&.Mui-focused fieldset': {
+                     borderColor: 'primary.main',
+                   },
+                 },
+                 '& .MuiInputLabel-root': {
+                   backgroundColor: 'background.paper',
+                   px: 0.5,
+                   '&.Mui-focused': {
+                     color: 'primary.main',
+                   },
+                 },
+               }}
+             />
+             <TextField
+               required
+               fullWidth
+               name="phone"
+               label="Phone Number"
+               type="tel"
+               value={formData.phone}
+               onChange={handleChange}
+               variant="outlined"
+               InputLabelProps={{
+                 shrink: true,
+               }}
+               InputProps={{
+                 startAdornment: (
+                   <InputAdornment position="start">
+                     <Phone color="action" />
+                   </InputAdornment>
+                 ),
+               }}
+               helperText="Enter your phone number with country code (e.g., +234...)"
+               sx={{
+                 '& .MuiOutlinedInput-root': {
+                   '& fieldset': {
+                     borderColor: 'rgba(0, 0, 0, 0.23)',
+                   },
+                   '&:hover fieldset': {
+                     borderColor: 'primary.main',
+                   },
+                   '&.Mui-focused fieldset': {
+                     borderColor: 'primary.main',
+                   },
+                 },
+                 '& .MuiInputLabel-root': {
+                   backgroundColor: 'background.paper',
+                   px: 0.5,
+                   '&.Mui-focused': {
+                     color: 'primary.main',
+                   },
+                 },
+               }}
+             />
+             <TextField
+               required
+               fullWidth
+               name="password"
+               label="Password"
+               type={showPassword ? 'text' : 'password'}
+               value={formData.password}
+               onChange={handleChange}
+               variant="outlined"
+               InputLabelProps={{
+                 shrink: true,
+               }}
+               InputProps={{
+                 startAdornment: (
+                   <InputAdornment position="start">
+                     <Lock color="action" />
+                   </InputAdornment>
+                 ),
+                 endAdornment: (
+                   <InputAdornment position="end">
+                     <IconButton
+                       aria-label="toggle password visibility"
+                       onClick={togglePasswordVisibility}
+                       edge="end"
+                     >
+                       {showPassword ? <VisibilityOff /> : <Visibility />}
+                     </IconButton>
+                   </InputAdornment>
+                 ),
+               }}
+               helperText="Password must be at least 6 characters long"
+               sx={{
+                 '& .MuiOutlinedInput-root': {
+                   '& fieldset': {
+                     borderColor: 'rgba(0, 0, 0, 0.23)',
+                   },
+                   '&:hover fieldset': {
+                     borderColor: 'primary.main',
+                   },
+                   '&.Mui-focused fieldset': {
+                     borderColor: 'primary.main',
+                   },
+                 },
+                 '& .MuiInputLabel-root': {
+                   backgroundColor: 'background.paper',
+                   px: 0.5,
+                   '&.Mui-focused': {
+                     color: 'primary.main',
+                   },
+                 },
+               }}
+             />
+           </Box>
+         </motion.div>
+       );
+     case 1:
+       return (
+         <motion.div
+           initial={{ opacity: 0, x: 50 }}
+           animate={{ opacity: 1, x: 0 }}
+           exit={{ opacity: 0, x: -50 }}
+         >
+           <FormControl fullWidth required variant="outlined">
+             <InputLabel 
+               shrink={true}
+               sx={{ 
+                 backgroundColor: 'background.paper',
+                 px: 0.5,
+                 '&.Mui-focused': {
+                   color: 'primary.main',
+                 },
+               }}
+             >
+               Role in Church
+             </InputLabel>
+             <Select
+               name="role"
+               value={formData.role}
+               onChange={handleSelectChange('role')}
+               startAdornment={
+                 <InputAdornment position="start">
+                   {getRoleIcon(formData.role)}
+                 </InputAdornment>
+               }
+               sx={{
+                 '& .MuiOutlinedInput-notchedOutline': {
+                   borderColor: 'rgba(0, 0, 0, 0.23)',
+                 },
+                 '&:hover .MuiOutlinedInput-notchedOutline': {
+                   borderColor: 'primary.main',
+                 },
+                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                   borderColor: 'primary.main',
+                 },
+               }}
+             >
+               <MenuItem value="cith_centre">
+                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                   <Home size={16} />
+                   CITH Centre Leader
+                 </Box>
+               </MenuItem>
+               <MenuItem value="area_supervisor">
+                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                   <Business sx={{ fontSize: 16 }} />
+                   Area Supervisor
+                 </Box>
+               </MenuItem>
+               <MenuItem value="zonal_supervisor">
+                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                   <Users size={16} />
+                   Zonal Supervisor
+                 </Box>
+               </MenuItem>
+               <MenuItem value="district_pastor">
+                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                   <Building size={16} />
+                   District Pastor
+                 </Box>
+               </MenuItem>
+             </Select>
+           </FormControl>
+         </motion.div>
+       );
+     case 2:
+       return (
+         <motion.div
+           initial={{ opacity: 0, x: 50 }}
+           animate={{ opacity: 1, x: 0 }}
+           exit={{ opacity: 0, x: -50 }}
+         >
+           {/* District Pastor selection */}
+           {formData.role === 'district_pastor' && (
+             <FormControl fullWidth required variant="outlined">
+               <InputLabel 
+                 shrink={true}
+                 sx={{ 
+                   backgroundColor: 'background.paper',
+                   px: 0.5,
+                   '&.Mui-focused': {
+                     color: 'primary.main',
+                   },
+                 }}
+               >
+                 Select Your District
+               </InputLabel>
+               <Select
+                 name="districtId"
+                 value={formData.districtId}
+                 onChange={handleSelectChange('districtId')}
+                 startAdornment={
+                   <InputAdornment position="start">
+                     <Building size={16} />
+                   </InputAdornment>
+                 }
+                 disabled={fetchingDistricts}
+                 sx={{
+                   '& .MuiOutlinedInput-notchedOutline': {
+                     borderColor: 'rgba(0, 0, 0, 0.23)',
+                   },
+                   '&:hover .MuiOutlinedInput-notchedOutline': {
+                     borderColor: 'primary.main',
+                   },
+                   '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                     borderColor: 'primary.main',
+                   },
+                 }}
+               >
+                 {fetchingDistricts ? (
+                   <MenuItem value="">
+                     <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
+                   </MenuItem>
+                 ) : districts.length === 0 ? (
+                   <MenuItem value="">No districts available</MenuItem>
+                 ) : (
+                   districts.map((district) => (
+                     <MenuItem key={district._id} value={district._id}>
+                       <Box>
+                         <Typography variant="body1">{getSafeDistrictName(district)}</Typography>
+                         <Typography variant="caption" color="textSecondary">
+                           District {district.districtNumber} - {district.displayText || district.pastorName}
+                         </Typography>
+                       </Box>
+                     </MenuItem>
+                   ))
+                 )}
+               </Select>
+               {districts.length === 0 && !fetchingDistricts && (
+                 <Typography variant="caption" color="error" sx={{ mt: 1 }}>
+                   No districts available. Please contact administrator.
+                 </Typography>
+               )}
+             </FormControl>
+           )}
 
-            {/* Zonal Supervisor selection */}
-            {formData.role === 'zonal_supervisor' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <FormControl fullWidth required>
-                  <InputLabel>Select District</InputLabel>
-                  <Select
-                    name="districtId"
-                    value={formData.districtId}
-                    onChange={handleSelectChange('districtId')}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <Building size={16} />
-                      </InputAdornment>
-                    }
-                    disabled={fetchingDistricts}
-                  >
-                    {fetchingDistricts ? (
-                      <MenuItem value="">
-                        <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
-                      </MenuItem>
-                    ) : districts.length === 0 ? (
-                      <MenuItem value="">No districts available</MenuItem>
-                    ) : (
-                      districts.map((district) => (
-                        <MenuItem key={district._id} value={district._id}>
-                          <Box>
-                            <Typography variant="body1">{getSafeDistrictName(district)}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              District {district.districtNumber} - {district.displayText || district.pastorName}
-                            </Typography>
-                          </Box>
-                        </MenuItem>
-                      ))
-                    )}
-                  </Select>
-                </FormControl>
-                
-                {formData.districtId && (
-                  <FormControl fullWidth required>
-                    <InputLabel>Select Your Zone</InputLabel>
-                    <Select
-                      name="zonalSupervisorId"
-                      value={formData.zonalSupervisorId}
-                      onChange={handleSelectChange('zonalSupervisorId')}
-                      startAdornment={
-                        <InputAdornment position="start">
-                          <Users size={16} />
-                        </InputAdornment>
-                      }
-                      disabled={fetchingZonals}
-                    >
-                      {fetchingZonals ? (
-                        <MenuItem value="">
-                          <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Zones...
-                        </MenuItem>
-                      ) : filteredZonalSupervisors.length === 0 ? (
-                        <MenuItem value="">No zones available in this district</MenuItem>
-                      ) : (
-                        filteredZonalSupervisors.map((zonal) => (
-                          <MenuItem key={zonal._id} value={zonal._id}>
-                            <Box>
-                              <Typography variant="body1">{getSafeZonalName(zonal)}</Typography>
-                              <Typography variant="caption" color="textSecondary">
-                                {zonal.displayText || zonal.supervisorName || 'Unassigned'}
-                              </Typography>
-                            </Box>
-                          </MenuItem>
-                        ))
-                      )}
-                    </Select>
-                  </FormControl>
-                )}
-                
-                {filteredZonalSupervisors.length === 0 && formData.districtId && !fetchingZonals && (
-                  <Alert severity="info">
-                    No zones found for this district. Please contact your administrator.
-                  </Alert>
-                )}
-              </Box>
-            )}
-            
-            {/* Area Supervisor selection - filtered by district for area supervisor role */}
-            {formData.role === 'area_supervisor' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <FormControl fullWidth required>
-                  <InputLabel>Select District</InputLabel>
-                  <Select
-                    name="districtId"
-                    value={formData.districtId}
-                    onChange={handleSelectChange('districtId')}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <Building size={16} />
-                      </InputAdornment>
-                    }
-                    disabled={fetchingDistricts}
-                  >
-                    {fetchingDistricts ? (
-                      <MenuItem value="">
-                        <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
-                      </MenuItem>
-                    ) : districts.length === 0 ? (
-                      <MenuItem value="">No districts available</MenuItem>
-                    ) : (
-                      districts.map((district) => (
-                        <MenuItem key={district._id} value={district._id}>
-                          <Box>
-                            <Typography variant="body1">{getSafeDistrictName(district)}</Typography>
-                            <Typography variant="caption" color="textSecondary">
-                              District {district.districtNumber} - {district.displayText || district.pastorName}
-                            </Typography>
-                          </Box>
-                        </MenuItem>
-                      ))
-                    )}
-                  </Select>
-                </FormControl>
-                
-                {formData.districtId && (
-                  <FormControl fullWidth required>
-                    <InputLabel>Select Your Area</InputLabel>
-                    <Select
-                      name="areaSupervisorId"
-                      value={formData.areaSupervisorId}
-                      onChange={handleSelectChange('areaSupervisorId')}
-                      startAdornment={
-                        <InputAdornment position="start">
-                          <Business fontSize="small" />
-                        </InputAdornment>
-                      }
-                      disabled={fetchingAreas}
-                    >
-                      {fetchingAreas ? (
-                        <MenuItem value="">
-                          <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Areas...
-                        </MenuItem>
-                      ) : filteredAreaSupervisors.length === 0 ? (
-                        <MenuItem value="">No areas available in this district</MenuItem>
-                      ) : (
-                        filteredAreaSupervisors.map((supervisor) => (
-                          <MenuItem key={supervisor._id} value={supervisor._id}>
-                            <Box>
-                              <Typography variant="body1">{getSafeAreaName(supervisor)}</Typography>
-                              <Typography variant="caption" color="textSecondary">
-                                {supervisor.displayText || supervisor.supervisorName}
-                              </Typography>
-                            </Box>
-                          </MenuItem>
-                        ))
-                      )}
-                    </Select>
-                  </FormControl>
-                )}
-                
-                {filteredAreaSupervisors.length === 0 && formData.districtId && !fetchingAreas && (
-                  <Alert severity="info">
-                    No area supervisors found for this district. Please contact your administrator.
-                  </Alert>
-                )}
-              </Box>
-            )}
-
-            {/* CITH Centre selection with nested filtering */}
-            {formData.role === 'cith_centre' && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {/* District selection first */}
-                <FormControl fullWidth required>
-                  <InputLabel>Select District</InputLabel>
-                  <Select
-                    name="districtId"
-                    value={formData.districtId}
-                    onChange={handleSelectChange('districtId')}
-                    startAdornment={
-                      <InputAdornment position="start">
-                        <Building size={16} />
-                      </InputAdornment>
-                    }
-                    disabled={fetchingDistricts}
-                  >
-                    {fetchingDistricts ? (
-                      <MenuItem value="">
-                        <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts
-                        </MenuItem>
+           {/* Zonal Supervisor selection */}
+           {formData.role === 'zonal_supervisor' && (
+             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+               <FormControl fullWidth required variant="outlined">
+                 <InputLabel 
+                   shrink={true}
+                   sx={{ 
+                     backgroundColor: 'background.paper',
+                     px: 0.5,
+                     '&.Mui-focused': {
+                       color: 'primary.main',
+                     },
+                   }}
+                 >
+                   Select District
+                 </InputLabel>
+                 <Select
+                   name="districtId"
+                   value={formData.districtId}
+                   onChange={handleSelectChange('districtId')}
+                   startAdornment={
+                     <InputAdornment position="start">
+                       <Building size={16} />
+                     </InputAdornment>
+                   }
+                   disabled={fetchingDistricts}
+                   sx={{
+                     '& .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'rgba(0, 0, 0, 0.23)',
+                     },
+                     '&:hover .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'primary.main',
+                     },
+                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'primary.main',
+                     },
+                   }}
+                 >
+                   {fetchingDistricts ? (
+                     <MenuItem value="">
+                       <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
+                     </MenuItem>
                    ) : districts.length === 0 ? (
                      <MenuItem value="">No districts available</MenuItem>
                    ) : (
@@ -871,10 +883,145 @@ const Register: React.FC = () => {
                  </Select>
                </FormControl>
                
-               {/* Area supervisor selection based on district */}
                {formData.districtId && (
-                 <FormControl fullWidth required>
-                   <InputLabel>Select Area</InputLabel>
+                 <FormControl fullWidth required variant="outlined">
+                   <InputLabel 
+                     shrink={true}
+                     sx={{ 
+                       backgroundColor: 'background.paper',
+                       px: 0.5,
+                       '&.Mui-focused': {
+                         color: 'primary.main',
+                       },
+                     }}
+                   >
+                     Select Your Zone
+                   </InputLabel>
+                   <Select
+                     name="zonalSupervisorId"
+                     value={formData.zonalSupervisorId}
+                     onChange={handleSelectChange('zonalSupervisorId')}
+                     startAdornment={
+                       <InputAdornment position="start">
+                         <Users size={16} />
+                       </InputAdornment>
+                     }
+                     disabled={fetchingZonals}
+                     sx={{
+                       '& .MuiOutlinedInput-notchedOutline': {
+                         borderColor: 'rgba(0, 0, 0, 0.23)',
+                       },
+                       '&:hover .MuiOutlinedInput-notchedOutline': {
+                         borderColor: 'primary.main',
+                       },
+                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                         borderColor: 'primary.main',
+                       },
+                     }}
+                   >
+                     {fetchingZonals ? (
+                       <MenuItem value="">
+                         <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Zones...
+                       </MenuItem>
+                     ) : filteredZonalSupervisors.length === 0 ? (
+                       <MenuItem value="">No zones available in this district</MenuItem>
+                     ) : (
+                       filteredZonalSupervisors.map((zonal) => (
+                         <MenuItem key={zonal._id} value={zonal._id}>
+                           <Box>
+                             <Typography variant="body1">{getSafeZonalName(zonal)}</Typography>
+                             <Typography variant="caption" color="textSecondary">
+                               {zonal.displayText || zonal.supervisorName || 'Unassigned'}
+                             </Typography>
+                           </Box>
+                         </MenuItem>
+                       ))
+                     )}
+                   </Select>
+                 </FormControl>
+               )}
+               
+               {filteredZonalSupervisors.length === 0 && formData.districtId && !fetchingZonals && (
+                 <Alert severity="info">
+                   No zones found for this district. Please contact your administrator.
+                 </Alert>
+               )}
+             </Box>
+           )}
+           
+           {/* Area Supervisor selection - filtered by district for area supervisor role */}
+           {formData.role === 'area_supervisor' && (
+             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+               <FormControl fullWidth required variant="outlined">
+                 <InputLabel 
+                   shrink={true}
+                   sx={{ 
+                     backgroundColor: 'background.paper',
+                     px: 0.5,
+                     '&.Mui-focused': {
+                       color: 'primary.main',
+                     },
+                   }}
+                 >
+                   Select District
+                 </InputLabel>
+                 <Select
+                   name="districtId"
+                   value={formData.districtId}
+                   onChange={handleSelectChange('districtId')}
+                   startAdornment={
+                     <InputAdornment position="start">
+                       <Building size={16} />
+                     </InputAdornment>
+                   }
+                   disabled={fetchingDistricts}
+                   sx={{
+                     '& .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'rgba(0, 0, 0, 0.23)',
+                     },
+                     '&:hover .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'primary.main',
+                     },
+                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'primary.main',
+                     },
+                   }}
+                 >
+                   {fetchingDistricts ? (
+                     <MenuItem value="">
+                       <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts...
+                     </MenuItem>
+                   ) : districts.length === 0 ? (
+                     <MenuItem value="">No districts available</MenuItem>
+                   ) : (
+                     districts.map((district) => (
+                       <MenuItem key={district._id} value={district._id}>
+                         <Box>
+                           <Typography variant="body1">{getSafeDistrictName(district)}</Typography>
+                           <Typography variant="caption" color="textSecondary">
+                             District {district.districtNumber} - {district.displayText || district.pastorName}
+                           </Typography>
+                         </Box>
+                       </MenuItem>
+                     ))
+                   )}
+                 </Select>
+               </FormControl>
+               
+               {formData.districtId && (
+                 <FormControl fullWidth required variant="outlined">
+                   <InputLabel 
+                     shrink={true}
+                     sx={{ 
+                       backgroundColor: 'background.paper',
+                       px: 0.5,
+                       '&.Mui-focused': {
+                         color: 'primary.main',
+                       },
+                     }}
+                   >
+                     Select Your Area
+                   </InputLabel>
                    <Select
                      name="areaSupervisorId"
                      value={formData.areaSupervisorId}
@@ -885,6 +1032,17 @@ const Register: React.FC = () => {
                        </InputAdornment>
                      }
                      disabled={fetchingAreas}
+                     sx={{
+                       '& .MuiOutlinedInput-notchedOutline': {
+                         borderColor: 'rgba(0, 0, 0, 0.23)',
+                       },
+                       '&:hover .MuiOutlinedInput-notchedOutline': {
+                         borderColor: 'primary.main',
+                       },
+                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                         borderColor: 'primary.main',
+                       },
+                     }}
                    >
                      {fetchingAreas ? (
                        <MenuItem value="">
@@ -908,308 +1066,599 @@ const Register: React.FC = () => {
                  </FormControl>
                )}
                
-               {/* Centre selection based on area supervisor */}
-               {formData.areaSupervisorId && (
-                 <FormControl fullWidth required>
-                   <InputLabel>Select Your CITH Centre</InputLabel>
-                   <Select
-                     name="cithCentreId"
-                     value={formData.cithCentreId}
-                     onChange={handleSelectChange('cithCentreId')}
-                     startAdornment={
-                       <InputAdornment position="start">
-                         <LocationOn />
-                       </InputAdornment>
-                     }
-                     disabled={fetchingCentres}
-                   >
-                     {fetchingCentres ? (
-                       <MenuItem value="">
-                         <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Centres...
-                       </MenuItem>
-                     ) : filteredCithCentres.length === 0 ? (
-                       <MenuItem value="">No centres available in this area</MenuItem>
-                     ) : (
-                       filteredCithCentres.map((centre) => (
-                         <MenuItem key={centre._id} value={centre._id}>
-                           <Box>
-                             <Typography variant="body1">{getSafeCentreName(centre)}</Typography>
-                             <Typography variant="caption" color="textSecondary">
-                               {centre.location} - {centre.displayText || centre.leaderName}
-                             </Typography>
-                           </Box>
-                         </MenuItem>
-                       ))
-                     )}
-                   </Select>
-                 </FormControl>
-               )}
-               
-               {/* Option to create new centre */}
-               {formData.areaSupervisorId && (
-                 <Box sx={{ mt: 1 }}>
-                   <Button
-                     startIcon={<Add />}
-                     onClick={() => setShowNewCentreDialog(true)}
-                     variant="outlined"
-                     color="primary"
-                     fullWidth
-                   >
-                     Register a New CITH Centre
-                   </Button>
-                 </Box>
-               )}
-               
-               {/* Messages when no options are available */}
-               {formData.districtId && filteredAreaSupervisors.length === 0 && !fetchingAreas && (
+               {filteredAreaSupervisors.length === 0 && formData.districtId && !fetchingAreas && (
                  <Alert severity="info">
                    No area supervisors found for this district. Please contact your administrator.
                  </Alert>
                )}
-               
-               {formData.areaSupervisorId && filteredCithCentres.length === 0 && !fetchingCentres && (
-                 <Alert severity="info">
-                   No CITH centres found for this area. You can register a new one with the button above.
-                 </Alert>
-               )}
              </Box>
            )}
-           
-           {/* Admin role doesn't need additional selection */}
-           {formData.role === 'admin' && (
-             <Box sx={{ textAlign: 'center', py: 4 }}>
-               <LogoComponent size={48} />
-               <Typography variant="h6" sx={{ mt: 2 }}>
-                 Administration Access
-               </Typography>
-               <Typography variant="body2" color="textSecondary">
-                 You will have full access to all church management features
-               </Typography>
-             </Box>
-           )}
-         </motion.div>
-       );
-     default:
-       return <div>Unknown step</div>;
-   }
- };
 
- return (
-   <PageContainer>
-     <Box
-       sx={{
-         minHeight: '100vh',
-         background: darkMode 
-           ? 'linear-gradient(135deg, #121212 0%, #1B5E20 100%)'
-           : 'linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)',
-         display: 'flex',
-         alignItems: 'center',
-         justifyContent: 'center',
-         py: 4,
-       }}
-     >
-       <Container component="main" maxWidth="sm">
-         <AnimatedCard delay={0.2}>
-           <Paper
-             elevation={12}
-             sx={{
-               padding: 4,
-               borderRadius: 4,
-               background: darkMode 
-                 ? 'rgba(30, 30, 30, 0.95)'
-                 : 'rgba(255, 255, 255, 0.95)',
-               backdropFilter: 'blur(10px)',
-             }}
-           >
-             <Box
-               sx={{
-                 display: 'flex',
-                 flexDirection: 'column',
-                 alignItems: 'center',
-               }}
-             >
-               {/* Header */}
-               <motion.div
-                 initial={{ scale: 0 }}
-                 animate={{ scale: 1 }}
-                 transition={{ delay: 0.3, type: 'spring' }}
-               >
-                 <Box
-                   sx={{
-                     width: 80,
-                     height: 80,
-                     borderRadius: '50%',
-                     background: darkMode 
-                       ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
-                       : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
-                     display: 'flex',
-                     alignItems: 'center',
-                     justifyContent: 'center',
-                     mx: 'auto',
-                     mb: 2,
-                     boxShadow: '0 4px 20px rgba(46, 125, 50, 0.3)',
-                     overflow: 'hidden',
-                   }}
-                 >
-                   <LogoComponent size={60} />
-                 </Box>
-               </motion.div>
-
-               <Typography component="h1" variant="h4" color="primary" sx={{ mb: 1 }}>
-                 Join House on the Rock
-               </Typography>
-               <Typography variant="h6" color="textSecondary" sx={{ mb: 3, textAlign: 'center' }}>
-                 Become part of our Church's management family
-               </Typography>
-
-               {/* Stepper */}
-               <Box sx={{ width: '100%', mb: 4 }}>
-                 <Stepper activeStep={activeStep} alternativeLabel>
-                   {steps.map((label) => (
-                     <Step key={label}>
-                       <StepLabel>{label}</StepLabel>
-                     </Step>
-                   ))}
-                 </Stepper>
-               </Box>
-
-               {error && (
-                 <motion.div
-                   initial={{ opacity: 0, y: -10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   style={{ width: '100%', marginBottom: 16 }}
-                 >
-                   <Alert severity="error" sx={{ borderRadius: 2 }}>{error}</Alert>
-                 </motion.div>
-               )}
-
-               {/* Form */}
-               <form style={{ width: '100%' }}>
-                 {renderStepContent(activeStep)}
-                 
-                 <Box sx={{ display: 'flex', flexDirection: 'row', pt: 3 }}>
-                   <Button
-                     color="inherit"
-                     disabled={activeStep === 0}
-                     onClick={handleBack}
-                     sx={{ mr: 1 }}
-                   >
-                     Back
-                   </Button>
-                   <Box sx={{ flex: '1 1 auto' }} />
-                   {activeStep === steps.length - 1 ? (
-                     <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                       <Button
-                         variant="contained"
-                         onClick={handleSubmit}
-                         disabled={loading}
-                         startIcon={loading ? <CircularProgress size={20} /> : null}
-                         sx={{
-                           background: darkMode 
-                             ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
-                             : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
-                           '&:hover': {
-                             background: darkMode 
-                               ? 'linear-gradient(45deg, #0F3C11, #1B5E20)'
-                               : 'linear-gradient(45deg, #1B5E20, #2E7D32)',
-                           },
-                         }}
-                       >
-                         {loading ? 'Creating Account...' : 'Join Church'}
-                       </Button>
-                     </motion.div>
-                   ) : (
-                     <Button onClick={handleNext} variant="contained">
-                       Next
-                     </Button>
-                   )}
-                 </Box>
-               </form>
-
-               <Box textAlign="center" sx={{ mt: 3 }}>
-                 <Link
-                   component={RouterLink}
-                   to="/login"
-                   variant="body2"
-                   sx={{
-                     color: 'secondary.main',
-                     textDecoration: 'none',
-                     '&:hover': {
-                       textDecoration: 'underline',
+           {/* CITH Centre selection with nested filtering */}
+           {formData.role === 'cith_centre' && (
+             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+               {/* District selection first */}
+               <FormControl fullWidth required variant="outlined">
+                 <InputLabel 
+                   shrink={true}
+                   sx={{ 
+                     backgroundColor: 'background.paper',
+                     px: 0.5,
+                     '&.Mui-focused': {
+                       color: 'primary.main',
                      },
                    }}
                  >
-                   Already part of our church? Sign In
-                 </Link>
-               </Box>
-             </Box>
-           </Paper>
-         </AnimatedCard>
-       </Container>
+                   Select District
+                 </InputLabel>
+                 <Select
+                   name="districtId"
+                   value={formData.districtId}
+                   onChange={handleSelectChange('districtId')}
+                   startAdornment={
+                     <InputAdornment position="start">
+                       <Building size={16} />
+                     </InputAdornment>
+                   }
+                   disabled={fetchingDistricts}
+                   sx={{
+                     '& .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'rgba(0, 0, 0, 0.23)',
+                     },
+                     '&:hover .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'primary.main',
+                     },
+                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'primary.main',
+                     },
+                   }}
+                 >
+                   {fetchingDistricts ? (
+                     <MenuItem value="">
+                       <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Districts
+                       </MenuItem>
+                  ) : districts.length === 0 ? (
+                    <MenuItem value="">No districts available</MenuItem>
+                  ) : (
+                    districts.map((district) => (
+                      <MenuItem key={district._id} value={district._id}>
+                        <Box>
+                          <Typography variant="body1">{getSafeDistrictName(district)}</Typography>
+                          <Typography variant="caption" color="textSecondary">
+                            District {district.districtNumber} - {district.displayText || district.pastorName}
+                          </Typography>
+                        </Box>
+                      </MenuItem>
+                    ))
+                  )}
+                </Select>
+              </FormControl>
+              
+              {/* Area supervisor selection based on district */}
+              {formData.districtId && (
+                <FormControl fullWidth required variant="outlined">
+                  <InputLabel 
+                    shrink={true}
+                    sx={{ 
+                      backgroundColor: 'background.paper',
+                      px: 0.5,
+                      '&.Mui-focused': {
+                        color: 'primary.main',
+                      },
+                    }}
+                  >
+                    Select Area
+                  </InputLabel>
+                  <Select
+                    name="areaSupervisorId"
+                    value={formData.areaSupervisorId}
+                    onChange={handleSelectChange('areaSupervisorId')}
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <Business fontSize="small" />
+                      </InputAdornment>
+                    }
+                    disabled={fetchingAreas}
+                    sx={{
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0, 0, 0, 0.23)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'primary.main',
+                      },
+                    }}
+                  >
+                    {fetchingAreas ? (
+                      <MenuItem value="">
+                        <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Areas...
+                      </MenuItem>
+                    ) : filteredAreaSupervisors.length === 0 ? (
+                      <MenuItem value="">No areas available in this district</MenuItem>
+                    ) : (
+                      filteredAreaSupervisors.map((supervisor) => (
+                        <MenuItem key={supervisor._id} value={supervisor._id}>
+                          <Box>
+                            <Typography variant="body1">{getSafeAreaName(supervisor)}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {supervisor.displayText || supervisor.supervisorName}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+              )}
+              
+              {/* Centre selection based on area supervisor */}
+              {formData.areaSupervisorId && (
+                <FormControl fullWidth required variant="outlined">
+                  <InputLabel 
+                    shrink={true}
+                    sx={{ 
+                      backgroundColor: 'background.paper',
+                      px: 0.5,
+                      '&.Mui-focused': {
+                        color: 'primary.main',
+                      },
+                    }}
+                  >
+                    Select Your CITH Centre
+                  </InputLabel>
+                  <Select
+                    name="cithCentreId"
+                    value={formData.cithCentreId}
+                    onChange={handleSelectChange('cithCentreId')}
+                    startAdornment={
+                      <InputAdornment position="start">
+                        <LocationOn />
+                      </InputAdornment>
+                    }
+                    disabled={fetchingCentres}
+                    sx={{
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(0, 0, 0, 0.23)',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'primary.main',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'primary.main',
+                      },
+                    }}
+                  >
+                    {fetchingCentres ? (
+                      <MenuItem value="">
+                        <CircularProgress size={20} sx={{ mr: 1 }} /> Loading Centres...
+                      </MenuItem>
+                    ) : filteredCithCentres.length === 0 ? (
+                      <MenuItem value="">No centres available in this area</MenuItem>
+                    ) : (
+                      filteredCithCentres.map((centre) => (
+                        <MenuItem key={centre._id} value={centre._id}>
+                          <Box>
+                            <Typography variant="body1">{getSafeCentreName(centre)}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {centre.location} - {centre.displayText || centre.leaderName}
+                            </Typography>
+                          </Box>
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
+              )}
+              
+              {/* Option to create new centre */}
+              {formData.areaSupervisorId && (
+                <Box sx={{ mt: 1 }}>
+                  <Button
+                    startIcon={<Add />}
+                    onClick={() => setShowNewCentreDialog(true)}
+                    variant="outlined"
+                    color="primary"
+                    fullWidth
+                  >
+                    Register a New CITH Centre
+                  </Button>
+                </Box>
+              )}
+              
+              {/* Messages when no options are available */}
+              {formData.districtId && filteredAreaSupervisors.length === 0 && !fetchingAreas && (
+                <Alert severity="info">
+                  No area supervisors found for this district. Please contact your administrator.
+                </Alert>
+              )}
+              
+              {formData.areaSupervisorId && filteredCithCentres.length === 0 && !fetchingCentres && (
+                <Alert severity="info">
+                  No CITH centres found for this area. You can register a new one with the button above.
+                </Alert>
+              )}
+            </Box>
+          )}
+          
+{/* Admin role doesn't need additional selection */}
+          {formData.role === 'admin' && (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <LogoComponent size={48} />
+              <Typography variant="h6" sx={{ mt: 2 }}>
+                Administration Access
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                You will have full access to all church management features
+              </Typography>
+            </Box>
+          )}
+        </motion.div>
+      );
+    default:
+      return <div>Unknown step</div>;
+  }
+};
 
-       {/* New Centre Creation Dialog */}
-       <Dialog open={showNewCentreDialog} onClose={() => setShowNewCentreDialog(false)} maxWidth="sm" fullWidth>
-         <DialogTitle>Register New CITH Centre</DialogTitle>
-         <DialogContent>
-           <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-             <TextField
-               label="Centre Name"
-               name="name"
-               value={newCentreData.name}
-               onChange={handleNewCentreChange}
-               fullWidth
-               required
-             />
-             <TextField
-               label="Location"
-               name="location"
-               value={newCentreData.location}
-               onChange={handleNewCentreChange}
-               fullWidth
-               required
-             />
-             <TextField
-               label="Leader Name"
-               name="leaderName"
-               value={newCentreData.leaderName}
-               onChange={handleNewCentreChange}
-               fullWidth
-               required
-             />
-             <TextField
-               label="Contact Email"
-               name="contactEmail"
-               type="email"
-               value={newCentreData.contactEmail}
-               onChange={handleNewCentreChange}
-               fullWidth
-             />
-             <TextField
-               label="Contact Phone"
-               name="contactPhone"
-               value={newCentreData.contactPhone}
-               onChange={handleNewCentreChange}
-               fullWidth
-             />
-           </Box>
-         </DialogContent>
-         <DialogActions>
-           <Button onClick={() => setShowNewCentreDialog(false)}>
-             Cancel
-           </Button>
-           <Button 
-             onClick={handleCreateCentre} 
-             variant="contained" 
-             disabled={loading || !newCentreData.name || !newCentreData.location || !newCentreData.leaderName}
-             startIcon={loading ? <CircularProgress size={20} /> : <Add />}
-           >
-             Create Centre
-           </Button>
-         </DialogActions>
-       </Dialog>
-     </Box>
-   </PageContainer>
- );
+return (
+  <PageContainer>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: darkMode 
+          ? 'linear-gradient(135deg, #121212 0%, #1B5E20 100%)'
+          : 'linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        py: 4,
+      }}
+    >
+      <Container component="main" maxWidth="sm">
+        <AnimatedCard delay={0.2}>
+          <Paper
+            elevation={12}
+            sx={{
+              padding: { xs: 3, sm: 4 },
+              borderRadius: 4,
+              background: darkMode 
+                ? 'rgba(30, 30, 30, 0.95)'
+                : 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              {/* Header */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: 'spring' }}
+              >
+                <Box
+                  sx={{
+                    width: { xs: 60, sm: 80 },
+                    height: { xs: 60, sm: 80 },
+                    borderRadius: '50%',
+                    background: darkMode 
+                      ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
+                      : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    mx: 'auto',
+                    mb: 2,
+                    boxShadow: '0 4px 20px rgba(46, 125, 50, 0.3)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <LogoComponent size={isMobile ? 50 : 60} />
+                </Box>
+              </motion.div>
+
+              <Typography 
+                component="h1" 
+                variant="h4" 
+                color="primary" 
+                sx={{ 
+                  mb: 1,
+                  fontSize: { xs: '1.75rem', sm: '2.125rem' }
+                }}
+              >
+                Join House on the Rock
+              </Typography>
+              <Typography 
+                variant="h6" 
+                color="textSecondary" 
+                sx={{ 
+                  mb: 3, 
+                  textAlign: 'center',
+                  fontSize: { xs: '1rem', sm: '1.25rem' }
+                }}
+              >
+                Become part of our Church's management family
+              </Typography>
+
+              {/* Stepper */}
+              <Box sx={{ width: '100%', mb: 4 }}>
+                <Stepper activeStep={activeStep} alternativeLabel>
+                  {steps.map((label) => (
+                    <Step key={label}>
+                      <StepLabel>{label}</StepLabel>
+                    </Step>
+                  ))}
+                </Stepper>
+              </Box>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  style={{ width: '100%', marginBottom: 16 }}
+                >
+                  <Alert 
+                    severity="error" 
+                    sx={{ borderRadius: 2 }}
+                    onClose={() => setError('')}
+                  >
+                    {error}
+                  </Alert>
+                </motion.div>
+              )}
+
+              {/* Form */}
+              <Box component="form" sx={{ width: '100%' }} noValidate>
+                {renderStepContent(activeStep)}
+                
+                <Box sx={{ display: 'flex', flexDirection: 'row', pt: 3 }}>
+                  <Button
+                    color="inherit"
+                    disabled={activeStep === 0}
+                    onClick={handleBack}
+                    sx={{ mr: 1 }}
+                  >
+                    Back
+                  </Button>
+                  <Box sx={{ flex: '1 1 auto' }} />
+                  {activeStep === steps.length - 1 ? (
+                    <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        variant="contained"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        startIcon={loading ? <CircularProgress size={20} /> : null}
+                        sx={{
+                          background: darkMode 
+                            ? 'linear-gradient(45deg, #1B5E20, #0F3C11)'
+                            : 'linear-gradient(45deg, #2E7D32, #1B5E20)',
+                          '&:hover': {
+                            background: darkMode 
+                              ? 'linear-gradient(45deg, #0F3C11, #1B5E20)'
+                              : 'linear-gradient(45deg, #1B5E20, #2E7D32)',
+                          },
+                        }}
+                      >
+                        {loading ? 'Creating Account...' : 'Join Church'}
+                      </Button>
+                    </motion.div>
+                  ) : (
+                    <Button onClick={handleNext} variant="contained">
+                      Next
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+
+              <Box textAlign="center" sx={{ mt: 3 }}>
+                <Link
+                  component={RouterLink}
+                  to="/login"
+                  variant="body2"
+                  sx={{
+                    color: 'secondary.main',
+                    textDecoration: 'none',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                    },
+                  }}
+                >
+                  Already part of our church? Sign In
+                </Link>
+              </Box>
+            </Box>
+          </Paper>
+        </AnimatedCard>
+      </Container>
+
+      {/* New Centre Creation Dialog */}
+      <Dialog open={showNewCentreDialog} onClose={() => setShowNewCentreDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Register New CITH Centre</DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Centre Name"
+              name="name"
+              value={newCentreData.name}
+              onChange={handleNewCentreChange}
+              fullWidth
+              required
+              variant="outlined"
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  backgroundColor: 'background.paper',
+                  px: 0.5,
+                  '&.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                },
+              }}
+            />
+            <TextField
+              label="Location"
+              name="location"
+              value={newCentreData.location}
+              onChange={handleNewCentreChange}
+              fullWidth
+              required
+              variant="outlined"
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  backgroundColor: 'background.paper',
+                  px: 0.5,
+                  '&.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                },
+              }}
+            />
+            <TextField
+              label="Leader Name"
+              name="leaderName"
+              value={newCentreData.leaderName}
+              onChange={handleNewCentreChange}
+              fullWidth
+              required
+              variant="outlined"
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  backgroundColor: 'background.paper',
+                  px: 0.5,
+                  '&.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                },
+              }}
+            />
+            <TextField
+              label="Contact Email"
+              name="contactEmail"
+              type="email"
+              value={newCentreData.contactEmail}
+              onChange={handleNewCentreChange}
+              fullWidth
+              variant="outlined"
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  backgroundColor: 'background.paper',
+                  px: 0.5,
+                  '&.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                },
+              }}
+            />
+            <TextField
+              label="Contact Phone"
+              name="contactPhone"
+              value={newCentreData.contactPhone}
+              onChange={handleNewCentreChange}
+              fullWidth
+              variant="outlined"
+              InputLabelProps={{
+                shrink: true,
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.23)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: 'primary.main',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  backgroundColor: 'background.paper',
+                  px: 0.5,
+                  '&.Mui-focused': {
+                    color: 'primary.main',
+                  },
+                },
+              }}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowNewCentreDialog(false)}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleCreateCentre} 
+            variant="contained" 
+            disabled={loading || !newCentreData.name || !newCentreData.location || !newCentreData.leaderName}
+            startIcon={loading ? <CircularProgress size={20} /> : <Add />}
+          >
+            Create Centre
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
+  </PageContainer>
+);
 };
 
 export default Register;

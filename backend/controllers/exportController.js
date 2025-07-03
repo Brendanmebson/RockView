@@ -46,8 +46,10 @@ const exportToExcel = async (req, res) => {
       query.cithCentreId = { $in: cithCentreIds };
     }
     
-    // Only include approved reports
+    // Only include approved reports for export
     query.status = 'district_approved';
+    
+    console.log('Export query:', query); // Debug log
     
     const reports = await WeeklyReport.find(query)
       .populate({
@@ -68,145 +70,215 @@ const exportToExcel = async (req, res) => {
       .populate('districtApprovedBy', 'name')
       .sort({ week: -1 });
     
+    console.log(`Found ${reports.length} reports for export`); // Debug log
+    
     if (reports.length === 0) {
-      return res.status(404).json({ message: 'No reports found for export' });
+      return res.status(404).json({ 
+        message: 'No approved reports found for export. Make sure reports are district approved.',
+        query: query 
+      });
     }
     
-    // Create workbook
-     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Weekly Reports');
+    // Create workbook with better Excel formatting
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'RockView Church System';
+    workbook.created = new Date();
     
-    // Define columns with proper headers
+    const worksheet = workbook.addWorksheet('Weekly Reports', {
+      pageSetup: {
+        paperSize: 9, // A4
+        orientation: 'landscape',
+        fitToPage: true,
+        fitToHeight: 0,
+        fitToWidth: 1
+      }
+    });
+    
+    // Define columns with better formatting
     const columns = [
-      { header: 'DISTRICT', key: 'district', width: 20 },
-      { header: 'AREA SUPERVISOR', key: 'areaSupervisor', width: 20 },
-      { header: 'CITH CENTRE', key: 'cithCentre', width: 25 },
-      { header: 'LOCATION', key: 'location', width: 20 },
-      { header: 'WEEK', key: 'week', width: 15 },
-      { header: 'EVENT TYPE', key: 'eventType', width: 20 },
-      { header: 'EVENT DESCRIPTION', key: 'eventDescription', width: 25 },
-      { header: 'MALE', key: 'male', width: 10 },
-      { header: 'FEMALE', key: 'female', width: 10 },
-      { header: 'CHILDREN', key: 'children', width: 10 },
-      { header: 'TOTAL ATTENDANCE', key: 'totalAttendance', width: 15 },
-      { header: 'OFFERINGS (₦)', key: 'offerings', width: 15 },
-      { header: 'TESTIMONIES', key: 'testimonies', width: 15 },
-      { header: 'FIRST TIMERS', key: 'firstTimers', width: 15 },
-      { header: 'FIRST TIMERS FOLLOWED UP', key: 'firstTimersFollowedUp', width: 20 },
-      { header: 'FIRST TIMERS CONVERTED', key: 'firstTimersConverted', width: 20 },
-      { header: 'MODE OF MEETING', key: 'modeOfMeeting', width: 15 },
-      { header: 'REMARKS', key: 'remarks', width: 30 },
+      { header: 'DISTRICT', key: 'district', width: 20, style: { alignment: { wrapText: true } } },
+      { header: 'AREA SUPERVISOR', key: 'areaSupervisor', width: 20, style: { alignment: { wrapText: true } } },
+      { header: 'CITH CENTRE', key: 'cithCentre', width: 25, style: { alignment: { wrapText: true } } },
+      { header: 'LOCATION', key: 'location', width: 20, style: { alignment: { wrapText: true } } },
+      { header: 'WEEK', key: 'week', width: 12, style: { numFmt: 'dd/mm/yyyy' } },
+      { header: 'EVENT TYPE', key: 'eventType', width: 15, style: { alignment: { wrapText: true } } },
+      { header: 'EVENT DESCRIPTION', key: 'eventDescription', width: 25, style: { alignment: { wrapText: true } } },
+      { header: 'MALE', key: 'male', width: 8, style: { numFmt: '0' } },
+      { header: 'FEMALE', key: 'female', width: 8, style: { numFmt: '0' } },
+      { header: 'CHILDREN', key: 'children', width: 10, style: { numFmt: '0' } },
+      { header: 'TOTAL', key: 'totalAttendance', width: 8, style: { numFmt: '0' } },
+      { header: 'OFFERINGS (₦)', key: 'offerings', width: 15, style: { numFmt: '#,##0.00' } },
+      { header: 'TESTIMONIES', key: 'testimonies', width: 12, style: { numFmt: '0' } },
+      { header: 'FIRST TIMERS', key: 'firstTimers', width: 12, style: { numFmt: '0' } },
+      { header: 'FOLLOWED UP', key: 'firstTimersFollowedUp', width: 12, style: { numFmt: '0' } },
+      { header: 'CONVERTED', key: 'firstTimersConverted', width: 12, style: { numFmt: '0' } },
+      { header: 'MODE', key: 'modeOfMeeting', width: 10 },
+      { header: 'REMARKS', key: 'remarks', width: 30, style: { alignment: { wrapText: true } } },
       { header: 'SUBMITTED BY', key: 'submittedBy', width: 15 },
-      { header: 'AREA APPROVED BY', key: 'areaApprovedBy', width: 15 },
-      { header: 'ZONAL APPROVED BY', key: 'zonalApprovedBy', width: 15 },
-      { header: 'DISTRICT APPROVED BY', key: 'districtApprovedBy', width: 15 },
       { header: 'STATUS', key: 'status', width: 15 },
     ];
     
     worksheet.columns = columns;
     
-    // Style the header row with Excel-like formatting
+    // Style the header row with professional Excel formatting
     const headerRow = worksheet.getRow(1);
     headerRow.font = { 
       bold: true, 
       color: { argb: 'FFFFFFFF' },
-      size: 11,
+      size: 10,
       name: 'Calibri'
     };
     headerRow.fill = {
       type: 'pattern',
       pattern: 'solid',
-      fgColor: { argb: 'FF366092' } // Dark blue background
+      fgColor: { argb: 'FF1F4E79' } // Professional blue
     };
     headerRow.alignment = { 
       vertical: 'middle', 
       horizontal: 'center',
       wrapText: true 
     };
-    headerRow.height = 25;
+    headerRow.height = 30;
     
-    // Add data with proper formatting
-    reports.forEach((report, index) => {
-      const centre = report.cithCentreId || {};
-      const area = centre.areaSupervisorId || {};
-      const district = area.districtId || {};
-      
-      const rowData = {
-        district: district.name || 'Unknown District',
-        areaSupervisor: area.name || 'Unknown Area',
-        cithCentre: centre.name || 'Unknown Centre',
-        location: centre.location || 'Unknown Location',
-        week: report.week ? report.week.toISOString().split('T')[0] : 'Unknown Date',
-        eventType: report.eventType ? report.eventType.replace(/_/g, ' ').toUpperCase() : 'REGULAR SERVICE',
-        eventDescription: report.eventDescription || '',
-        male: report.data?.male || 0,
-        female: report.data?.female || 0,
-        children: report.data?.children || 0,
-        totalAttendance: (report.data?.male || 0) + (report.data?.female || 0) + (report.data?.children || 0),
-        offerings: report.data?.offerings || 0,
-        testimonies: report.data?.numberOfTestimonies || 0,
-        firstTimers: report.data?.numberOfFirstTimers || 0,
-        firstTimersFollowedUp: report.data?.firstTimersFollowedUp || 0,
-        firstTimersConverted: report.data?.firstTimersConvertedToCITH || 0,
-        modeOfMeeting: (report.data?.modeOfMeeting || 'physical').toUpperCase(),
-        remarks: report.data?.remarks || '',
-        submittedBy: report.submittedBy?.name || 'Unknown User',
-        areaApprovedBy: report.areaApprovedBy?.name || '',
-        zonalApprovedBy: report.zonalApprovedBy?.name || '',
-        districtApprovedBy: report.districtApprovedBy?.name || '',
-        status: (report.status || 'unknown').replace(/_/g, ' ').toUpperCase(),
+    // Add border to header
+    headerRow.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'medium', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
       };
-      
-      const dataRow = worksheet.addRow(rowData);
-      
-      // Style data rows
-      dataRow.font = { name: 'Calibri', size: 10 };
-      dataRow.alignment = { vertical: 'middle', wrapText: true };
-      
-      // Alternate row colors
-      if (index % 2 === 1) {
-        dataRow.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FFF2F2F2' } // Light gray for alternating rows
+    });
+    
+    // Add data with proper formatting and validation
+    reports.forEach((report, index) => {
+      try {
+        const centre = report.cithCentreId || {};
+        const area = centre.areaSupervisorId || {};
+        const district = area.districtId || {};
+        
+        const male = parseInt(report.data?.male) || 0;
+        const female = parseInt(report.data?.female) || 0;
+        const children = parseInt(report.data?.children) || 0;
+        
+        const rowData = {
+          district: district.name || 'Unknown District',
+          areaSupervisor: area.name || 'Unknown Area',
+          cithCentre: centre.name || 'Unknown Centre',
+          location: centre.location || 'Unknown Location',
+          week: report.week ? new Date(report.week) : new Date(),
+          eventType: report.eventType ? 
+            report.eventType.replace(/_/g, ' ').toUpperCase() : 'REGULAR SERVICE',
+          eventDescription: report.eventDescription || '',
+          male: male,
+          female: female,
+          children: children,
+          totalAttendance: male + female + children,
+          offerings: parseFloat(report.data?.offerings) || 0,
+          testimonies: parseInt(report.data?.numberOfTestimonies) || 0,
+          firstTimers: parseInt(report.data?.numberOfFirstTimers) || 0,
+          firstTimersFollowedUp: parseInt(report.data?.firstTimersFollowedUp) || 0,
+          firstTimersConverted: parseInt(report.data?.firstTimersConvertedToCITH) || 0,
+          modeOfMeeting: (report.data?.modeOfMeeting || 'physical').toUpperCase(),
+          remarks: report.data?.remarks || '',
+          submittedBy: report.submittedBy?.name || 'Unknown User',
+          status: (report.status || 'unknown').replace(/_/g, ' ').toUpperCase(),
         };
+        
+        const dataRow = worksheet.addRow(rowData);
+        
+        // Style data rows
+        dataRow.font = { name: 'Calibri', size: 9 };
+        dataRow.alignment = { vertical: 'middle', wrapText: true };
+        dataRow.height = 20;
+        
+        // Alternate row colors for better readability
+        if (index % 2 === 1) {
+          dataRow.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8F9FA' } // Very light gray
+          };
+        }
+        
+        // Add borders to data cells
+        dataRow.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+          };
+        });
+        
+      } catch (rowError) {
+        console.error(`Error processing row ${index}:`, rowError);
       }
     });
     
-    // Add borders to all cells
-    worksheet.eachRow((row) => {
-      row.eachCell((cell) => {
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'FF000000' } },
-          left: { style: 'thin', color: { argb: 'FF000000' } },
-          bottom: { style: 'thin', color: { argb: 'FF000000' } },
-          right: { style: 'thin', color: { argb: 'FF000000' } }
-        };
-      });
+    // Add totals row
+    if (reports.length > 0) {
+      const totalsRowIndex = reports.length + 2;
+      const totalsRow = worksheet.getRow(totalsRowIndex);
+      
+      // Calculate totals
+      const totalMale = reports.reduce((sum, report) => sum + (parseInt(report.data?.male) || 0), 0);
+      const totalFemale = reports.reduce((sum, report) => sum + (parseInt(report.data?.female) || 0), 0);
+      const totalChildren = reports.reduce((sum, report) => sum + (parseInt(report.data?.children) || 0), 0);
+      const totalOfferings = reports.reduce((sum, report) => sum + (parseFloat(report.data?.offerings) || 0), 0);
+      const totalTestimonies = reports.reduce((sum, report) => sum + (parseInt(report.data?.numberOfTestimonies) || 0), 0);
+      const totalFirstTimers = reports.reduce((sum, report) => sum + (parseInt(report.data?.numberOfFirstTimers) || 0), 0);
+      
+      totalsRow.values = [
+        '', '', '', '', '', '', 'TOTALS:', 
+        totalMale, totalFemale, totalChildren, 
+        totalMale + totalFemale + totalChildren,
+        totalOfferings, totalTestimonies, totalFirstTimers,
+        '', '', '', '', '', ''
+      ];
+      
+      totalsRow.font = { bold: true, name: 'Calibri', size: 10 };
+      totalsRow.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFDCE6F1' }
+      };
+    }
+    
+    // Auto-fit columns with limits
+    worksheet.columns.forEach(column => {
+      if (column.width && column.width < 8) column.width = 8;
+      if (column.width && column.width > 40) column.width = 40;
     });
     
-    // Auto-fit columns
-    worksheet.columns.forEach(column => {
-      if (column.width < 10) column.width = 10;
-      if (column.width > 50) column.width = 50;
-    });
+    // Freeze the header row
+    worksheet.views = [
+      { state: 'frozen', ySplit: 1 }
+    ];
     
     // Set response headers
+    const filename = `weekly-reports-${new Date().toISOString().split('T')[0]}.xlsx`;
     res.setHeader(
       'Content-Type',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename=weekly-reports-${new Date().toISOString().split('T')[0]}.xlsx`
+      `attachment; filename="${filename}"`
     );
+    res.setHeader('Content-Length', '0'); // Will be set by the stream
     
     // Send the file
     await workbook.xlsx.write(res);
     res.end();
+    
   } catch (error) {
     console.error('Export error:', error);
-    res.status(400).json({ message: error.message || 'Export failed' });
+    res.status(500).json({ 
+      message: 'Export failed', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 

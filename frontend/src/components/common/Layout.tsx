@@ -1,4 +1,4 @@
-// frontend/src/components/common/Layout.tsx
+// src/components/common/Layout.tsx
 import React from 'react';
 import {
   AppBar,
@@ -19,8 +19,6 @@ import {
   Divider,
   Badge,
   Tooltip,
-  Chip,
-  Collapse,
   Button,
   useMediaQuery,
   useTheme,
@@ -45,7 +43,7 @@ import { PageContainer } from './AnimatedComponents';
 import { useEffect, useState } from 'react';
 import { useThemeContext } from '../../context/ThemeContext';
 import api from '../../services/api';
-
+import { notificationService } from '../../services/notificationService';
 // Import the logos
 import lightLogo from '../../assets/light-logo.png';
 import darkLogo from '../../assets/dark-logo.png';
@@ -76,6 +74,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const currentDrawerWidth = isMobile ? mobileDrawerWidth : (collapsed ? collapsedDrawerWidth : drawerWidth);
 
+  useEffect(() => {
+    const handleNotificationUpdate = (updatedNotifications: any[]) => {
+      setNotifications(updatedNotifications);
+    };
+    
+    notificationService.addListener(handleNotificationUpdate);
+    
+    return () => {
+      notificationService.removeListener(handleNotificationUpdate);
+    };
+  }, []);
+
   // Auto-collapse on mobile
   useEffect(() => {
     if (isMobile && !collapsed) {
@@ -104,22 +114,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const fetchNotifications = async () => {
     try {
-      setNotifications([
-        {
-          id: 1,
-          title: 'New Report Submitted',
-          message: 'A new weekly report needs your approval',
-          time: new Date(),
-          read: false,
-        },
-        {
-          id: 2,
-          title: 'System Update',
-          message: 'The system will be updated tonight',
-          time: new Date(Date.now() - 3600000),
-          read: true,
-        },
-      ]);
+      const fetchedNotifications = await notificationService.fetchNotifications();
+      setNotifications(fetchedNotifications);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
@@ -526,18 +522,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
   return (
-    <Box sx={{ display: 'flex', width: '100%', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', width: '100%', overflow: 'hidden', height: '100vh' }}>
       <CssBaseline />
       
-      {/* Sidebar/Drawer - This comes first and has the highest z-index */}
+      {/* Sidebar/Drawer - Highest z-index */}
       <Box
         component="nav"
         sx={{ 
           width: { sm: currentDrawerWidth }, 
           flexShrink: { sm: 0 },
           transition: 'width 0.3s',
-          zIndex: theme.zIndex.drawer + 2, // Higher than AppBar
+          zIndex: theme.zIndex.drawer + 10, // Much higher than AppBar
           position: 'relative',
+          height: '100vh',
         }}
         aria-label="church navigation"
       >
@@ -552,7 +549,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             '& .MuiDrawer-paper': { 
               boxSizing: 'border-box', 
               width: mobileDrawerWidth,
-              zIndex: theme.zIndex.drawer + 3,
+              zIndex: theme.zIndex.drawer + 15,
+              height: '100vh',
             },
           }}
         >
@@ -569,9 +567,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               width: currentDrawerWidth,
               transition: 'width 0.3s',
               overflowX: 'hidden',
-              position: 'relative',
+              position: 'fixed',
               height: '100vh',
-              zIndex: theme.zIndex.drawer + 2,
+              zIndex: theme.zIndex.drawer + 10,
+              top: 0,
+              left: 0,
             },
           }}
           open
@@ -590,14 +590,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             xs: '100%',
             sm: `calc(100% - ${currentDrawerWidth}px)` 
           },
+          marginLeft: { xs: 0, sm: 0 }, // Remove margin since drawer is fixed
           transition: 'width 0.3s',
           overflow: 'hidden',
           maxWidth: '100%',
+          height: '100vh',
         }}
       >
-        {/* AppBar - Now positioned relative to main content, not fixed */}
+        {/* AppBar - Lower z-index */}
         <AppBar
-          position="relative" // Changed from "fixed" to "relative"
+          position="relative"
           sx={{
             width: '100%',
             zIndex: theme.zIndex.drawer + 1, // Lower than drawer
@@ -737,21 +739,59 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </MenuItem>
                 ) : (
                   notifications.map((notification) => (
-                    <MenuItem key={notification.id} sx={{ py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
+                    <MenuItem 
+                      key={notification.id} 
+                      sx={{ 
+                        py: 1.5, 
+                        borderBottom: 1, 
+                        borderColor: 'divider',
+                        cursor: 'pointer',
+                        '&:hover': {
+                          backgroundColor: 'action.hover',
+                        }
+                      }}
+                      onClick={() => {
+                        if (notification.actionUrl) {
+                          navigate(notification.actionUrl);
+                        }
+                        notificationService.markAsRead(notification.id);
+                        handleNotificationClose();
+                      }}
+                    >
                       <Box sx={{ width: '100%' }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <Typography variant="body2" fontWeight={notification.read ? 400 : 600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                          <Typography 
+                            variant="body2" 
+                            fontWeight={notification.read ? 400 : 600} 
+                            sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+                          >
                             {notification.title}
                           </Typography>
                           {!notification.read && (
-                            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'primary.main', ml: 1 }} />
+                            <Box sx={{ 
+                              width: 8, 
+                              height: 8, 
+                              borderRadius: '50%', 
+                              bgcolor: notification.type === 'error' ? 'error.main' : 
+                                        notification.type === 'warning' ? 'warning.main' :
+                                        notification.type === 'success' ? 'success.main' : 'primary.main',
+                              ml: 1 
+                            }} />
                           )}
                         </Box>
-                        <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
+                        <Typography 
+                          variant="caption" 
+                          color="textSecondary" 
+                          sx={{ mt: 0.5, display: 'block', fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+                        >
                           {notification.message}
                         </Typography>
-                        <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' } }}>
-                          {notification.time.toLocaleTimeString()}
+                        <Typography 
+                          variant="caption" 
+                          color="textSecondary" 
+                          sx={{ fontSize: { xs: '0.65rem', sm: '0.7rem' } }}
+                        >
+                          {new Date(notification.createdAt).toLocaleTimeString()}
                         </Typography>
                       </Box>
                     </MenuItem>
@@ -767,15 +807,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </Toolbar>
         </AppBar>
         
-        {/* Main Content */}
+         {/* Main Content */}
         <Box
           component="main"
           sx={{ 
             flexGrow: 1, 
-            p: { xs: 2, sm: 3 }, 
+            p: { xs: 1.5, sm: 2, md: 3 }, 
             overflow: 'auto',
             maxWidth: '100%',
             minHeight: 'calc(100vh - 64px)', // Subtract AppBar height
+            // Better mobile responsiveness
+            '& .MuiTable-root': {
+              minWidth: { xs: '100%', sm: 'auto' },
+            },
+            '& .MuiTableContainer-root': {
+              overflowX: 'auto',
+            }
           }}
         >
           <PageContainer>
