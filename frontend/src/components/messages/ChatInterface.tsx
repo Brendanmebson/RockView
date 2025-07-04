@@ -118,13 +118,21 @@ const ChatInterface: React.FC = () => {
   };
 
   const fetchAvailableUsers = async () => {
+  try {
+    const response = await api.get('/messages/users');
+    setAvailableUsers(response.data);
+  } catch (error: any) {
+    console.error('Error fetching available users:', error);
+    setError('Failed to load available users');
+    // Fallback to users/hierarchy endpoint if messages/users fails
     try {
-      const response = await api.get('/users/hierarchy');
-      setAvailableUsers(response.data);
-    } catch (error) {
-      console.error('Error fetching available users:', error);
+      const fallbackResponse = await api.get('/users/hierarchy');
+      setAvailableUsers(fallbackResponse.data);
+    } catch (fallbackError) {
+      console.error('Fallback fetch also failed:', fallbackError);
     }
-  };
+  }
+};
 
   const fetchMessages = async (userId: string) => {
     try {

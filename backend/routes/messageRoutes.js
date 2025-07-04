@@ -8,6 +8,7 @@ const {
   deleteMessage,
   getUnreadCount,
   markMessagesAsRead,
+  getAvailableUsers,
 } = require('../controllers/messageController');
 const { protect } = require('../middleware/auth');
 

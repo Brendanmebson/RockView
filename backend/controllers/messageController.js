@@ -17,11 +17,7 @@ const sendMessage = async (req, res) => {
       return res.status(404).json({ message: 'Recipient not found' });
     }
     
-    // Check if user can message this recipient based on hierarchy
-    const canMessage = await canUserMessageRecipient(req.user, recipient);
-    if (!canMessage) {
-      return res.status(403).json({ message: 'You cannot message this user' });
-    }
+     // Allow messaging between all users (removed hierarchy restriction)
     
     const message = await Message.create({
       from: req.user._id,
@@ -30,7 +26,7 @@ const sendMessage = async (req, res) => {
       content,
       priority: req.body.priority || 'normal',
       category: req.body.category || 'general',
-      messageType: type, // 'chat' or 'email'
+      messageType: type,
     });
     
     const populatedMessage = await Message.findById(message._id)
@@ -230,14 +226,19 @@ const markMessagesAsRead = async (req, res) => {
 // @access  Private
 const getAvailableUsers = async (req, res) => {
   try {
-    const users = await getUsersByHierarchy(req.user);
+    // Get all users except the current user
+    const users = await User.find(
+      { _id: { $ne: req.user._id } }, 
+      'name email role'
+    ).sort({ name: 1 });
+    
     res.json(users);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-// Helper function to get users based on hierarchy
+// Helper function to get users based on hierarchy (for notifications only)
 const getUsersByHierarchy = async (currentUser) => {
   let users = [];
   
@@ -245,7 +246,7 @@ const getUsersByHierarchy = async (currentUser) => {
     if (currentUser.role === 'admin') {
       users = await User.find({ _id: { $ne: currentUser._id } }, 'name email role');
     } else if (currentUser.role === 'district_pastor') {
-      // Can message area supervisors and CITH centres in their district
+      // Can receive notifications from area supervisors and CITH centres in their district
       const areaSupervisors = await AreaSupervisor.find({ districtId: currentUser.districtId });
       const areaSupervisorIds = areaSupervisors.map(as => as._id);
       
@@ -254,36 +255,17 @@ const getUsersByHierarchy = async (currentUser) => {
       
       users = await User.find({
         $or: [
-          { role: 'admin' },
           { areaSupervisorId: { $in: areaSupervisorIds } },
           { cithCentreId: { $in: cithCentreIds } }
-        ],
-        _id: { $ne: currentUser._id }
+        ]
       }, 'name email role');
     } else if (currentUser.role === 'area_supervisor') {
-      // Can message CITH centres under them and their district pastor
+      // Can receive notifications from CITH centres under them
       const cithCentres = await CithCentre.find({ areaSupervisorId: currentUser.areaSupervisorId });
       const cithCentreIds = cithCentres.map(cc => cc._id);
       
       users = await User.find({
-        $or: [
-          { role: 'admin' },
-          { role: 'district_pastor', districtId: currentUser.districtId },
-          { cithCentreId: { $in: cithCentreIds } }
-        ],
-        _id: { $ne: currentUser._id }
-      }, 'name email role');
-    } else if (currentUser.role === 'cith_centre') {
-      // Can message their area supervisor, district pastor, and admin
-      const centre = await CithCentre.findById(currentUser.cithCentreId).populate('areaSupervisorId');
-      
-      users = await User.find({
-        $or: [
-          { role: 'admin' },
-          { areaSupervisorId: centre?.areaSupervisorId?._id },
-          { role: 'district_pastor', districtId: centre?.areaSupervisorId?.districtId }
-        ],
-        _id: { $ne: currentUser._id }
+        cithCentreId: { $in: cithCentreIds }
       }, 'name email role');
     }
   } catch (error) {
@@ -293,56 +275,7 @@ const getUsersByHierarchy = async (currentUser) => {
   return users;
 };
 
-// Helper function to check messaging permissions
-const canUserMessageRecipient = async (sender, recipient) => {
-  // Admin can message anyone
-  if (sender.role === 'admin') return true;
-  
-  // Users can message admins
-  if (recipient.role === 'admin') return true;
-  
-  // District pastor can message area supervisors and CITH centre leaders in their district
-  if (sender.role === 'district_pastor') {
-    if (recipient.role === 'area_supervisor') {
-      const area = await AreaSupervisor.findById(recipient.areaSupervisorId);
-      return area && area.districtId.toString() === sender.districtId.toString();
-    }
-    
-    if (recipient.role === 'cith_centre') {
-      const centre = await CithCentre.findById(recipient.cithCentreId).populate('areaSupervisorId');
-      return centre && centre.areaSupervisorId.districtId.toString() === sender.districtId.toString();
-    }
-  }
-  
-  // Area supervisor can message CITH centre leaders under them
-  if (sender.role === 'area_supervisor' && recipient.role === 'cith_centre') {
-    const centre = await CithCentre.findById(recipient.cithCentreId);
-    return centre && centre.areaSupervisorId.toString() === sender.areaSupervisorId.toString();
-  }
-  
-  // CITH centre leaders can message their area supervisor
-  if (sender.role === 'cith_centre' && recipient.role === 'area_supervisor') {
-    const centre = await CithCentre.findById(sender.cithCentreId);
-    return centre && centre.areaSupervisorId.toString() === recipient.areaSupervisorId.toString();
-  }
-  
-  // Area supervisors can message their district pastor
-  if (sender.role === 'area_supervisor' && recipient.role === 'district_pastor') {
-    const area = await AreaSupervisor.findById(sender.areaSupervisorId);
-    return area && area.districtId.toString() === recipient.districtId.toString();
-  }
-  
-  return false;
-};
 
-const getAvailableUsers = async (req, res) => {
-  try {
-    const users = await getUsersByHierarchy(req.user);
-    res.json(users);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
 
 module.exports = {
   sendMessage,
@@ -352,4 +285,5 @@ module.exports = {
   getUnreadCount,
   markMessagesAsRead,
   getAvailableUsers,
+  getUsersByHierarchy,
 };

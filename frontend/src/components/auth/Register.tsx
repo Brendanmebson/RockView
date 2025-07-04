@@ -25,6 +25,7 @@ import {
   CircularProgress,
   useTheme,
   useMediaQuery,
+  
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -45,21 +46,13 @@ import {
 } from '@mui/icons-material';
 import { Building, Home, Users } from 'lucide-react';
 import { PageContainer, AnimatedCard } from '../common/AnimatedComponents';
-import GridItem from '../common/GridItem';
 import { useThemeContext } from '../../context/ThemeContext';
 
-// Logo component helper
-const getLogo = (isDark: boolean) => {
-  try {
-    if (isDark) {
-      return require('../../assets/dark-mode.png');
-    } else {
-      return require('../../assets/light-mode.png');
-    }
-  } catch (error) {
-    return null;
-  }
-};
+import lightLogo from '../../assets/light-logo.png';
+import darkLogo from '../../assets/dark-logo.png';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+
 
 interface ZonalSupervisor {
   _id: string;
@@ -73,9 +66,7 @@ const Register: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { darkMode } = useThemeContext();
-  const lightLogo = getLogo(false);
-  const darkLogo = getLogo(true);
-
+  
   const [activeStep, setActiveStep] = useState(0);
   const [formData, setFormData] = useState({
     email: '',
@@ -460,22 +451,22 @@ const Register: React.FC = () => {
    return centre.name || 'Unknown Centre';
  };
 
- const LogoComponent = ({ size }: { size: number }) => {
-   const logoSrc = darkMode ? darkLogo : lightLogo;
-   
-   if (logoSrc) {
-     return (
-       <img 
-         src={logoSrc} 
-         alt="House on the Rock" 
-         style={{
-           width: size,
-           height: size,
-           objectFit: 'contain'
-         }}
-       />
-     );
-   }
+const LogoComponent = ({ size }: { size: number }) => {
+    const logoSrc = darkMode ? darkLogo : lightLogo;
+    
+    if (logoSrc) {
+      return (
+        <img 
+          src={logoSrc} 
+          alt="House on the Rock" 
+          style={{
+            width: size,
+            height: size,
+            objectFit: 'contain'
+          }}
+        />
+      );
+    }
    
    return (
      <Box
@@ -494,7 +485,7 @@ const Register: React.FC = () => {
          fontSize: size * 0.4,
        }}
      >
-       H
+        HOTR
      </Box>
    );
  };
@@ -1302,6 +1293,7 @@ const Register: React.FC = () => {
 };
 
 return (
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
   <PageContainer>
     <Box
       sx={{
@@ -1658,6 +1650,7 @@ return (
       </Dialog>
     </Box>
   </PageContainer>
+      </LocalizationProvider>
 );
 };
 

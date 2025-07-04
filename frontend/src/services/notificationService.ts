@@ -1,4 +1,4 @@
-// frontend/src/services/notificationService.ts
+// frontend/src/services/notificationService.ts - Updated to use real API
 import api from './api';
 
 export interface Notification {
@@ -26,22 +26,18 @@ class NotificationService {
   private listeners: Array<(notifications: Notification[]) => void> = [];
   private unreadCount: number = 0;
 
-  // Add listener for notification updates
   addListener(callback: (notifications: Notification[]) => void) {
     this.listeners.push(callback);
   }
 
-  // Remove listener
   removeListener(callback: (notifications: Notification[]) => void) {
     this.listeners = this.listeners.filter(listener => listener !== callback);
   }
 
-  // Notify all listeners
   private notifyListeners() {
     this.listeners.forEach(listener => listener(this.notifications));
   }
 
-  // Fetch notifications from server
   async fetchNotifications(): Promise<Notification[]> {
     try {
       const response = await api.get('/notifications?limit=50');
@@ -55,7 +51,6 @@ class NotificationService {
     }
   }
 
-  // Get unread count
   async fetchUnreadCount(): Promise<number> {
     try {
       const response = await api.get('/notifications/unread-count');
@@ -67,12 +62,10 @@ class NotificationService {
     }
   }
 
-  // Mark notification as read
   async markAsRead(notificationId: string): Promise<void> {
     try {
       await api.put(`/notifications/${notificationId}/read`);
       
-      // Update local state
       const notification = this.notifications.find(n => n._id === notificationId);
       if (notification && !notification.read) {
         notification.read = true;
@@ -84,12 +77,10 @@ class NotificationService {
     }
   }
 
-  // Mark all notifications as read
   async markAllAsRead(): Promise<void> {
     try {
       await api.put('/notifications/mark-all-read');
       
-      // Update local state
       this.notifications.forEach(notification => {
         notification.read = true;
       });
@@ -100,17 +91,14 @@ class NotificationService {
     }
   }
 
-  // Get unread count (local)
   getUnreadCount(): number {
     return this.unreadCount;
   }
 
-  // Get all notifications (local)
   getNotifications(): Notification[] {
     return this.notifications;
   }
 
-  // Poll for new notifications
   startPolling(intervalMs: number = 30000) {
     setInterval(async () => {
       await this.fetchNotifications();
