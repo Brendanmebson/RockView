@@ -620,7 +620,6 @@ const getDashboardData = async (req, res) => {
       stats: {},
       recentReports: [],
       notifications: [],
-      // Add organizational data
       districts: [],
       areaSupervisors: [],
       zonalSupervisors: [],
@@ -628,15 +627,11 @@ const getDashboardData = async (req, res) => {
     };
 
     // Get basic counts and organizational data
-    const [totalUsers, totalDistricts, totalAreas, totalCentres, districts, areas, zonals, centres] = await Promise.all([
+    const [totalUsers, totalDistricts, totalAreas, totalCentres] = await Promise.all([
       User.countDocuments(),
       District.countDocuments(),
       AreaSupervisor.countDocuments(),
-      CithCentre.countDocuments(),
-      District.find().select('_id name districtNumber'),
-      AreaSupervisor.find().populate('districtId', 'name districtNumber').select('_id name districtId'),
-      ZonalSupervisor.find().populate('districtId', 'name districtNumber').select('_id name districtId'),
-      CithCentre.find().populate('areaSupervisorId', 'name').select('_id name location areaSupervisorId')
+      CithCentre.countDocuments()
     ]);
 
     dashboardData.stats = {
@@ -646,79 +641,98 @@ const getDashboardData = async (req, res) => {
       totalCentres
     };
 
-    // Add organizational data to response
-    dashboardData.districts = districts;
-    dashboardData.areaSupervisors = areas;
-    dashboardData.zonalSupervisors = zonals;
-    dashboardData.cithCentres = centres;
+    // Fetch organizational data
+    try {
+      const [districts, areas, zonals, centres] = await Promise.all([
+        District.find().select('_id name districtNumber'),
+        AreaSupervisor.find().populate('districtId', 'name districtNumber').select('_id name districtId'),
+        ZonalSupervisor.find().populate('districtId', 'name districtNumber').select('_id name districtId'),
+        CithCentre.find().populate('areaSupervisorId', 'name').select('_id name location areaSupervisorId')
+      ]);
 
-
-    // Get role-specific data
-    if (userRole === 'admin') {
-      // Admin sees everything
-      const recentReports = await WeeklyReport.find({})
-        .populate('cithCentreId', 'name location')
-        .populate('submittedBy', 'name email')
-        .sort({ createdAt: -1 })
-        .limit(5);
-      
-      dashboardData.recentReports = recentReports;
-    } else if (userRole === 'district_pastor') {
-      // District pastor sees reports from their district
-      const districtId = req.user.districtId;
-      if (districtId) {
-        // Get all areas in the district
-        const areas = await AreaSupervisor.find({ districtId });
-        const areaIds = areas.map(area => area._id);
-        
-        // Get all centres in those areas
-        const centres = await CithCentre.find({ areaSupervisorId: { $in: areaIds } });
-        const centreIds = centres.map(centre => centre._id);
-        
-        const recentReports = await WeeklyReport.find({ cithCentreId: { $in: centreIds } })
-          .populate('cithCentreId', 'name location')
-          .populate('submittedBy', 'name email')
-          .sort({ createdAt: -1 })
-          .limit(5);
-        
-        dashboardData.recentReports = recentReports;
-      }
-    } else if (userRole === 'area_supervisor') {
-      // Area supervisor sees reports from their area
-      const areaSupervisorId = req.user.areaSupervisorId;
-      if (areaSupervisorId) {
-        const centres = await CithCentre.find({ areaSupervisorId });
-        const centreIds = centres.map(centre => centre._id);
-        
-        const recentReports = await WeeklyReport.find({ cithCentreId: { $in: centreIds } })
-          .populate('cithCentreId', 'name location')
-          .populate('submittedBy', 'name email')
-          .sort({ createdAt: -1 })
-          .limit(5);
-        
-        dashboardData.recentReports = recentReports;
-      }
-    } else if (userRole === 'cith_centre') {
-      // CITH centre sees only their reports
-      const cithCentreId = req.user.cithCentreId;
-      if (cithCentreId) {
-        const recentReports = await WeeklyReport.find({ cithCentreId })
-          .populate('cithCentreId', 'name location')
-          .populate('submittedBy', 'name email')
-          .sort({ createdAt: -1 })
-          .limit(5);
-        
-        dashboardData.recentReports = recentReports;
-      }
+      dashboardData.districts = districts || [];
+      dashboardData.areaSupervisors = areas || [];
+      dashboardData.zonalSupervisors = zonals || [];
+      dashboardData.cithCentres = centres || [];
+    } catch (orgError) {
+      console.error('Error fetching organizational data:', orgError);
+      // Continue with empty arrays
     }
 
-     res.json(dashboardData);
+    // Get role-specific data
+    try {
+      let recentReports = [];
+      
+      if (userRole === 'admin') {
+        recentReports = await WeeklyReport.find({})
+          .populate('cithCentreId', 'name location')
+          .populate('submittedBy', 'name email')
+          .sort({ createdAt: -1 })
+          .limit(5);
+      } else if (userRole === 'district_pastor') {
+        const districtId = req.user.districtId;
+        if (districtId) {
+          const areas = await AreaSupervisor.find({ districtId });
+          const areaIds = areas.map(area => area._id);
+          
+          const centres = await CithCentre.find({ areaSupervisorId: { $in: areaIds } });
+          const centreIds = centres.map(centre => centre._id);
+          
+          recentReports = await WeeklyReport.find({ cithCentreId: { $in: centreIds } })
+            .populate('cithCentreId', 'name location')
+            .populate('submittedBy', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(5);
+        }
+      } else if (userRole === 'area_supervisor') {
+        const areaSupervisorId = req.user.areaSupervisorId;
+        if (areaSupervisorId) {
+          const centres = await CithCentre.find({ areaSupervisorId });
+          const centreIds = centres.map(centre => centre._id);
+          
+          recentReports = await WeeklyReport.find({ cithCentreId: { $in: centreIds } })
+            .populate('cithCentreId', 'name location')
+            .populate('submittedBy', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(5);
+        }
+      } else if (userRole === 'cith_centre') {
+        const cithCentreId = req.user.cithCentreId;
+        if (cithCentreId) {
+          recentReports = await WeeklyReport.find({ cithCentreId })
+            .populate('cithCentreId', 'name location')
+            .populate('submittedBy', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(5);
+        }
+      }
+      
+      dashboardData.recentReports = recentReports || [];
+    } catch (reportsError) {
+      console.error('Error fetching recent reports:', reportsError);
+      dashboardData.recentReports = [];
+    }
+
+    res.json(dashboardData);
   } catch (error) {
     console.error('Get dashboard data error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
+   res.status(500).json({ 
+     message: 'Server error',
+     stats: {
+       totalUsers: 0,
+       totalDistricts: 0,
+       totalAreas: 0,
+       totalCentres: 0
+     },
+     recentReports: [],
+     notifications: [],
+     districts: [],
+     areaSupervisors: [],
+     zonalSupervisors: [],
+     cithCentres: []
+   });
+ }
 };
-
 // @desc    Check position availability
 // @route   GET /api/auth/check-position/:role/:targetId
 // @access  Private

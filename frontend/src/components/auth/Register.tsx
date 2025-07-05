@@ -1310,16 +1310,22 @@ return (
       <Container component="main" maxWidth="sm">
         <AnimatedCard delay={0.2}>
           <Paper
-            elevation={12}
-            sx={{
-              padding: { xs: 3, sm: 4 },
-              borderRadius: 4,
-              background: darkMode 
-                ? 'rgba(30, 30, 30, 0.95)'
-                : 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)',
-            }}
-          >
+          elevation={12}
+          sx={{
+            padding: { xs: 3, sm: 4 },
+            borderRadius: 4,
+            background: darkMode 
+              ? 'rgba(30, 30, 30, 0.95)' 
+              : 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
+            border: darkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)'
+              : '1px solid rgba(0, 0, 0, 0.05)',
+            boxShadow: darkMode
+              ? '0 8px 32px rgba(0, 0, 0, 0.3)'
+              : '0 8px 32px rgba(0, 0, 0, 0.1)',
+          }}
+        >
             <Box
               sx={{
                 display: 'flex',

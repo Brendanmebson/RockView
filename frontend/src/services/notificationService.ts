@@ -25,6 +25,7 @@ class NotificationService {
   private notifications: Notification[] = [];
   private listeners: Array<(notifications: Notification[]) => void> = [];
   private unreadCount: number = 0;
+  private isPolling: boolean = false;
 
   addListener(callback: (notifications: Notification[]) => void) {
     this.listeners.push(callback);
@@ -100,9 +101,24 @@ class NotificationService {
   }
 
   startPolling(intervalMs: number = 30000) {
+    if (this.isPolling) {
+      return;
+    }
+    
+    this.isPolling = true;
+    
+    // Initial fetch
+    this.fetchNotifications();
+    
     setInterval(async () => {
-      await this.fetchNotifications();
+      if (this.isPolling) {
+        await this.fetchNotifications();
+      }
     }, intervalMs);
+  }
+
+  stopPolling() {
+    this.isPolling = false;
   }
 }
 

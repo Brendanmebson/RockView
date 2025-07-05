@@ -228,12 +228,16 @@ const getAvailableUsers = async (req, res) => {
   try {
     // Get all users except the current user
     const users = await User.find(
-      { _id: { $ne: req.user._id } }, 
-      'name email role'
+      { 
+        _id: { $ne: req.user._id },
+        isActive: true // Only active users
+      }, 
+      'name email role phone'
     ).sort({ name: 1 });
     
     res.json(users);
   } catch (error) {
+    console.error('Error fetching available users:', error);
     res.status(400).json({ message: error.message });
   }
 };

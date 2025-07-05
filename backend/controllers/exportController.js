@@ -49,8 +49,6 @@ const exportToExcel = async (req, res) => {
     // Only include approved reports for export
     query.status = 'district_approved';
     
-    console.log('Export query:', query); // Debug log
-    
     const reports = await WeeklyReport.find(query)
       .populate({
         path: 'cithCentreId',
@@ -70,52 +68,70 @@ const exportToExcel = async (req, res) => {
       .populate('districtApprovedBy', 'name')
       .sort({ week: -1 });
     
-    console.log(`Found ${reports.length} reports for export`); // Debug log
-    
     if (reports.length === 0) {
       return res.status(404).json({ 
-        message: 'No approved reports found for export. Make sure reports are district approved.',
-        query: query 
+        message: 'No approved reports found for export.'
       });
     }
     
-    // Create workbook with better Excel formatting
+    // Create workbook
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'RockView Church System';
     workbook.created = new Date();
     
     const worksheet = workbook.addWorksheet('Weekly Reports');
     
-    // Define columns with better formatting
-    const columns = [
-       { header: 'District', key: 'district', width: 20 },
-      { header: 'Area Supervisor', key: 'areaSupervisor', width: 20 },
-      { header: 'CITH Centre', key: 'cithCentre', width: 25 },
-      { header: 'Location', key: 'location', width: 20 },
-      { header: 'Week', key: 'week', width: 15 },
-      { header: 'Event Type', key: 'eventType', width: 15 },
-      { header: 'Event Description', key: 'eventDescription', width: 25 },
-      { header: 'Male', key: 'male', width: 10 },
-      { header: 'Female', key: 'female', width: 10 },
-      { header: 'Children', key: 'children', width: 12 },
-      { header: 'Total Attendance', key: 'totalAttendance', width: 15 },
-      { header: 'Offerings (₦)', key: 'offerings', width: 15 },
-      { header: 'Testimonies', key: 'testimonies', width: 12 },
-      { header: 'First Timers', key: 'firstTimers', width: 12 },
-      { header: 'Followed Up', key: 'followedUp', width: 12 },
-      { header: 'Converted', key: 'converted', width: 12 },
-      { header: 'Mode of Meeting', key: 'mode', width: 15 },
-      { header: 'Remarks', key: 'remarks', width: 30 },
-      { header: 'Submitted By', key: 'submittedBy', width: 18 },
-      { header: 'Status', key: 'status', width: 15 },
+    // Add title row
+    worksheet.mergeCells('A1:T1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'HOUSE ON THE ROCK CHURCH - WEEKLY REPORTS';
+    titleCell.font = { 
+      name: 'Calibri', 
+      size: 16, 
+      bold: true, 
+      color: { argb: 'FFFFFFFF' } 
+    };
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1B5E20' }
+    };
+    titleCell.alignment = { 
+      vertical: 'middle', 
+      horizontal: 'center' 
+    };
+    
+    // Add export date row
+    worksheet.mergeCells('A2:T2');
+    const dateCell = worksheet.getCell('A2');
+    dateCell.value = `Exported on: ${new Date().toLocaleDateString()}`;
+    dateCell.font = { 
+      name: 'Calibri', 
+      size: 12, 
+      italic: true 
+    };
+    dateCell.alignment = { 
+      vertical: 'middle', 
+      horizontal: 'center' 
+    };
+    
+    // Add empty row
+    worksheet.addRow([]);
+    
+    // Define headers
+    const headers = [
+      'District', 'Area Supervisor', 'CITH Centre', 'Location', 'Week',
+      'Event Type', 'Event Description', 'Male', 'Female', 'Children',
+      'Total Attendance', 'Offerings (₦)', 'Testimonies', 'First Timers',
+      'Followed Up', 'Converted', 'Mode of Meeting', 'Remarks',
+      'Submitted By', 'Status'
     ];
     
-     
-    // Excel-style header formatting
-    const headerRow = worksheet.getRow(1);
+    // Add headers
+    const headerRow = worksheet.addRow(headers);
     headerRow.height = 25;
     
-    // Style each header cell individually for proper Excel look
+    // Style headers
     headerRow.eachCell((cell, colNumber) => {
       cell.font = { 
         name: 'Calibri',
@@ -126,7 +142,7 @@ const exportToExcel = async (req, res) => {
       cell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF366092' } // Excel blue
+        fgColor: { argb: 'FF366092' }
       };
       cell.alignment = { 
         vertical: 'middle', 
@@ -141,153 +157,92 @@ const exportToExcel = async (req, res) => {
       };
     });
     
-    // Add data rows with Excel-style formatting
+    // Add data rows
     reports.forEach((report, index) => {
-      try {
-        const centre = report.cithCentreId || {};
-        const area = centre.areaSupervisorId || {};
-        const district = area.districtId || {};
-        
-        const male = parseInt(report.data?.male) || 0;
-        const female = parseInt(report.data?.female) || 0;
-        const children = parseInt(report.data?.children) || 0;
-        
-        const rowData = {
-          district: district.name || 'Unknown District',
-          areaSupervisor: area.name || 'Unknown Area',
-          cithCentre: centre.name || 'Unknown Centre',
-          location: centre.location || 'Unknown Location',
-          week: report.week ? new Date(report.week).toLocaleDateString() : '',
-          eventType: report.eventType ? 
-            report.eventType.replace(/_/g, ' ').toUpperCase() : 'REGULAR SERVICE',
-          eventDescription: report.eventDescription || '',
-          male: male,
-          female: female,
-          children: children,
-          totalAttendance: male + female + children,
-          offerings: parseFloat(report.data?.offerings) || 0,
-          testimonies: parseInt(report.data?.numberOfTestimonies) || 0,
-          firstTimers: parseInt(report.data?.numberOfFirstTimers) || 0,
-          followedUp: parseInt(report.data?.firstTimersFollowedUp) || 0,
-          converted: parseInt(report.data?.firstTimersConvertedToCITH) || 0,
-          mode: (report.data?.modeOfMeeting || 'physical').toUpperCase(),
-          remarks: report.data?.remarks || '',
-          submittedBy: report.submittedBy?.name || 'Unknown User',
-          status: (report.status || 'unknown').replace(/_/g, ' ').toUpperCase(),
-        };
-        
-        const dataRow = worksheet.addRow(rowData);
-        dataRow.height = 20;
-        
-        // Style data cells with Excel formatting
-        dataRow.eachCell((cell, colNumber) => {
-          cell.font = { name: 'Calibri', size: 10 };
-          cell.alignment = { 
-            vertical: 'middle',
-            wrapText: true,
-            horizontal: colNumber >= 8 && colNumber <= 16 ? 'center' : 'left' // Center numbers
-          };
-          
-          // Alternate row colors like Excel
-          if (index % 2 === 1) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFF2F2F2' }
-            };
-          }
-          
-          // Add borders
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-            left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-            bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
-            right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
-          };
-        });
-        
-        // Format number columns
-        dataRow.getCell('male').numFmt = '0';
-        dataRow.getCell('female').numFmt = '0';
-        dataRow.getCell('children').numFmt = '0';
-        dataRow.getCell('totalAttendance').numFmt = '0';
-        dataRow.getCell('offerings').numFmt = '#,##0.00';
-        dataRow.getCell('testimonies').numFmt = '0';
-        dataRow.getCell('firstTimers').numFmt = '0';
-        dataRow.getCell('followedUp').numFmt = '0';
-        dataRow.getCell('converted').numFmt = '0';
-        
-      } catch (rowError) {
-        console.error(`Error processing row ${index}:`, rowError);
-      }
-    });
-    
-    // Add totals row with Excel styling
-    if (reports.length > 0) {
-      const totalsRowIndex = reports.length + 2;
-      const totalsRow = worksheet.getRow(totalsRowIndex);
+      const centre = report.cithCentreId || {};
+      const area = centre.areaSupervisorId || {};
+      const district = area.districtId || {};
       
-      // Calculate totals
-      const totalMale = reports.reduce((sum, report) => sum + (parseInt(report.data?.male) || 0), 0);
-      const totalFemale = reports.reduce((sum, report) => sum + (parseInt(report.data?.female) || 0), 0);
-      const totalChildren = reports.reduce((sum, report) => sum + (parseInt(report.data?.children) || 0), 0);
-      const totalOfferings = reports.reduce((sum, report) => sum + (parseFloat(report.data?.offerings) || 0), 0);
-      const totalTestimonies = reports.reduce((sum, report) => sum + (parseInt(report.data?.numberOfTestimonies) || 0), 0);
-      const totalFirstTimers = reports.reduce((sum, report) => sum + (parseInt(report.data?.numberOfFirstTimers) || 0), 0);
-      const totalFollowedUp = reports.reduce((sum, report) => sum + (parseInt(report.data?.firstTimersFollowedUp) || 0), 0);
-      const totalConverted = reports.reduce((sum, report) => sum + (parseInt(report.data?.firstTimersConvertedToCITH) || 0), 0);
+      const male = parseInt(report.data?.male) || 0;
+      const female = parseInt(report.data?.female) || 0;
+      const children = parseInt(report.data?.children) || 0;
       
-      totalsRow.values = [
-        '', '', '', '', '', '', 'TOTALS:', 
-        totalMale, totalFemale, totalChildren, 
-        totalMale + totalFemale + totalChildren,
-        totalOfferings, totalTestimonies, totalFirstTimers,
-        totalFollowedUp, totalConverted, '', '', '', ''
+      const rowData = [
+        district.name || 'Unknown District',
+        area.name || 'Unknown Area',
+        centre.name || 'Unknown Centre',
+        centre.location || 'Unknown Location',
+        report.week ? new Date(report.week).toLocaleDateString() : '',
+        report.eventType ? 
+          report.eventType.replace(/_/g, ' ').toUpperCase() : 'REGULAR SERVICE',
+        report.eventDescription || '',
+        male,
+        female,
+        children,
+        male + female + children,
+        parseFloat(report.data?.offerings) || 0,
+        parseInt(report.data?.numberOfTestimonies) || 0,
+        parseInt(report.data?.numberOfFirstTimers) || 0,
+        parseInt(report.data?.firstTimersFollowedUp) || 0,
+        parseInt(report.data?.firstTimersConvertedToCITH) || 0,
+        (report.data?.modeOfMeeting || 'physical').toUpperCase(),
+        report.data?.remarks || '',
+        report.submittedBy?.name || 'Unknown User',
+        (report.status || 'unknown').replace(/_/g, ' ').toUpperCase()
       ];
       
-      // Style totals row
-      totalsRow.eachCell((cell, colNumber) => {
-        if (colNumber >= 7) { // From "TOTALS" column onwards
-          cell.font = { name: 'Calibri', size: 11, bold: true };
+      const dataRow = worksheet.addRow(rowData);
+      dataRow.height = 20;
+      
+      // Style data cells
+      dataRow.eachCell((cell, colNumber) => {
+        cell.font = { name: 'Calibri', size: 10 };
+        cell.alignment = { 
+          vertical: 'middle',
+          wrapText: true,
+          horizontal: colNumber >= 8 && colNumber <= 16 ? 'center' : 'left'
+        };
+        
+        // Alternate row colors
+        if (index % 2 === 1) {
           cell.fill = {
             type: 'pattern',
             pattern: 'solid',
-            fgColor: { argb: 'FFDCE6F1' }
-          };
-          cell.border = {
-            top: { style: 'medium', color: { argb: 'FF000000' } },
-            left: { style: 'thin', color: { argb: 'FF000000' } },
-            bottom: { style: 'medium', color: { argb: 'FF000000' } },
-            right: { style: 'thin', color: { argb: 'FF000000' } }
-          };
-          cell.alignment = { 
-            vertical: 'middle', 
-            horizontal: 'center' 
+            fgColor: { argb: 'FFF2F2F2' }
           };
         }
+        
+        // Add borders
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          left: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          bottom: { style: 'thin', color: { argb: 'FFD0D0D0' } },
+          right: { style: 'thin', color: { argb: 'FFD0D0D0' } }
+        };
       });
       
-      // Format totals numbers
-      totalsRow.getCell(8).numFmt = '0'; // male
-      totalsRow.getCell(9).numFmt = '0'; // female
-      totalsRow.getCell(10).numFmt = '0'; // children
-      totalsRow.getCell(11).numFmt = '0'; // total
-      totalsRow.getCell(12).numFmt = '#,##0.00'; // offerings
-      totalsRow.getCell(13).numFmt = '0'; // testimonies
-      totalsRow.getCell(14).numFmt = '0'; // first timers
-      totalsRow.getCell(15).numFmt = '0'; // followed up
-      totalsRow.getCell(16).numFmt = '0'; // converted
-    }
+      // Format number columns
+      dataRow.getCell(8).numFmt = '0';   // male
+      dataRow.getCell(9).numFmt = '0';   // female
+      dataRow.getCell(10).numFmt = '0';  // children
+      dataRow.getCell(11).numFmt = '0';  // total
+      dataRow.getCell(12).numFmt = '#,##0.00'; // offerings
+      dataRow.getCell(13).numFmt = '0';  // testimonies
+      dataRow.getCell(14).numFmt = '0';  // first timers
+      dataRow.getCell(15).numFmt = '0';  // followed up
+      dataRow.getCell(16).numFmt = '0';  // converted
+    });
     
-    // Freeze the header row like Excel
-    worksheet.views = [
-      { state: 'frozen', ySplit: 1 }
-    ];
-    
-    // Auto-fit columns with reasonable limits
-    worksheet.columns.forEach(column => {
-      if (column.width && column.width < 10) column.width = 10;
-      if (column.width && column.width > 40) column.width = 40;
+    // Auto-fit columns
+    worksheet.columns.forEach((column, index) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const columnLength = cell.value ? cell.value.toString().length : 10;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
+      column.width = Math.min(Math.max(maxLength + 2, 10), 40);
     });
     
     // Set response headers
@@ -309,8 +264,7 @@ const exportToExcel = async (req, res) => {
     console.error('Export error:', error);
     res.status(500).json({ 
       message: 'Export failed', 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message
     });
   }
 };

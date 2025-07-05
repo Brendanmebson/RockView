@@ -45,41 +45,41 @@ const Login: React.FC = () => {
     }
   }, [user, navigate]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      setError('');
-      setLoading(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  e.stopPropagation();
+  
+  setError('');
+  setLoading(true);
 
-      // Basic validation
-      if (!email.trim() || !password.trim()) {
-        setError('Please fill in all fields');
-        setLoading(false);
-        return;
-      }
+  // Basic validation
+  if (!email.trim() || !password.trim()) {
+    setError('Please fill in all fields');
+    setLoading(false);
+    return;
+  }
 
-      if (password.length < 6) {
-        setError('Password must be at least 6 characters long');
-        setLoading(false);
-        return;
-      }
+  if (password.length < 6) {
+    setError('Password must be at least 6 characters long');
+    setLoading(false);
+    return;
+  }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError('Please enter a valid email address');
-      setLoading(false);
-      return;
-    }
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
+    setError('Please enter a valid email address');
+    setLoading(false);
+    return;
+  }
 
-    try {
+  try {
     await login(email.trim(), password);
-    // Don't navigate here - let AuthContext handle it
+    // Navigation will be handled by AuthContext
   } catch (error: any) {
-    setError(error.response?.data?.message || 'Invalid email or password. Please try again.');
     console.error('Login error:', error);
-    // Clear password field on error
+    setError(error.response?.data?.message || 'Invalid email or password. Please try again.');
+    // Don't clear email, only clear password on error
     setPassword('');
   } finally {
     setLoading(false);

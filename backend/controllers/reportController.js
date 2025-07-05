@@ -126,6 +126,7 @@ const submitReport = async (req, res) => {
         message: `Report for this week and event type (${eventType || 'regular_service'}) already exists` 
       });
     }    
+    
     // Validate report data
     const reportData = {
       male: parseInt(data.male) || 0,
@@ -153,6 +154,14 @@ const submitReport = async (req, res) => {
     // Populate the created report
     const populatedReport = await WeeklyReport.findById(report._id)
       .populate(getReportPopulationQuery());
+    
+    // Send notifications after successful creation
+    try {
+      await notifyReportSubmitted(report._id, cithCentreId, req.user._id);
+    } catch (notificationError) {
+      console.error('Error sending notifications:', notificationError);
+      // Don't fail the request if notifications fail
+    }
     
     res.status(201).json(populatedReport);
   } catch (error) {

@@ -1,13 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import CithCentreDashboard from './CithCentreDashboard';
 import AreaSupervisorDashboard from './AreaSupervisorDashboard';
 import ZonalSupervisorDashboard from './ZonalSupervisorDashboard';
 import DistrictPastorDashboard from './DistrictPastorDashboard';
 import AdminDashboard from './AdminDashboard';
+import { Box, CircularProgress, Typography } from '@mui/material';
 
 const DashboardMain: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+
+  useEffect(() => {
+    if (!loading && user) {
+      // Small delay to ensure all context is loaded
+      setTimeout(() => {
+        setDashboardLoading(false);
+      }, 500);
+    }
+  }, [loading, user]);
+
+  if (loading || dashboardLoading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '50vh',
+        gap: 2
+      }}>
+        <CircularProgress size={40} />
+        <Typography variant="body2" color="textSecondary">
+          Loading dashboard...
+        </Typography>
+      </Box>
+    );
+  }
 
   if (!user) return null;
 
@@ -23,7 +52,13 @@ const DashboardMain: React.FC = () => {
     case 'admin':
       return <AdminDashboard />;
     default:
-      return <div>Invalid role</div>;
+      return (
+        <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Typography variant="h6" color="error">
+            Invalid user role: {user.role}
+          </Typography>
+        </Box>
+      );
   }
 };
 

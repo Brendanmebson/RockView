@@ -6,88 +6,121 @@ const AreaSupervisor = require('../models/AreaSupervisor');
 
 // Helper function to notify supervisors about report submission (hierarchical)
 const notifyReportSubmitted = async (reportId, cithCentreId, submittedBy) => {
- try {
-   // Get the CITH centre with populated supervisors
-   const centre = await CithCentre.findById(cithCentreId)
-     .populate({
-       path: 'areaSupervisorId',
-       populate: {
-         path: 'districtId',
-       }
-     });
-   
-   if (!centre || !centre.areaSupervisorId) return;
-   
-   // Find area supervisor user (direct supervisor)
-   const areaSupervisorUser = await User.findOne({ 
-     areaSupervisorId: centre.areaSupervisorId._id 
-   });
-   
-   if (areaSupervisorUser) {
-     await createNotification({
-       recipient: areaSupervisorUser._id,
-       sender: submittedBy,
-       title: 'New Report Submitted',
-       message: `A new weekly report has been submitted from ${centre.name} and requires your approval.`,
-       type: 'report_submitted',
-       actionUrl: `/reports/${reportId}`,
-       metadata: { reportId },
-     });
-   }
-   
-   // Find zonal supervisor user (if exists)
-   const zonalSupervisorUser = await User.findOne({ 
-     zonalSupervisorId: { $exists: true },
-     // Additional query to check if this zonal supervisor manages this area
-   });
-   
-   if (zonalSupervisorUser) {
-     await createNotification({
-       recipient: zonalSupervisorUser._id,
-       sender: submittedBy,
-       title: 'New Report in Your Zone',
-       message: `A new weekly report has been submitted from ${centre.name} in your zone.`,
-       type: 'report_submitted',
-       actionUrl: `/reports/${reportId}`,
-       metadata: { reportId },
-     });
-   }
-   
-   // Find district pastor user (overall supervisor)
-   if (centre.areaSupervisorId.districtId) {
-     const districtPastorUser = await User.findOne({ 
-       districtId: centre.areaSupervisorId.districtId._id 
-     });
-     
-     if (districtPastorUser) {
-       await createNotification({
-         recipient: districtPastorUser._id,
-         sender: submittedBy,
-         title: 'New Report in Your District',
-         message: `A new weekly report has been submitted from ${centre.name} in your district.`,
-         type: 'report_submitted',
-         actionUrl: `/reports/${reportId}`,
-         metadata: { reportId },
-       });
-     }
-   }
-   
-   // Notify admin (receives all notifications)
-   const adminUsers = await User.find({ role: 'admin' });
-   for (const admin of adminUsers) {
-     await createNotification({
-       recipient: admin._id,
-       sender: submittedBy,
-       title: 'New Report Submitted',
-       message: `A new weekly report has been submitted from ${centre.name}.`,
-       type: 'report_submitted',
-       actionUrl: `/reports/${reportId}`,
-       metadata: { reportId },
-     });
-   }
- } catch (error) {
-   console.error('Error notifying report submission:', error);
- }
+  try {
+    console.log('Sending notification for report:', reportId);
+    
+    // Get the CITH centre with populated supervisors
+    const centre = await CithCentre.findById(cithCentreId)
+      .populate({
+        path: 'areaSupervisorId',
+        populate: {
+          path: 'districtId',
+        }
+      });
+    
+    if (!centre || !centre.areaSupervisorId) {
+      console.log('No area supervisor found for centre:', cithCentreId);
+      return;
+    }
+    
+    console.log('Centre found:', centre.name);
+    console.log('Area supervisor:', centre.areaSupervisorId.name);
+    
+    // Find area supervisor user (direct supervisor)
+    const areaSupervisorUser = await User.findOne({ 
+      role: 'area_supervisor',
+      areaSupervisorId: centre.areaSupervisorId._id 
+    });
+    
+    console.log('Area supervisor user found:', areaSupervisorUser?.name);
+    
+    if (areaSupervisorUser) {
+      await createNotification({
+        recipient: areaSupervisorUser._id,
+        sender: submittedBy,
+        title: 'New Report Submitted',
+        message: `A new weekly report has been submitted from ${centre.name} and requires your approval.`,
+        type: 'report_submitted',
+        actionUrl: `/reports/${reportId}`,
+        metadata: { reportId },
+      });
+      console.log('Notification sent to area supervisor');
+    }
+    
+    // Find zonal supervisor user (if exists)
+    const zonalSupervisorUser = await User.findOne({ 
+      role: 'zonal_supervisor',
+      // You may need to adjust this query based on your zonal supervisor schema
+    });
+    
+    if (zonalSupervisorUser) {
+      await createNotification({
+        recipient: zonalSupervisorUser._id,
+        sender: submittedBy,
+        title: 'New Report in Your Zone',
+        message: `A new weekly report has been submitted from ${centre.name} in your zone.`,
+        type: 'report_submitted',
+        actionUrl: `/reports/${reportId}`,
+        metadata: { reportId },
+      });
+      console.log('Notification sent to zonal supervisor');
+    }
+    
+    // Find district pastor user (overall supervisor)
+    if (centre.areaSupervisorId.districtId) {
+      const districtPastorUser = await User.findOne({ 
+        role: 'district_pastor',
+        districtId: centre.areaSupervisorId.districtId._id 
+      });
+      
+      console.log('District pastor user found:', districtPastorUser?.name);
+      
+      if (districtPastorUser) {
+        await createNotification({
+          recipient: districtPastorUser._id,
+          sender: submittedBy,
+          title: 'New Report in Your District',
+          message: `A new weekly report has been submitted from ${centre.name} in your district.`,
+          type: 'report_submitted',
+          actionUrl: `/reports/${reportId}`,
+          metadata: { reportId },
+        });
+        console.log('Notification sent to district pastor');
+      }
+    }
+    
+    // Notify admin (receives all notifications)
+    const adminUsers = await User.find({ role: 'admin' });
+    console.log('Admin users found:', adminUsers.length);
+    
+    for (const admin of adminUsers) {
+      await createNotification({
+        recipient: admin._id,
+        sender: submittedBy,
+        title: 'New Report Submitted',
+        message: `A new weekly report has been submitted from ${centre.name}.`,
+        type: 'report_submitted',
+        actionUrl: `/reports/${reportId}`,
+        metadata: { reportId },
+      });
+    }
+    console.log('Notifications sent to all admins');
+    
+  } catch (error) {
+    console.error('Error notifying report submission:', error);
+  }
+};
+
+const createNotification = async (data) => {
+  try {
+    console.log('Creating notification:', data);
+    const notification = await Notification.create(data);
+    console.log('Notification created successfully:', notification._id);
+    return notification;
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    throw error;
+  }
 };
 
 // Helper function to notify about report approval (hierarchical)
@@ -323,15 +356,6 @@ const getUnreadCount = async (req, res) => {
    res.json({ count });
  } catch (error) {
    res.status(400).json({ message: error.message });
- }
-};
-
-const createNotification = async (data) => {
- try {
-   const notification = await Notification.create(data);
-   return notification;
- } catch (error) {
-   console.error('Error creating notification:', error);
  }
 };
 

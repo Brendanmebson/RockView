@@ -25,6 +25,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+const [dashboardLoading, setDashboardLoading] = useState(false);
+
   const [userCentre, setUserCentre] = useState<CithCentre | null>(null);
   const [userArea, setUserArea] = useState<AreaSupervisor | null>(null);
   const [userDistrict, setUserDistrict] = useState<District | null>(null);
@@ -105,45 +107,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const fetchUserProfile = async (authToken?: string) => {
-    try {
-      // Use provided token or current token
-      const tokenToUse = authToken || token;
-      if (!tokenToUse) return;
+const fetchUserProfile = async (authToken?: string) => {
+  try {
+    setDashboardLoading(true);
+    const tokenToUse = authToken || token;
+    if (!tokenToUse) return;
 
-      // Temporarily set token for API call if not already set
-      if (authToken && !token) {
-        api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
-      }
-
-      const response = await api.get('/auth/profile');
-      setUser(response.data);
-      
-      // Set user context based on role
-      if (response.data.cithCentreId) {
-        setUserCentre(response.data.cithCentreId);
-        
-        if (response.data.cithCentreId.areaSupervisorId) {
-          setUserArea(response.data.cithCentreId.areaSupervisorId);
-          
-          if (response.data.cithCentreId.areaSupervisorId.districtId) {
-            setUserDistrict(response.data.cithCentreId.areaSupervisorId.districtId);
-          }
-        }
-      } else if (response.data.areaSupervisorId) {
-        setUserArea(response.data.areaSupervisorId);
-        
-        if (response.data.areaSupervisorId.districtId) {
-          setUserDistrict(response.data.areaSupervisorId.districtId);
-        }
-      } else if (response.data.districtId) {
-        setUserDistrict(response.data.districtId);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      throw error;
+    if (authToken && !token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
     }
-  };
+
+    const response = await api.get('/auth/profile');
+    setUser(response.data);
+    
+    // Set user context based on role
+    if (response.data.cithCentreId) {
+      setUserCentre(response.data.cithCentreId);
+      
+      if (response.data.cithCentreId.areaSupervisorId) {
+        setUserArea(response.data.cithCentreId.areaSupervisorId);
+        
+        if (response.data.cithCentreId.areaSupervisorId.districtId) {
+          setUserDistrict(response.data.cithCentreId.areaSupervisorId.districtId);
+        }
+      }
+    } else if (response.data.areaSupervisorId) {
+      setUserArea(response.data.areaSupervisorId);
+      
+      if (response.data.areaSupervisorId.districtId) {
+        setUserDistrict(response.data.areaSupervisorId.districtId);
+      }
+    } else if (response.data.districtId) {
+      setUserDistrict(response.data.districtId);
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  } finally {
+    setDashboardLoading(false);
+  }
+};
 
   const refreshUserContext = async () => {
     if (token && !isSessionExpired()) {
@@ -152,26 +155,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (email: string, password: string) => {
-    setLoading(true);
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      const { token: newToken, ...userData } = response.data;
-      
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-      setUser(userData);
-      updateActivity();
-      
-      // Set up API authorization header
-      api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      
-    } catch (error) {
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+const login = async (email: string, password: string) => {
+  setLoading(true);
+  try {
+    const response = await api.post('/auth/login', { email, password });
+    const { token: newToken, ...userData } = response.data;
+    
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+    setUser(userData);
+    updateActivity();
+    
+    // Set up API authorization header
+    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+    
+    // Fetch complete user profile data
+    await fetchUserProfile(newToken);
+    
+  } catch (error) {
+    throw error;
+  } finally {
+    setLoading(false);
+  }
+};
 
   const register = async (userData: any) => {
     setLoading(true);
