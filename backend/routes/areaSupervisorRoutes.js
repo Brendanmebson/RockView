@@ -17,7 +17,7 @@ router
   .post(authorize('admin', 'district_pastor'), createAreaSupervisor);
 
 router
-  .route('/users/:id')
+  .route('/:id')
   .get(getAreaSupervisorById)
   .put(authorize('admin', 'district_pastor', 'area_supervisor'), updateAreaSupervisor)
   .delete(authorize('admin', 'district_pastor'), deleteAreaSupervisor);

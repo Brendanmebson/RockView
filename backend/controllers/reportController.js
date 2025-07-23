@@ -97,37 +97,37 @@ const sanitizeReportData = (reports) => {
 const submitReport = async (req, res) => {
   try {
     const { week, data, eventType, eventDescription } = req.body;
-    
-    // Validate that the user has access to submit for this centre
+
+// Validate that the user has access to submit for this centre
     if (req.user.role !== 'cith_centre') {
       return res.status(403).json({ message: 'Only CITH centres can submit reports' });
     }
-    
-    // Set the CITH centre ID from user's association
+
+// Set the CITH centre ID from user's association
     const cithCentreId = req.user.cithCentreId;
-    
+
     if (!cithCentreId) {
       return res.status(400).json({ message: 'User not associated with any CITH centre' });
     }
-    
-    // Validate the week format (should be start of week)
+
+// Validate the week format (should be start of week)
     const weekStart = new Date(week);
     weekStart.setHours(0, 0, 0, 0);
-    
-    // Check if report for this week and event type already exists
+
+// Check if report for this week and event type already exists
     const existingReport = await WeeklyReport.findOne({
       cithCentreId,
       week: weekStart,
       eventType: eventType || 'regular_service',
     });
-    
+
     if (existingReport) {
-      return res.status(400).json({ 
-        message: `Report for this week and event type (${eventType || 'regular_service'}) already exists` 
+      return res.status(400).json({
+        message: `Report for this week and event type (${eventType || 'regular_service'}) already exists`
       });
-    }    
-    
-    // Validate report data
+    }
+
+// Validate report data
     const reportData = {
       male: parseInt(data.male) || 0,
       female: parseInt(data.female) || 0,
@@ -140,8 +140,8 @@ const submitReport = async (req, res) => {
       modeOfMeeting: data.modeOfMeeting || 'physical',
       remarks: data.remarks || ''
     };
-    
-    // Create the report
+
+// Create the report
     const report = await WeeklyReport.create({
       cithCentreId,
       week: weekStart,
@@ -150,25 +150,24 @@ const submitReport = async (req, res) => {
       data: reportData,
       submittedBy: req.user._id,
     });
-    
-    // Populate the created report
-    const populatedReport = await WeeklyReport.findById(report._id)
+
+// Populate the created report
+const populatedReport = await WeeklyReport.findById(report._id)
       .populate(getReportPopulationQuery());
-    
-    // Send notifications after successful creation
+
+// Send notifications after successful creation
     try {
       await notifyReportSubmitted(report._id, cithCentreId, req.user._id);
     } catch (notificationError) {
       console.error('Error sending notifications:', notificationError);
-      // Don't fail the request if notifications fail
+// Don't fail the request if notifications fail
     }
-    
+
     res.status(201).json(populatedReport);
   } catch (error) {
     console.error('Error submitting report:', error);
     res.status(400).json({ message: error.message });
   }
-};
 await notifyReportSubmitted(report._id, cithCentreId, req.user._id);
 res.status(201).json(populatedReport);
 

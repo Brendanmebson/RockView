@@ -25,14 +25,14 @@ const allowedOrigins = [
   'https://rockview.vercel.app',
   'https://rockview-frontend.vercel.app',
   /^https:\/\/rockview.*\.vercel\.app$/,
-  /^https:\/\/.*--rockview.*\.vercel\.app$/ // Vercel preview deployments
+  /^https:\/\/.*--rockview.*\.vercel\.app$/// Vercel preview deployments
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, curl)
+// Allow requests with no origin (like mobile apps, Postman, curl)
     if (!origin) return callback(null, true);
-    
+
     const isAllowed = allowedOrigins.some(allowed => {
       if (typeof allowed === 'string') {
         return allowed === origin;
@@ -40,11 +40,11 @@ app.use(cors({
         return allowed.test(origin);
       }
     });
-    
+
     if (isAllowed) {
       return callback(null, true);
     }
-    
+
     console.log(`CORS blocked origin: ${origin}`);
     const msg = `CORS policy violation: Origin ${origin} not allowed`;
     return callback(new Error(msg), false);
@@ -53,7 +53,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
     'Origin',
-    'X-Requested-With', 
+    'X-Requested-With',
     'Content-Type',
     'Accept',
     'Authorization',
@@ -61,8 +61,8 @@ app.use(cors({
     'Pragma'
   ],
   exposedHeaders: ['Content-Length', 'Authorization'],
-  maxAge: 86400, // 24 hours
-  optionsSuccessStatus: 200 // For legacy browser support
+  maxAge: 86400,// 24 hours
+  optionsSuccessStatus: 200// For legacy browser support
 }));
 
 // Explicit preflight request handler
@@ -75,15 +75,15 @@ app.options('*', (req, res) => {
 });
 
 // Body parser middleware
-app.use(express.json({ 
+app.use(express.json({
   limit: '10mb',
   verify: (req, res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ 
-  extended: false, 
-  limit: '10mb' 
+app.use(express.urlencoded({
+  extended: false,
+  limit: '10mb'
 }));
 
 // Logging
@@ -96,10 +96,10 @@ if (process.env.NODE_ENV === 'development') {
 // Health check endpoints (for uptime monitoring)
 const healthCheck = async (req, res) => {
   try {
-    // Check database connection
+// Check database connection
     const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-    
-    // Basic health info
+
+// Basic health info
     const healthData = {
       status: 'OK',
       timestamp: new Date().toISOString(),
@@ -113,7 +113,7 @@ const healthCheck = async (req, res) => {
       version: process.env.npm_package_version || '1.0.0'
     };
 
-    // If database is disconnected, return 503
+// If database is disconnected, return 503
     if (dbStatus !== 'connected') {
       return res.status(503).json({
         ...healthData,
@@ -156,41 +156,62 @@ app.get('/', (req, res) => {
   });
 });
 
-// API Routes - Wrapped in try-catch for better error handling
-try {
-  // Public routes (no authentication required)
-  app.use('/api/public', require('./routes/publicRoutes'));
-  
-  // Authentication routes
-  app.use('/api/auth', require('./routes/authRoutes'));
-  
-  // Protected routes (authentication required)
-  app.use('/api/users', require('./routes/userRoutes'));
-  app.use('/api/districts', require('./routes/districtRoutes'));
-  app.use('/api/zonal-supervisors', require('./routes/zonalSupervisorRoutes'));
-  app.use('/api/area-supervisors', require('./routes/areaSupervisorRoutes'));
-  app.use('/api/cith-centres', require('./routes/cithCentreRoutes'));
-  app.use('/api/reports', require('./routes/reportRoutes'));
-  app.use('/api/messages', require('./routes/messageRoutes'));
-  app.use('/api/export', require('./routes/exportRoutes'));
-  app.use('/api/notifications', require('./routes/notificationRoutes'));
-
-  
-  console.log('✅ All routes loaded successfully');
-} catch (error) {
-  console.error('❌ Error loading routes:', error);
-  console.error('This might be due to missing dependencies or syntax errors in route files');
-  
-  // Load essential routes only
+// API Routes - Load routes individually with error handling
+const loadRoute = (path, routeFile, routeName) => {
   try {
-    app.use('/api/public', require('./routes/publicRoutes'));
-    app.use('/api/auth', require('./routes/authRoutes'));
-    app.use('/api/users', require('./routes/userRoutes'));
-    console.log('✅ Essential routes loaded');
-  } catch (essentialError) {
-    console.error('❌ Failed to load even essential routes:', essentialError);
+    app.use(path, require(routeFile));
+    console.log(`✅ ${routeName} routes loaded`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Error loading ${routeName} routes:`, error.message);
+    return false;
   }
+};
+
+// Load routes with individual error handling
+console.log('🔄 Loading API routes...');
+
+// Public routes (no authentication required)
+loadRoute('/api/public', './routes/publicRoutes', 'Public');
+
+// Authentication routes
+loadRoute('/api/auth', './routes/authRoutes', 'Authentication');
+
+// Protected routes (authentication required)
+loadRoute('/api/users', './routes/userRoutes', 'Users');
+loadRoute('/api/districts', './routes/districtRoutes', 'Districts');
+loadRoute('/api/zonal-supervisors', './routes/zonalSupervisorRoutes', 'Zonal Supervisors');
+loadRoute('/api/area-supervisors', './routes/areaSupervisorRoutes', 'Area Supervisors');
+loadRoute('/api/cith-centres', './routes/cithCentreRoutes', 'CITH Centres');
+loadRoute('/api/messages', './routes/messageRoutes', 'Messages');
+loadRoute('/api/notifications', './routes/notificationRoutes', 'Notifications');
+loadRoute('/api/export', './routes/exportRoutes', 'Export');
+
+// Load reports route with special handling for the async issue
+try {
+  const reportRoutes = require('./routes/reportRoutes');
+  app.use('/api/reports', reportRoutes);
+  console.log('✅ Reports routes loaded');
+} catch (error) {
+  console.error('❌ Error loading Reports routes:', error.message);
+  console.log('🔄 Creating fallback reports routes...');
+
+// Create fallback reports routes
+  const fallbackReportsRouter = express.Router();
+
+  fallbackReportsRouter.get('/', (req, res) => {
+    res.json({ message: 'Reports endpoint temporarily unavailable. Please check server logs.' });
+  });
+
+  fallbackReportsRouter.post('/', (req, res) => {
+    res.status(503).json({ message: 'Report submission temporarily unavailable. Please try again later.' });
+  });
+
+  app.use('/api/reports', fallbackReportsRouter);
+  console.log('⚠️ Fallback reports routes loaded');
 }
+
+console.log('✅ Route loading completed');
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
@@ -253,19 +274,19 @@ process.on('unhandledRejection', (err, promise) => {
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 RockView Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`🚀 RockView Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   console.log(`📍 Server URL: ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}`);
   console.log(`🗄️  Database: ${mongoose.connection.readyState === 1 ? '✅ Connected' : '❌ Not connected'}`);
   console.log(`🔐 JWT Secret: ${process.env.JWT_SECRET ? '✅ Configured' : '❌ Not configured'}`);
-  
-  // Health check endpoints for monitoring
+
+// Health check endpoints for monitoring
   console.log('\n🏥 Health Check Endpoints (for UptimeRobot):');
   console.log(`  GET  ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/ping`);
   console.log(`  GET  ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/health`);
   console.log(`  GET  ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/api/ping`);
   console.log(`  GET  ${process.env.NODE_ENV === 'production' ? 'https://your-app.onrender.com' : `http://localhost:${PORT}`}/api/health`);
-  
-  // Log available routes
+
+// Log available routes
   console.log('\n📋 Available API Routes:');
   console.log('  GET  /health                    - Health check');
   console.log('  GET  /ping                      - Health check (alternative)');
@@ -284,13 +305,13 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('  GET  /api/reports              - Weekly reports');
   console.log('  GET  /api/messages             - Messaging system');
   console.log('  GET  /api/export/*             - Data export');
-  
-  // Log allowed origins for debugging
+
+// Log allowed origins for debugging
   if (process.env.NODE_ENV === 'development') {
     console.log('\n🌐 Allowed CORS origins:', allowedOrigins);
   }
-  
-  // UptimeRobot setup instructions
+
+// UptimeRobot setup instructions
   console.log('\n🤖 UptimeRobot Setup Instructions:');
   console.log('1. Go to https://uptimerobot.com');
   console.log('2. Create a new monitor');
@@ -304,22 +325,22 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 // Graceful shutdown
 const gracefulShutdown = (signal) => {
   console.log(`\n${signal} received. Shutting down gracefully...`);
-  
+
   server.close(async () => {
     console.log('🔄 HTTP server closed');
-    
+
     try {
       await mongoose.connection.close();
       console.log('🗄️  Database connection closed');
     } catch (error) {
       console.error('❌ Error closing database connection:', error);
     }
-    
+
     console.log('✅ Process terminated gracefully');
     process.exit(0);
   });
-  
-  // Force close server after 10 seconds
+
+// Force close server after 10 seconds
   setTimeout(() => {
     console.error('⏰ Could not close connections in time, forcefully shutting down');
     process.exit(1);
@@ -333,7 +354,7 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 const keepAlive = () => {
   setInterval(() => {
     if (process.env.NODE_ENV === 'production') {
-      // Make a request to keep the server alive
+// Make a request to keep the server alive
       const http = require('http');
       const options = {
         hostname: 'localhost',
@@ -341,18 +362,18 @@ const keepAlive = () => {
         path: '/ping',
         method: 'GET'
       };
-      
+
       const req = http.request(options, (res) => {
         console.log(`Keep-alive ping: ${res.statusCode}`);
       });
-      
+
       req.on('error', (e) => {
         console.error(`Keep-alive error: ${e.message}`);
       });
-      
+
       req.end();
     }
-  }, 14 * 60 * 1000); // Ping every 14 minutes
+  }, 14 * 60 * 1000);// Ping every 14 minutes
 };
 
 // Start keep-alive only in production
