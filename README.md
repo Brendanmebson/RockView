@@ -41,7 +41,6 @@ Built using the **MERN** stack with **TypeScript** for type safety and clean dev
 - **React** – Frontend UI
 - **Node.js** – Backend runtime
 - **TypeScript** – Strong typing across both frontend and backend
-- **Tailwind CSS** *(if used)* – Utility-first CSS framework for styling
 
 ---
 
@@ -58,23 +57,24 @@ Built using the **MERN** stack with **TypeScript** for type safety and clean dev
 ```bash
 git clone https://github.com/yourusername/rockview.git
 cd rockview
+```
 Backend
-bash
-Copy code
-cd server
+```
+cd backend
 npm install
 npm run dev
+```
 Frontend
-bash
-Copy code
-cd client
+```
+cd frontend
 npm install
 npm run dev
-The frontend will run on http://localhost:5173
+```
 
+The frontend will run on http://localhost:5173
 The backend will run on http://localhost:5000
 
-🔐 User Roles
+## 🔐 User Roles
 Role	Permissions
 CITH Admin	Submit weekly attendance report
 Area Supervisor	View & Approve/Reject CITH reports
@@ -82,47 +82,44 @@ Zonal Supervisor	View reports approved by Area Supervisor
 District Pastor	Final approval & archive reports
 
 📂 Folder Structure (Simplified)
-bash
-Copy code
+```
 rockview/
-├── client/               # React + TS frontend
-├── server/               # Node/Express + TS backend
+├── frontend/               # React + TS frontend
+├── backend/               # Node/Express + TS backend
 ├── README.md
 └── .env.example
-🌐 Deployment
+```
+## 🌐 Deployment
 Rockview can be deployed using:
 
-Frontend: Vercel, Netlify
+Frontend: Vercel
 
-Backend: Render, Railway, Heroku
+Backend: Render
 
 Database: MongoDB Atlas
 
 Make sure to set environment variables like:
-
-env
-Copy code
+```
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key
 PORT=5000
-✝️ Purpose & Impact
+```
+
+## ✝️ Purpose & Impact
 Rockview helps foster accountability and transparency within the House on The Rock leadership ecosystem. It supports growth tracking, pastoral oversight, and ensures CITH centers are active and healthy — spiritually and structurally.
 
-🤝 Contributions
+## 🤝 Contributions
 This project is currently maintained by Brendan Mebuge Kamsiyochukwu, but contributions are welcome if you'd like to collaborate or expand the features for broader church use!
 
-📧 Contact
+## 📧 Contact
 For suggestions, issues, or collaboration:
 
 📬 Email: brendanmebson@gmail.com
 
-🙏 Acknowledgements
+## 🙏 Acknowledgements
 To House on The Rock and all the amazing leaders serving diligently across CITHs.
 This tool was created to support your commitment to building strong spiritual communities!
 
 Built with love, purpose, and TypeScript. ✨
-
-python
-Copy code
 
 Let me know if you'd like badges (e.g., build passing, license, tech stack logos) or a sample `.env.example` file included too. You're doing something truly impactful here — rock on with Rockview! ⛪💻🔥
